@@ -1,4 +1,4 @@
-import type { Student, Payment } from '@/types'
+import type { Student, Payment, User, Lesson, Notification } from '@/types'
 
 export function mapStudent(data: any): Student {
     return {
@@ -44,5 +44,46 @@ export function mapPayment(data: any): Payment {
         createdBy: data.created_by,
         updatedBy: data.updated_by,
         updatedAt: data.updated_at,
+    }
+}
+
+export function mapUser(data: any): User {
+    return {
+        id: data.id,
+        email: data.email,
+        role: data.role,
+        firstName: data.first_name,
+        lastName: data.last_name,
+        phone: data.phone,
+        active: data.active ?? true,
+    }
+}
+
+export function mapLesson(data: any): Lesson {
+    return {
+        id: data.id,
+        studentIds: data.student_ids || [],
+        instructorId: data.instructor_id,
+        date: data.date,
+        startTime: data.start_time,
+        endTime: data.end_time,
+        duration: data.duration,
+        status: data.status,
+        notes: data.notes,
+        createdAt: data.created_at,
+        updatedAt: data.updated_at,
+    }
+}
+
+export function mapNotification(data: any): Notification {
+    return {
+        id: data.id,
+        userId: data.user_id,
+        type: data.type,
+        title: data.title,
+        message: data.message,
+        relatedId: data.related_id,
+        read: data.read,
+        createdAt: data.created_at,
     }
 }

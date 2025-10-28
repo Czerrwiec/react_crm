@@ -67,3 +67,22 @@ export interface Notification {
     read: boolean
     createdAt: string
 }
+
+export interface Notification {
+    id: string
+    userId: string
+    type: string
+    title: string
+    message: string
+    relatedId: string | null
+    read: boolean
+    createdAt: string
+}
+
+export interface NotificationSettings {
+    lessonCreated: boolean
+    lessonUpdated: boolean
+    lessonCancelled: boolean
+    paymentAdded: boolean
+    studentAdded: boolean
+}

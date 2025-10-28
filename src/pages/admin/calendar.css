@@ -1,0 +1,87 @@
+.rbc-calendar {
+  font-family: inherit;
+}
+
+.rbc-header {
+  padding: 8px 3px;
+  font-weight: 600;
+  font-size: 13px;
+  border-bottom: 2px solid #e5e7eb;
+}
+
+.rbc-today {
+  background-color: #dbeafe;
+}
+
+.rbc-event {
+  padding: 2px 4px;
+  font-size: 11px;
+  line-height: 1.3;
+}
+
+.rbc-event-label {
+  font-size: 10px;
+}
+
+.rbc-month-view {
+  border: none;
+}
+
+.rbc-month-row {
+  min-height: 60px;
+  overflow: visible;
+}
+
+.rbc-date-cell {
+  padding: 4px;
+  font-size: 12px;
+}
+
+.rbc-time-view {
+  border: none;
+}
+
+.rbc-time-header {
+  margin-bottom: 5px;
+}
+
+.rbc-time-content {
+  border-top: 1px solid #e5e7eb;
+}
+
+.rbc-time-slot {
+  min-height: 30px;
+}
+
+.rbc-timeslot-group {
+  min-height: 60px;
+  font-size: 11px;
+}
+
+.rbc-label {
+  font-size: 11px;
+  padding: 0 5px;
+}
+
+.rbc-day-slot .rbc-time-slot {
+  border-top: 1px solid #f3f4f6;
+}
+
+.rbc-current-time-indicator {
+  background-color: #ef4444;
+  height: 2px;
+}
+
+/* Compact week view */
+.rbc-time-header-content {
+  border-left: none;
+}
+
+.rbc-time-content > * + * > * {
+  border-left: 1px solid #e5e7eb;
+}
+
+/* Remove default toolbar since we have custom */
+.rbc-toolbar {
+  display: none;
+}

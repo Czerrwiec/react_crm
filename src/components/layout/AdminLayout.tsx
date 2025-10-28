@@ -6,16 +6,28 @@ import {
 	Users,
 	UserCog,
 	Calendar,
+	Settings,
 	LogOut,
 } from 'lucide-react';
 import StudentsPage from '@/pages/admin/StudentsPage';
+import AddStudentPage from '@/pages/admin/AddStudentPage';
 import StudentDetailPage from '@/pages/admin/StudentDetailPage';
+import EditStudentPage from '@/pages/admin/EditStudentPage';
+import InstructorsPage from '@/pages/admin/InstructorsPage';
+import AddInstructorPage from '@/pages/admin/AddInstructorPage';
+import InstructorDetailPage from '@/pages/admin/InstructorDetailPage';
+import CalendarPage from '@/pages/admin/CalendarPage';
+import SettingsPage from '@/pages/admin/SettingsPage'
+import NotificationBell from '@/components/NotificationBell';
+import NotificationsPage from '@/pages/admin/NotificationsPage';
+
 
 const navigation = [
 	{ name: 'Dashboard', path: '/admin', icon: LayoutDashboard },
 	{ name: 'Kursanci', path: '/admin/students', icon: Users },
 	{ name: 'Instruktorzy', path: '/admin/instructors', icon: UserCog },
 	{ name: 'Kalendarz', path: '/admin/calendar', icon: Calendar },
+	{ name: 'Ustawienia', path: '/admin/settings', icon: Settings },
 ];
 
 export default function AdminLayout() {
@@ -25,11 +37,12 @@ export default function AdminLayout() {
 	return (
 		<div className="flex h-screen bg-gray-50">
 			{/* Sidebar */}
-			<aside className="w-64 border-r bg-white">
+			<aside className="flex w-64 flex-col border-r bg-white">
 				<div className="flex h-16 items-center justify-center border-b px-6">
 					<h1 className="text-xl font-bold">CRM Admin</h1>
+					<NotificationBell />
 				</div>
-				<nav className="space-y-1 p-4">
+				<nav className="flex-1 space-y-1 p-4">
 					{navigation.map((item) => {
 						const Icon = item.icon;
 						const isActive = location.pathname === item.path;
@@ -49,7 +62,7 @@ export default function AdminLayout() {
 						);
 					})}
 				</nav>
-				<div className="absolute bottom-4 left-4 right-4">
+				<div className="border-t p-4">
 					<Button
 						variant="outline"
 						className="w-full justify-start"
@@ -65,15 +78,15 @@ export default function AdminLayout() {
 				<Routes>
 					<Route index element={<Navigate to="/admin/students" replace />} />
 					<Route path="students" element={<StudentsPage />} />
-					<Route
-						path="instructors"
-						element={<div className="p-8">Instruktorzy - wkrótce</div>}
-					/>
-					<Route
-						path="calendar"
-						element={<div className="p-8">Kalendarz - wkrótce</div>}
-					/>
+					<Route path="students/add" element={<AddStudentPage />} />
+					<Route path="students/:id/edit" element={<EditStudentPage />} />
 					<Route path="students/:id" element={<StudentDetailPage />} />
+					<Route path="instructors" element={<InstructorsPage />} />
+					<Route path="instructors/add" element={<AddInstructorPage />} />
+					<Route path="instructors/:id" element={<InstructorDetailPage />} />
+					<Route path="calendar" element={<CalendarPage />} />
+					<Route path="settings" element={<SettingsPage />} />
+					<Route path="notifications" element={<NotificationsPage />} />
 				</Routes>
 			</main>
 		</div>
