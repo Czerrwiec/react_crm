@@ -4,7 +4,6 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Select } from '@/components/ui/select';
 import { Search, Plus, Phone, Mail, ChevronDown, Check } from 'lucide-react';
 import type { Student } from '@/types';
 import { useNavigate } from 'react-router-dom';

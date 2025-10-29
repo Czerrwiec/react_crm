@@ -1,6 +1,5 @@
 import { supabase } from '@/lib/supabase'
 import { mapNotification } from '@/lib/mappers'
-import type { Notification } from '@/types'
 
 export const notificationService = {
     async getNotifications(unreadOnly: boolean = false) {
