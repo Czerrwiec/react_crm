@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { notificationService } from '@/services/notification.service';
-import { useNotifications } from '@/hooks/useNotifications';
+import { useNotifications } from '@/hooks/notificationContext';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -12,7 +12,7 @@ import { pl } from 'date-fns/locale';
 
 export default function NotificationsPage() {
 	const navigate = useNavigate();
-	const { refresh } = useNotifications(); // Dodaj hook
+	const { refresh } = useNotifications();
 	const [notifications, setNotifications] = useState<Notification[]>([]);
 	const [loading, setLoading] = useState(true);
 	const [showUnreadOnly, setShowUnreadOnly] = useState(false);
@@ -35,16 +35,26 @@ export default function NotificationsPage() {
 
 	const handleNotificationClick = async (notification: Notification) => {
 		if (!notification.read) {
-			await notificationService.markAsRead(notification.id);
-			await loadNotifications();
-			refresh(); // Odśwież licznik
+			try {
+				await notificationService.markAsRead(notification.id);
+				setNotifications((prev) =>
+					prev.map((n) => (n.id === notification.id ? { ...n, read: true } : n))
+				);
+				await refresh();
+			} catch (error) {
+				console.error('Error marking as read:', error);
+			}
 		}
 
-		// Nawiguj do powiązanego zasobu jeśli istnieje
+		// Nawiguj do powiązanego zasobu
 		if (notification.relatedId) {
 			if (notification.type.includes('lesson')) {
-				navigate('/admin/calendar');
-			} else if (notification.type.includes('student')) {
+				// Przekieruj do szczegółów kursanta
+				navigate(`/admin/students/${notification.relatedId}`);
+			} else if (
+				notification.type.includes('student') ||
+				notification.type.includes('payment')
+			) {
 				navigate(`/admin/students/${notification.relatedId}`);
 			}
 		}
@@ -54,17 +64,18 @@ export default function NotificationsPage() {
 		try {
 			await notificationService.markAllAsRead();
 			await loadNotifications();
-			refresh(); // Odśwież licznik
+			await refresh();
 		} catch (error) {
 			console.error('Error marking all as read:', error);
 		}
 	};
 
-	const handleDelete = async (id: string) => {
+	const handleDelete = async (e: React.MouseEvent, id: string) => {
+		e.stopPropagation();
 		try {
 			await notificationService.deleteNotification(id);
 			await loadNotifications();
-			refresh(); // Odśwież licznik
+			await refresh();
 		} catch (error) {
 			console.error('Error deleting notification:', error);
 		}
@@ -153,10 +164,7 @@ export default function NotificationsPage() {
 										<Button
 											variant="ghost"
 											size="icon"
-											onClick={(e) => {
-												e.stopPropagation();
-												handleDelete(notification.id);
-											}}>
+											onClick={(e) => handleDelete(e, notification.id)}>
 											<Trash2 className="h-4 w-4 text-gray-400 hover:text-red-500" />
 										</Button>
 									</div>

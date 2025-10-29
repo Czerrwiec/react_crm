@@ -29,7 +29,7 @@ export default function AddInstructorPage() {
 			console.error('Error creating instructor:', error);
 			alert('Błąd dodawania instruktora. Może email już istnieje?');
 		} finally {
-			setLoading(false);
+			// setLoading(false);
 		}
 	};
 

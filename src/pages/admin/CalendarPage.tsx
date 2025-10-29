@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { Calendar, dateFnsLocalizer, View } from 'react-big-calendar';
 import {
 	format,
@@ -42,14 +43,18 @@ interface CalendarEvent {
 }
 
 export default function CalendarPage() {
+	const location = useLocation();
 	const [lessons, setLessons] = useState<Lesson[]>([]);
 	const [instructors, setInstructors] = useState<User[]>([]);
 	const [students, setStudents] = useState<Student[]>([]);
 	const [selectedInstructor, setSelectedInstructor] = useState<string>('all');
 	const [currentDate, setCurrentDate] = useState(new Date());
-	const [selectedDay, setSelectedDay] = useState(new Date()); // Dzień wyświetlany w sidebarz
+	const [selectedDay, setSelectedDay] = useState(new Date());
 	const [loading, setLoading] = useState(true);
 	const [view, setView] = useState<View>('month');
+	const [highlightedLessonId, setHighlightedLessonId] = useState<string | null>(
+		null
+	);
 
 	// Dialogs
 	const [lessonDialogOpen, setLessonDialogOpen] = useState(false);
@@ -66,6 +71,25 @@ export default function CalendarPage() {
 			loadLessons();
 		}
 	}, [selectedInstructor, currentDate]);
+
+	// Check for lessonId from navigation state
+	useEffect(() => {
+		if (location.state?.lessonId && lessons.length > 0) {
+			setHighlightedLessonId(location.state.lessonId);
+
+			// Find the lesson and navigate to its date
+			const lesson = lessons.find((l) => l.id === location.state.lessonId);
+			if (lesson) {
+				const lessonDate = new Date(lesson.date);
+				setCurrentDate(lessonDate);
+				setSelectedDay(lessonDate);
+				setView('week'); // Switch to week view for better visibility
+			}
+
+			// Clear highlight after 3 seconds
+			setTimeout(() => setHighlightedLessonId(null), 3000);
+		}
+	}, [location.state, lessons]);
 
 	const loadInitialData = async () => {
 		try {
@@ -155,13 +179,16 @@ export default function CalendarPage() {
 				break;
 		}
 
+		const isHighlighted = highlightedLessonId === lesson.id;
+
 		return {
 			style: {
 				backgroundColor,
 				borderRadius: '4px',
 				opacity: 0.9,
 				color: 'white',
-				border: '0px',
+				border: isHighlighted ? '3px solid #ef4444' : '0px',
+				boxShadow: isHighlighted ? '0 0 10px rgba(239, 68, 68, 0.5)' : 'none',
 				display: 'block',
 			},
 		};
@@ -172,7 +199,7 @@ export default function CalendarPage() {
 
 		if (direction === 'today') {
 			newDate = new Date();
-			setSelectedDay(new Date()); // Także zaznacz dzisiejszy dzień
+			setSelectedDay(new Date());
 		} else if (direction === 'prev') {
 			if (view === 'month') newDate = subMonths(currentDate, 1);
 			else newDate = subWeeks(currentDate, 1);
@@ -301,7 +328,6 @@ export default function CalendarPage() {
 			{/* Calendar views */}
 			{view === 'month' ? (
 				<div className="grid flex-1 gap-4 md:grid-cols-[2fr,1fr]">
-					{/* Month view - compact */}
 					<div className="rounded-lg border bg-white p-3">
 						<Calendar
 							localizer={localizer}
@@ -320,7 +346,6 @@ export default function CalendarPage() {
 						/>
 					</div>
 
-					{/* Day view - sidebar */}
 					<div className="rounded-lg border bg-white p-3">
 						<div className="mb-2 text-center font-semibold">
 							{format(selectedDay, 'd MMMM yyyy', { locale: pl })}

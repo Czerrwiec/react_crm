@@ -1,6 +1,6 @@
 import { Bell } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useNotifications } from '@/hooks/useNotifications';
+import { useNotifications } from '@/hooks/notificationContext';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -9,7 +9,6 @@ export default function NotificationBell() {
 	const { role } = useAuth();
 	const navigate = useNavigate();
 
-	// Pokaż tylko dla adminów
 	if (role !== 'admin') return null;
 
 	return (

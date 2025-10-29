@@ -32,11 +32,16 @@ const localizer = dateFnsLocalizer({
 	locales,
 });
 
+interface PaymentWithCreator extends Payment {
+	createdByName?: string | null;
+	updatedByName?: string | null;
+}
+
 export default function StudentDetailPage() {
 	const { id } = useParams<{ id: string }>();
 	const navigate = useNavigate();
 	const [student, setStudent] = useState<Student | null>(null);
-	const [payments, setPayments] = useState<Payment[]>([]);
+	const [payments, setPayments] = useState<PaymentWithCreator[]>([]);
 	const [lessons, setLessons] = useState<Lesson[]>([]);
 	const [loading, setLoading] = useState(true);
 	const [dialogOpen, setDialogOpen] = useState(false);
@@ -53,7 +58,24 @@ export default function StudentDetailPage() {
 				paymentService.getPaymentsByStudent(studentId),
 			]);
 			setStudent(studentData);
-			setPayments(paymentsData);
+
+			const paymentsWithCreators = await Promise.all(
+				paymentsData.map(async (payment) => {
+					const createdByName = payment.createdBy
+						? await paymentService.getCreatedByName(payment.createdBy)
+						: null;
+					const updatedByName = payment.updatedBy
+						? await paymentService.getCreatedByName(payment.updatedBy)
+						: null;
+					return {
+						...payment,
+						createdByName,
+						updatedByName,
+					};
+				})
+			);
+
+			setPayments(paymentsWithCreators);
 
 			if (studentData.instructorId) {
 				const lessonsData = await lessonService.getLessonsByInstructor(
@@ -160,9 +182,12 @@ export default function StudentDetailPage() {
 						{student.firstName} {student.lastName}
 					</h1>
 					<div className="mt-2 flex gap-2">
-						{!student.active && <Badge variant="secondary">Nieaktywny</Badge>}
 						{student.theoryPassed && <Badge>Teoria ✓</Badge>}
 						{student.coursePaid && <Badge>Opłacony</Badge>}
+						{student.isSupplementaryCourse && (
+							<Badge variant="secondary">Kurs uzupełniający</Badge>
+						)}
+						{student.car && <Badge variant="secondary">Auto na egzamin</Badge>}
 					</div>
 				</div>
 				<Button onClick={() => navigate(`/admin/students/${id}/edit`)}>
@@ -171,7 +196,6 @@ export default function StudentDetailPage() {
 				</Button>
 			</div>
 
-			{/* Tabs */}
 			<div className="mb-6 flex gap-2 border-b">
 				<button
 					className={`px-4 py-2 font-medium transition-colors ${
@@ -195,7 +219,6 @@ export default function StudentDetailPage() {
 
 			{activeTab === 'info' ? (
 				<div className="grid gap-6 md:grid-cols-2">
-					{/* Dane personalne */}
 					<Card>
 						<CardHeader>
 							<CardTitle>Dane personalne</CardTitle>
@@ -224,7 +247,6 @@ export default function StudentDetailPage() {
 						</CardContent>
 					</Card>
 
-					{/* Postęp kursu */}
 					<Card>
 						<CardHeader>
 							<CardTitle>Postęp kursu</CardTitle>
@@ -242,6 +264,13 @@ export default function StudentDetailPage() {
 								<strong>Egzamin wewnętrzny:</strong>{' '}
 								{student.internalExamPassed ? '✓ Zdany' : '✗ Nie zdany'}
 							</div>
+							<div>
+								<strong>Kurs uzupełniający:</strong>{' '}
+								{student.isSupplementaryCourse ? 'Tak' : 'Nie'}
+							</div>
+							<div>
+								<strong>Auto na egzamin:</strong> {student.car ? 'Tak' : 'Nie'}
+							</div>
 							{student.courseStartDate && (
 								<div>
 									<strong>Rozpoczęcie:</strong>{' '}
@@ -251,7 +280,6 @@ export default function StudentDetailPage() {
 						</CardContent>
 					</Card>
 
-					{/* Płatności */}
 					<Card className="md:col-span-2">
 						<CardHeader>
 							<div className="flex items-center justify-between">
@@ -300,38 +328,12 @@ export default function StudentDetailPage() {
 							) : (
 								<div className="space-y-2">
 									{payments.map((payment) => (
-										<div
+										<PaymentRow
 											key={payment.id}
-											className="flex items-center justify-between rounded-lg border p-3">
-											<div>
-												<div className="font-medium">
-													{payment.amount.toFixed(2)} zł
-												</div>
-												<div className="text-sm text-muted-foreground">
-													{format(
-														new Date(payment.createdAt),
-														'dd.MM.yyyy HH:mm'
-													)}{' '}
-													• {payment.type === 'course' ? 'Kurs' : 'Dodatkowe'} •{' '}
-													{payment.method === 'cash'
-														? 'Gotówka'
-														: payment.method === 'card'
-														? 'Karta'
-														: 'Przelew'}
-												</div>
-											</div>
-											<Button
-												variant="ghost"
-												size="icon"
-												onClick={async () => {
-													if (confirm('Usunąć płatność?')) {
-														await paymentService.deletePayment(payment.id);
-														id && loadData(id);
-													}
-												}}>
-												<Trash2 className="h-4 w-4 text-destructive" />
-											</Button>
-										</div>
+											payment={payment}
+											studentId={student.id}
+											onSuccess={() => id && loadData(id)}
+										/>
 									))}
 								</div>
 							)}
@@ -384,6 +386,163 @@ export default function StudentDetailPage() {
 		</div>
 	);
 }
+
+function PaymentRow({
+	payment,
+	studentId,
+	onSuccess,
+}: {
+	payment: PaymentWithCreator;
+	studentId: string;
+	onSuccess: () => void;
+}) {
+	const [editing, setEditing] = useState(false);
+
+	const handleDelete = async () => {
+		if (!confirm('Usunąć płatność?')) return;
+
+		try {
+			await paymentService.deletePayment(payment.id);
+			onSuccess();
+		} catch (error) {
+			console.error('Error deleting payment:', error);
+			alert('Błąd usuwania płatności');
+		}
+	};
+
+	if (editing) {
+		return (
+			<EditPaymentForm
+				payment={payment}
+				studentId={studentId}
+				onCancel={() => setEditing(false)}
+				onSuccess={() => {
+					setEditing(false);
+					onSuccess();
+				}}
+			/>
+		);
+	}
+
+	return (
+		<div className="flex items-center justify-between rounded-lg border p-3">
+			<div>
+				<div className="font-medium">{payment.amount.toFixed(2)} zł</div>
+				<div className="text-sm text-muted-foreground">
+					{format(new Date(payment.createdAt), 'dd.MM.yyyy HH:mm')} •{' '}
+					{payment.type === 'course' ? 'Kurs' : 'Dodatkowe'} •{' '}
+					{payment.method === 'cash'
+						? 'Gotówka'
+						: payment.method === 'card'
+						? 'Karta'
+						: 'Przelew'}
+				</div>
+				{(payment.createdByName || payment.updatedByName) && (
+					<div className="text-xs text-gray-500 mt-1">
+						{payment.createdByName && `Dodano: ${payment.createdByName}`}
+						{payment.updatedByName && ` • Edytowano: ${payment.updatedByName}`}
+					</div>
+				)}
+			</div>
+			<div className="flex gap-2">
+				<Button variant="ghost" size="icon" onClick={() => setEditing(true)}>
+					<Pencil className="h-4 w-4" />
+				</Button>
+				<Button variant="ghost" size="icon" onClick={handleDelete}>
+					<Trash2 className="h-4 w-4 text-destructive" />
+				</Button>
+			</div>
+		</div>
+	);
+}
+
+function EditPaymentForm({
+	payment,
+	studentId,
+	onCancel,
+	onSuccess,
+}: {
+	payment: Payment;
+	studentId: string;
+	onCancel: () => void;
+	onSuccess: () => void;
+}) {
+	const [amount, setAmount] = useState(payment.amount.toString());
+	const [type, setType] = useState<'course' | 'extra_lessons'>(payment.type);
+	const [method, setMethod] = useState<'cash' | 'card' | 'transfer'>(
+		payment.method
+	);
+	const [loading, setLoading] = useState(false);
+
+	const handleSubmit = async (e: React.FormEvent) => {
+		e.preventDefault();
+		setLoading(true);
+
+		try {
+			await paymentService.updatePayment({
+				...payment,
+				studentId,
+				amount: parseFloat(amount),
+				type,
+				method,
+			});
+			onSuccess();
+		} catch (error: any) {
+			console.error('Error updating payment:', error);
+			alert(error.message || 'Błąd aktualizacji płatności');
+		} finally {
+			setLoading(false);
+		}
+	};
+
+	return (
+		<form onSubmit={handleSubmit} className="rounded-lg border p-3 space-y-3">
+			<div className="grid grid-cols-3 gap-2">
+				<div>
+					<Label htmlFor="amount">Kwota (zł)</Label>
+					<Input
+						id="amount"
+						type="number"
+						step="0.01"
+						value={amount}
+						onChange={(e) => setAmount(e.target.value)}
+						required
+					/>
+				</div>
+				<div>
+					<Label htmlFor="type">Typ</Label>
+					<Select
+						id="type"
+						value={type}
+						onChange={(e) => setType(e.target.value as any)}>
+						<option value="course">Kurs</option>
+						<option value="extra_lessons">Dodatkowe godziny</option>
+					</Select>
+				</div>
+				<div>
+					<Label htmlFor="method">Metoda</Label>
+					<Select
+						id="method"
+						value={method}
+						onChange={(e) => setMethod(e.target.value as any)}>
+						<option value="cash">Gotówka</option>
+						<option value="card">Karta</option>
+						<option value="transfer">Przelew</option>
+					</Select>
+				</div>
+			</div>
+			<div className="flex gap-2 justify-end">
+				<Button type="button" variant="outline" onClick={onCancel} size="sm">
+					Anuluj
+				</Button>
+				<Button type="submit" disabled={loading} size="sm">
+					{loading ? 'Zapisywanie...' : 'Zapisz'}
+				</Button>
+			</div>
+		</form>
+	);
+}
+
 function AddPaymentDialog({
 	studentId,
 	open,
@@ -399,6 +558,7 @@ function AddPaymentDialog({
 	const [type, setType] = useState<'course' | 'extra_lessons'>('course');
 	const [method, setMethod] = useState<'cash' | 'card' | 'transfer'>('cash');
 	const [loading, setLoading] = useState(false);
+
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
 		setLoading(true);
@@ -422,6 +582,7 @@ function AddPaymentDialog({
 			setLoading(false);
 		}
 	};
+
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
 			<DialogTrigger asChild>
