@@ -24,11 +24,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 	const [loading, setLoading] = useState(true);
 
 	useEffect(() => {
+		let mounted = true;
+
 		// Check initial session
 		authService.getCurrentUser().then(({ data: { user } }) => {
+			if (!mounted) return;
 			setUser(user);
 			if (user) {
-				authService.getUserRole().then(setRole);
+				authService.getUserRole().then((role) => {
+					if (mounted) setRole(role);
+				});
 			}
 			setLoading(false);
 		});
@@ -37,16 +42,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 		const {
 			data: { subscription },
 		} = authService.onAuthStateChange((user) => {
+			if (!mounted) return;
 			setUser(user);
 			if (user) {
-				authService.getUserRole().then(setRole);
+				authService.getUserRole().then((role) => {
+					if (mounted) setRole(role);
+				});
 			} else {
 				setRole(null);
 			}
-			setLoading(false);
 		});
 
-		return () => subscription.unsubscribe();
+		return () => {
+			mounted = false;
+			subscription.unsubscribe();
+		};
 	}, []);
 
 	const signIn = async (email: string, password: string) => {

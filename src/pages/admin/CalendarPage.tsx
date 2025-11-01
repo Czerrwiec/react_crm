@@ -23,6 +23,7 @@ import LessonDetailDialog from '@/components/LessonDetailDialog';
 import type { Lesson, User, Student } from '@/types';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import './calendar.css';
+// import { useAuth } from '@/hooks/useAuth';
 
 const locales = { pl };
 
@@ -43,6 +44,7 @@ interface CalendarEvent {
 }
 
 export default function CalendarPage() {
+	// const { user } = useAuth();
 	const location = useLocation();
 	const [lessons, setLessons] = useState<Lesson[]>([]);
 	const [instructors, setInstructors] = useState<User[]>([]);
@@ -112,15 +114,44 @@ export default function CalendarPage() {
 
 	const loadLessons = async () => {
 		try {
-			const data =
-				selectedInstructor === 'all'
-					? await lessonService.getAllLessons(currentDate)
-					: await lessonService.getLessonsByInstructor(
-							selectedInstructor,
-							currentDate
-					  );
+			const prevMonth = new Date(
+				currentDate.getFullYear(),
+				currentDate.getMonth() - 1,
+				1
+			);
+			const nextMonth = new Date(
+				currentDate.getFullYear(),
+				currentDate.getMonth() + 1,
+				1
+			);
 
-			setLessons(data);
+			if (selectedInstructor === 'all') {
+				const [prevLessons, currentLessons, nextLessons] = await Promise.all([
+					lessonService.getAllLessons(prevMonth),
+					lessonService.getAllLessons(currentDate),
+					lessonService.getAllLessons(nextMonth),
+				]);
+
+				const allLessons = [...prevLessons, ...currentLessons, ...nextLessons];
+				const uniqueLessons = Array.from(
+					new Map(allLessons.map((lesson) => [lesson.id, lesson])).values()
+				);
+
+				setLessons(uniqueLessons);
+			} else {
+				const [prevLessons, currentLessons, nextLessons] = await Promise.all([
+					lessonService.getLessonsByInstructor(selectedInstructor, prevMonth),
+					lessonService.getLessonsByInstructor(selectedInstructor, currentDate),
+					lessonService.getLessonsByInstructor(selectedInstructor, nextMonth),
+				]);
+
+				const allLessons = [...prevLessons, ...currentLessons, ...nextLessons];
+				const uniqueLessons = Array.from(
+					new Map(allLessons.map((lesson) => [lesson.id, lesson])).values()
+				);
+
+				setLessons(uniqueLessons);
+			}
 		} catch (error) {
 			console.error('Error loading lessons:', error);
 		}
@@ -337,7 +368,7 @@ export default function CalendarPage() {
 							style={{ height: 'calc(100vh - 350px)', minHeight: '500px' }}
 							date={currentDate}
 							view="month"
-							onNavigate={() => {}}
+							onNavigate={(newDate) => setCurrentDate(newDate)}
 							onSelectSlot={(slotInfo) => handleDayClick(slotInfo.start)}
 							selectable
 							toolbar={false}
@@ -368,6 +399,21 @@ export default function CalendarPage() {
 							timeslots={2}
 							min={new Date(2024, 0, 1, 6, 0)}
 							max={new Date(2024, 0, 1, 22, 0)}
+							formats={{
+								timeGutterFormat: 'HH:mm',
+								eventTimeRangeFormat: ({ start, end }, culture, localizer) =>
+									`${localizer?.format(
+										start,
+										'HH:mm',
+										culture
+									)} - ${localizer?.format(end, 'HH:mm', culture)}`,
+								agendaTimeRangeFormat: ({ start, end }, culture, localizer) =>
+									`${localizer?.format(
+										start,
+										'HH:mm',
+										culture
+									)} - ${localizer?.format(end, 'HH:mm', culture)}`,
+							}}
 							eventPropGetter={eventStyleGetter}
 							onSelectEvent={handleEventClick}
 						/>

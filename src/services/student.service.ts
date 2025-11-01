@@ -16,6 +16,17 @@ export const studentService = {
         return data.map(mapStudentWithInstructor)
     },
 
+    async getActiveStudents() {
+        const { data, error } = await supabase
+            .from('students')
+            .select('*')
+            .eq('active', true)
+            .order('last_name')
+
+        if (error) throw error
+        return data.map(mapStudent)
+    },
+
     async getStudent(id: string) {
         const { data, error } = await supabase
             .from('students')

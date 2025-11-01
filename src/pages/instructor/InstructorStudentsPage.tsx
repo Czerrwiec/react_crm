@@ -76,10 +76,6 @@ export default function InstructorStudentsPage() {
 
 	return (
 		<div className="p-8">
-			<div className="mb-6 flex items-center justify-between">
-				<h1 className="text-3xl font-bold">Moi kursanci</h1>
-			</div>
-
 			<div className="mb-6 flex items-center gap-4">
 				<Card className="flex-1">
 					<CardContent className="pt-6">

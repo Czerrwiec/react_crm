@@ -87,7 +87,7 @@ export default function LessonDialog({
 
 	const loadStudents = async () => {
 		try {
-			const allStudents = await studentService.getStudents();
+			const allStudents = await studentService.getActiveStudents();
 			const instructorStudents = allStudents.filter(
 				(s) => s.instructorId === instructorId && s.active
 			);
@@ -99,22 +99,32 @@ export default function LessonDialog({
 
 	const checkConflict = async () => {
 		try {
-			const existingLessons = await lessonService.getLessonsByInstructor(
-				instructorId,
-				new Date(formData.date)
+			// Pobierz lekcje z poprzedniego, obecnego i następnego miesiąca
+			const selectedDate = new Date(formData.date);
+			const prevMonth = new Date(
+				selectedDate.getFullYear(),
+				selectedDate.getMonth() - 1,
+				1
+			);
+			const nextMonth = new Date(
+				selectedDate.getFullYear(),
+				selectedDate.getMonth() + 1,
+				1
 			);
 
-			const hasConflict = existingLessons.some((l) => {
-				// Pomiń obecną lekcję przy edycji
+			const [prevLessons, currentLessons, nextLessons] = await Promise.all([
+				lessonService.getLessonsByInstructor(instructorId, prevMonth),
+				lessonService.getLessonsByInstructor(instructorId, selectedDate),
+				lessonService.getLessonsByInstructor(instructorId, nextMonth),
+			]);
+
+			const allLessons = [...prevLessons, ...currentLessons, ...nextLessons];
+
+			const hasConflict = allLessons.some((l) => {
 				if (lesson && l.id === lesson.id) return false;
-
-				// Pomiń anulowane
 				if (l.status === 'cancelled') return false;
-
-				// Sprawdź czy ta sama data
 				if (l.date !== formData.date) return false;
 
-				// Sprawdź nakładanie się czasów
 				return timeRangesOverlap(
 					formData.startTime,
 					formData.endTime,
@@ -178,10 +188,10 @@ export default function LessonDialog({
 		}
 
 		if (conflictWarning) {
-			const confirmed = window.confirm(
-				'W tym czasie instruktor ma już zaplanowaną lekcję. Czy na pewno chcesz dodać kolejną?'
+			alert(
+				'W tym czasie instruktor ma już zaplanowaną lekcję. Wybierz inny termin.'
 			);
-			if (!confirmed) return;
+			return;
 		}
 
 		setLoading(true);
@@ -272,8 +282,9 @@ export default function LessonDialog({
 					</div>
 
 					{conflictWarning && (
-						<div className="rounded-lg bg-orange-50 border border-orange-200 p-3 text-sm text-orange-800">
-							⚠️ Uwaga: w tym czasie instruktor ma już zaplanowaną lekcję
+						<div className="rounded-lg bg-red-50 border border-red-200 p-3 text-sm text-red-800">
+							W tym czasie instruktor ma już zaplanowaną lekcję. Wybierz inny
+							termin.
 						</div>
 					)}
 
@@ -344,7 +355,7 @@ export default function LessonDialog({
 							onClick={() => onOpenChange(false)}>
 							Anuluj
 						</Button>
-						<Button type="submit" disabled={loading}>
+						<Button type="submit" disabled={loading || conflictWarning}>
 							{loading
 								? 'Zapisywanie...'
 								: lesson

@@ -24,22 +24,16 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
 	const [unreadCount, setUnreadCount] = useState(0);
 	const { user, role } = useAuth();
 	const channelRef = useRef<RealtimeChannel | null>(null);
-	const loadingRef = useRef(false);
 	const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
 	const loadUnreadCount = async () => {
-		if (!user || role !== 'admin' || loadingRef.current) {
-			return;
-		}
+		if (!user || role !== 'admin') return;
 
-		loadingRef.current = true;
 		try {
 			const count = await notificationService.getUnreadCount();
 			setUnreadCount(count);
 		} catch (error) {
 			console.error('Error loading unread count:', error);
-		} finally {
-			loadingRef.current = false;
 		}
 	};
 
@@ -70,7 +64,6 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
 					filter: `user_id=eq.${user.id}`,
 				},
 				() => {
-					// Debounce refresh to avoid multiple calls
 					if (timeoutRef.current) {
 						clearTimeout(timeoutRef.current);
 					}
@@ -93,7 +86,6 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
 			}
 		};
 	}, [user, role]);
-
 	return (
 		<NotificationsContext.Provider
 			value={{ unreadCount, refresh: loadUnreadCount }}>

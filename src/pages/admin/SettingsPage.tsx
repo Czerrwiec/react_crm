@@ -121,7 +121,7 @@ export default function SettingsPage() {
 
 				<Card className="md:col-span-2">
 					<CardHeader>
-						<CardTitle>Powiadomienia</CardTitle>
+						<CardTitle>Powiadomienia dla mnie</CardTitle>
 					</CardHeader>
 					<CardContent className="space-y-4">
 						<div className="rounded-lg bg-blue-50 border border-blue-200 p-4 mb-4">
@@ -137,12 +137,11 @@ export default function SettingsPage() {
 								/>
 								<div>
 									<Label className="cursor-pointer font-semibold text-base">
-										Włącz powiadomienia
+										Włącz moje powiadomienia
 									</Label>
 									<p className="text-sm text-gray-600 mt-1">
-										Główny przełącznik powiadomień. Gdy wyłączony, nie będziesz
-										otrzymywać żadnych powiadomień, niezależnie od ustawień
-										poniżej.
+										Włącz lub wyłącz wszystkie powiadomienia dla swojego konta.
+										Każdy admin ma osobne ustawienia.
 									</p>
 								</div>
 							</label>
@@ -219,9 +218,9 @@ export default function SettingsPage() {
 
 						<div className="pt-4 border-t">
 							<p className="text-xs text-gray-500 mb-3">
-								💡 Powiadomienia pokazują kto faktycznie wykonał akcję (Admin
-								lub Instruktor). Nie otrzymasz powiadomienia o własnych
-								działaniach.
+								💡 Powiadomienia pokazują kto wykonał akcję (Admin/Instruktor).
+								Nie otrzymasz powiadomienia o własnych działaniach. Inni admini
+								mogą mieć własne ustawienia.
 							</p>
 							<Button onClick={handleSave} disabled={saving}>
 								{saving ? 'Zapisywanie...' : 'Zapisz ustawienia'}

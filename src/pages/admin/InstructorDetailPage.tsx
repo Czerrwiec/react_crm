@@ -16,6 +16,7 @@ export default function InstructorDetailPage() {
 	const navigate = useNavigate();
 	const [instructor, setInstructor] = useState<User | null>(null);
 	const [students, setStudents] = useState<Student[]>([]);
+	const [showInactive, setShowInactive] = useState(false);
 	const [loading, setLoading] = useState(true);
 	const [editing, setEditing] = useState(false);
 	const [formData, setFormData] = useState<User | null>(null);
@@ -79,6 +80,9 @@ export default function InstructorDetailPage() {
 		);
 	}
 
+	const activeStudents = students.filter((s) => s.active);
+	const displayedStudents = showInactive ? students : activeStudents;
+
 	return (
 		<div className="p-8">
 			<div className="mb-4 flex items-center justify-between">
@@ -119,6 +123,7 @@ export default function InstructorDetailPage() {
 							)}
 						</div>
 					</CardHeader>
+
 					<CardContent className="space-y-4">
 						{editing ? (
 							<>
@@ -208,19 +213,29 @@ export default function InstructorDetailPage() {
 
 				<Card>
 					<CardHeader>
-						<CardTitle>Kursanci ({students.length})</CardTitle>
+						<div className="flex items-center justify-between">
+							<CardTitle>Kursanci ({activeStudents.length})</CardTitle>
+							<Button
+								variant="outline"
+								size="sm"
+								onClick={() => setShowInactive(!showInactive)}>
+								{showInactive ? 'Ukryj nieaktywnych' : 'Pokaż nieaktywnych'}
+							</Button>
+						</div>
 					</CardHeader>
 					<CardContent>
-						{students.length === 0 ? (
+						{displayedStudents.length === 0 ? (
 							<div className="py-4 text-center text-gray-500">
-								Brak przypisanych kursantów
+								{showInactive ? 'Brak kursantów' : 'Brak aktywnych kursantów'}
 							</div>
 						) : (
 							<div className="space-y-2">
-								{students.map((student) => (
+								{displayedStudents.map((student) => (
 									<div
 										key={student.id}
-										className="flex items-center justify-between rounded-lg border p-3 hover:bg-gray-50 cursor-pointer"
+										className={`flex items-center justify-between rounded-lg border p-3 hover:bg-gray-50 cursor-pointer ${
+											!student.active ? 'opacity-60' : ''
+										}`}
 										onClick={() => navigate(`/admin/students/${student.id}`)}>
 										<div>
 											<div className="font-medium">

@@ -12,9 +12,9 @@ function ProtectedRoute({
 	children: React.ReactNode;
 	allowedRoles: string[];
 }) {
-	const { user, role, loading } = useAuth();
+	const auth = useAuth();
 
-	if (loading) {
+	if (auth.loading) {
 		return (
 			<div className="flex h-screen items-center justify-center">
 				<div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
@@ -22,7 +22,7 @@ function ProtectedRoute({
 		);
 	}
 
-	if (!user || !role || !allowedRoles.includes(role)) {
+	if (!auth.user || !auth.role || !allowedRoles.includes(auth.role)) {
 		return <Navigate to="/login" replace />;
 	}
 
@@ -30,9 +30,9 @@ function ProtectedRoute({
 }
 
 function AppRoutes() {
-	const { user, role, loading } = useAuth();
+	const auth = useAuth();
 
-	if (loading) {
+	if (auth.loading) {
 		return (
 			<div className="flex h-screen items-center justify-center">
 				<div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
@@ -40,7 +40,7 @@ function AppRoutes() {
 		);
 	}
 
-	if (!user) {
+	if (!auth.user) {
 		return (
 			<Routes>
 				<Route path="/login" element={<LoginPage />} />
@@ -51,7 +51,7 @@ function AppRoutes() {
 
 	return (
 		<Routes>
-			{role === 'admin' && (
+			{auth.role === 'admin' && (
 				<Route
 					path="/admin/*"
 					element={
@@ -61,7 +61,7 @@ function AppRoutes() {
 					}
 				/>
 			)}
-			{role === 'instructor' && (
+			{auth.role === 'instructor' && (
 				<Route
 					path="/instructor/*"
 					element={
@@ -74,7 +74,7 @@ function AppRoutes() {
 			<Route
 				path="*"
 				element={
-					<Navigate to={role === 'admin' ? '/admin' : '/instructor'} replace />
+					<Navigate to={auth.role === 'admin' ? '/admin' : '/instructor'} replace />
 				}
 			/>
 		</Routes>

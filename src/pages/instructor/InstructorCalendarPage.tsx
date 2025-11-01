@@ -82,11 +82,31 @@ export default function InstructorCalendarPage() {
 		if (!user) return;
 
 		try {
-			const data = await lessonService.getLessonsByInstructor(
-				user.id,
-				currentDate
+			// Pobierz poprzedni, obecny i następny miesiąc
+			const prevMonth = new Date(
+				currentDate.getFullYear(),
+				currentDate.getMonth() - 1,
+				1
 			);
-			setLessons(data);
+			const nextMonth = new Date(
+				currentDate.getFullYear(),
+				currentDate.getMonth() + 1,
+				1
+			);
+
+			const [prevLessons, currentLessons, nextLessons] = await Promise.all([
+				lessonService.getLessonsByInstructor(user.id, prevMonth),
+				lessonService.getLessonsByInstructor(user.id, currentDate),
+				lessonService.getLessonsByInstructor(user.id, nextMonth),
+			]);
+
+			// Połącz wszystkie lekcje i usuń duplikaty
+			const allLessons = [...prevLessons, ...currentLessons, ...nextLessons];
+			const uniqueLessons = Array.from(
+				new Map(allLessons.map((lesson) => [lesson.id, lesson])).values()
+			);
+
+			setLessons(uniqueLessons);
 		} catch (error) {
 			console.error('Error loading lessons:', error);
 		}
@@ -280,7 +300,7 @@ export default function InstructorCalendarPage() {
 							style={{ height: 'calc(100vh - 350px)', minHeight: '500px' }}
 							date={currentDate}
 							view="month"
-							onNavigate={() => {}}
+							onNavigate={(newDate) => setCurrentDate(newDate)}
 							onSelectSlot={(slotInfo) => handleDayClick(slotInfo.start)}
 							selectable
 							toolbar={false}
@@ -311,6 +331,21 @@ export default function InstructorCalendarPage() {
 							timeslots={2}
 							min={new Date(2024, 0, 1, 6, 0)}
 							max={new Date(2024, 0, 1, 22, 0)}
+							formats={{
+								timeGutterFormat: 'HH:mm',
+								eventTimeRangeFormat: ({ start, end }, culture, localizer) =>
+									`${localizer?.format(
+										start,
+										'HH:mm',
+										culture
+									)} - ${localizer?.format(end, 'HH:mm', culture)}`,
+								agendaTimeRangeFormat: ({ start, end }, culture, localizer) =>
+									`${localizer?.format(
+										start,
+										'HH:mm',
+										culture
+									)} - ${localizer?.format(end, 'HH:mm', culture)}`,
+							}}
 							eventPropGetter={eventStyleGetter}
 							onSelectEvent={handleEventClick}
 						/>
