@@ -1,4 +1,4 @@
-import type { Student, Payment, User, Lesson, Notification } from '@/types'
+import type { Student, Payment, User, Lesson, Notification, CarReservation, Car } from '@/types'
 
 export function mapStudent(data: any): Student {
     return {
@@ -85,5 +85,30 @@ export function mapNotification(data: any): Notification {
         relatedId: data.related_id,
         read: data.read,
         createdAt: data.created_at,
+    }
+}
+
+export function mapCar(data: any): Car {
+    return {
+        id: data.id,
+        name: data.name,
+        year: data.year,
+        inspectionDate: data.inspection_date,
+        insuranceDate: data.insurance_date,
+        active: data.active ?? true,
+    }
+}
+
+export function mapCarReservation(data: any): CarReservation {
+    return {
+        id: data.id,
+        carId: data.car_id,
+        studentIds: data.student_ids || [],
+        date: data.date,
+        startTime: data.start_time,
+        endTime: data.end_time,
+        notes: data.notes,
+        createdAt: data.created_at,
+        createdBy: data.created_by,
     }
 }

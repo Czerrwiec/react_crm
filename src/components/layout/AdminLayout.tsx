@@ -11,6 +11,7 @@ import {
 	LogOut,
 	Menu,
 	X,
+	Car
 } from 'lucide-react';
 import StudentsPage from '@/pages/admin/StudentsPage';
 import AddStudentPage from '@/pages/admin/AddStudentPage';
@@ -23,12 +24,14 @@ import CalendarPage from '@/pages/admin/CalendarPage';
 import SettingsPage from '@/pages/admin/SettingsPage';
 import NotificationBell from '@/components/NotificationBell';
 import NotificationsPage from '@/pages/admin/NotificationsPage';
+import CarsPage from '@/pages/admin/CarsPage';
 
 const navigation = [
 	{ name: 'Dashboard', path: '/admin', icon: LayoutDashboard },
 	{ name: 'Kursanci', path: '/admin/students', icon: Users },
-	{ name: 'Instruktorzy', path: '/admin/instructors', icon: UserCog },
 	{ name: 'Kalendarz', path: '/admin/calendar', icon: Calendar },
+	{ name: 'Samochody', path: '/admin/cars', icon: Car },
+	{ name: 'Instruktorzy', path: '/admin/instructors', icon: UserCog },
 	{ name: 'Ustawienia', path: '/admin/settings', icon: Settings },
 ];
 
@@ -56,7 +59,7 @@ export default function AdminLayout() {
 					mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
 				)}>
 				<div className="flex h-16 items-center justify-center border-b px-6">
-					<h1 className="text-xl font-bold">CRM Admin</h1>
+					<h1 className="text-xl font-bold ml-10 md:ml-0">CRM Admin</h1>
 					<NotificationBell />
 				</div>
 				<nav className="flex-1 space-y-1 p-4">
@@ -111,6 +114,7 @@ export default function AdminLayout() {
 					<Route path="instructors/add" element={<AddInstructorPage />} />
 					<Route path="instructors/:id" element={<InstructorDetailPage />} />
 					<Route path="calendar" element={<CalendarPage />} />
+					<Route path="cars" element={<CarsPage />} />
 					<Route path="settings" element={<SettingsPage />} />
 					<Route path="notifications" element={<NotificationsPage />} />
 				</Routes>

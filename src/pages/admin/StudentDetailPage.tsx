@@ -167,222 +167,286 @@ export default function StudentDetailPage() {
 	}
 
 	return (
-		<div className="p-8">
-			<Button
-				variant="ghost"
-				onClick={() => navigate('/admin/students')}
-				className="mb-4">
-				<ArrowLeft className="mr-2 h-4 w-4" />
-				Powrót
-			</Button>
+		<div className="flex h-screen flex-col">
+			{/* Fixed Header */}
+			<div className="flex-shrink-0 border-b bg-white p-4 sm:p-8 pt-16">
+				<div className="mb-4 flex items-center justify-between">
+					<div className="flex-1 min-w-0">
+						<h1 className="truncate text-xl font-bold sm:text-3xl">
+							{student.firstName} {student.lastName}
+						</h1>
+						<div className="mt-2 flex flex-wrap gap-2">
+							{student.theoryPassed && (
+								<Badge className="text-xs">Teoria ✓</Badge>
+							)}
+							{student.coursePaid && (
+								<Badge className="text-xs">Opłacony</Badge>
+							)}
+							{student.isSupplementaryCourse && (
+								<Badge variant="secondary" className="text-xs">
+									Kurs uzupełniający
+								</Badge>
+							)}
+							{student.car && (
+								<Badge variant="secondary" className="text-xs">
+									Auto na egzamin
+								</Badge>
+							)}
+						</div>
+					</div>
 
-			<div className="mb-6 flex items-start justify-between">
-				<div>
-					<h1 className="text-3xl font-bold">
-						{student.firstName} {student.lastName}
-					</h1>
-					<div className="mt-2 flex gap-2">
-						{student.theoryPassed && <Badge>Teoria ✓</Badge>}
-						{student.coursePaid && <Badge>Opłacony</Badge>}
-						{student.isSupplementaryCourse && (
-							<Badge variant="secondary">Kurs uzupełniający</Badge>
-						)}
-						{student.car && <Badge variant="secondary">Auto na egzamin</Badge>}
+					{/* MOBILE – góra-prawo */}
+					<div className="sm:hidden absolute right-4 top-4 z-10 flex gap-2">
+						<Button
+							variant="ghost"
+							size="icon"
+							onClick={() => navigate('/admin/students')}>
+							<ArrowLeft className="h-5 w-5" />
+						</Button>
+						<Button
+							size="icon"
+							onClick={() => navigate(`/admin/students/${id}/edit`)}>
+							<Pencil className="h-4 w-4" />
+						</Button>
+					</div>
+
+					{/* DESKTOP – w linii z imieniem */}
+					<div className="hidden sm:flex items-center gap-3">
+						<Button
+							variant="ghost"
+							size="icon"
+							onClick={() => navigate('/admin/students')}>
+							<ArrowLeft className="h-5 w-5" />
+						</Button>
+						<Button onClick={() => navigate(`/admin/students/${id}/edit`)}>
+							Edytuj kursanta
+						</Button>
 					</div>
 				</div>
-				<Button onClick={() => navigate(`/admin/students/${id}/edit`)}>
-					<Pencil className="mr-2 h-4 w-4" />
-					Edytuj
-				</Button>
+
+				{/* Tabs */}
+				<div className="flex gap-2 border-b -mb-4">
+					<button
+						className={`px-3 py-2 text-sm font-medium transition-colors sm:px-4 ${
+							activeTab === 'info'
+								? 'border-b-2 border-primary text-primary'
+								: 'text-gray-600 hover:text-gray-900'
+						}`}
+						onClick={() => setActiveTab('info')}>
+						Informacje
+					</button>
+					<button
+						className={`px-3 py-2 text-sm font-medium transition-colors sm:px-4 ${
+							activeTab === 'calendar'
+								? 'border-b-2 border-primary text-primary'
+								: 'text-gray-600 hover:text-gray-900'
+						}`}
+						onClick={() => setActiveTab('calendar')}>
+						Kalendarz
+					</button>
+				</div>
 			</div>
 
-			<div className="mb-6 flex gap-2 border-b">
-				<button
-					className={`px-4 py-2 font-medium transition-colors ${
-						activeTab === 'info'
-							? 'border-b-2 border-primary text-primary'
-							: 'text-gray-600 hover:text-gray-900'
-					}`}
-					onClick={() => setActiveTab('info')}>
-					Informacje
-				</button>
-				<button
-					className={`px-4 py-2 font-medium transition-colors ${
-						activeTab === 'calendar'
-							? 'border-b-2 border-primary text-primary'
-							: 'text-gray-600 hover:text-gray-900'
-					}`}
-					onClick={() => setActiveTab('calendar')}>
-					Kalendarz lekcji
-				</button>
-			</div>
+			{/* Scrollable Content */}
+			<div className="flex-1 overflow-auto">
+				<div className="p-3 sm:p-8">
+					{activeTab === 'info' ? (
+						<div className="grid gap-3 sm:gap-6 md:grid-cols-3">
+							<Card>
+								<CardHeader className="pb-3 sm:pb-6">
+									<CardTitle className="text-base sm:text-2xl">
+										Dane personalne
+									</CardTitle>
+								</CardHeader>
+								<CardContent className="space-y-2 text-sm">
+									{student.phone && (
+										<div>
+											<strong>Telefon:</strong> {student.phone}
+										</div>
+									)}
+									{student.email && (
+										<div>
+											<strong>Email:</strong> {student.email}
+										</div>
+									)}
+									{student.pkkNumber && (
+										<div>
+											<strong>PKK:</strong> {student.pkkNumber}
+										</div>
+									)}
+									{student.city && (
+										<div>
+											<strong>Miasto:</strong> {student.city}
+										</div>
+									)}
+								</CardContent>
+							</Card>
 
-			{activeTab === 'info' ? (
-				<div className="grid gap-6 md:grid-cols-2">
-					<Card>
-						<CardHeader>
-							<CardTitle>Dane personalne</CardTitle>
-						</CardHeader>
-						<CardContent className="space-y-2">
-							{student.phone && (
-								<div>
-									<strong>Telefon:</strong> {student.phone}
-								</div>
-							)}
-							{student.email && (
-								<div>
-									<strong>Email:</strong> {student.email}
-								</div>
-							)}
-							{student.pkkNumber && (
-								<div>
-									<strong>PKK:</strong> {student.pkkNumber}
-								</div>
-							)}
-							{student.city && (
-								<div>
-									<strong>Miasto:</strong> {student.city}
-								</div>
-							)}
-						</CardContent>
-					</Card>
+							<Card>
+								<CardHeader className="pb-3 sm:pb-6">
+									<CardTitle className="text-base sm:text-2xl">
+										Postęp kursu
+									</CardTitle>
+								</CardHeader>
+								<CardContent className="space-y-2 text-sm">
+									<div>
+										<strong>Wyjezdzone:</strong>{' '}
+										{formatHours(student.totalHoursDriven)}
+									</div>
+									<div>
+										<strong>Teoria:</strong>{' '}
+										{student.theoryPassed ? '✓ Zdana' : '✗ Nie zdana'}
+									</div>
+									<div>
+										<strong>Egzamin wewnętrzny:</strong>{' '}
+										{student.internalExamPassed ? '✓ Zdany' : '✗ Nie zdany'}
+									</div>
+									<div>
+										<strong>Kurs uzupełniający:</strong>{' '}
+										{student.isSupplementaryCourse ? 'Tak' : 'Nie'}
+									</div>
+									<div>
+										<strong>Auto na egzamin:</strong>{' '}
+										{student.car ? 'Tak' : 'Nie'}
+									</div>
+									{student.courseStartDate && (
+										<div>
+											<strong>Rozpoczęcie:</strong>{' '}
+											{format(new Date(student.courseStartDate), 'dd.MM.yyyy')}
+										</div>
+									)}
+								</CardContent>
+							</Card>
 
-					<Card>
-						<CardHeader>
-							<CardTitle>Postęp kursu</CardTitle>
-						</CardHeader>
-						<CardContent className="space-y-2">
-							<div>
-								<strong>Wyjeżdżone:</strong>{' '}
-								{formatHours(student.totalHoursDriven)}
-							</div>
-							<div>
-								<strong>Teoria:</strong>{' '}
-								{student.theoryPassed ? '✓ Zdana' : '✗ Nie zdana'}
-							</div>
-							<div>
-								<strong>Egzamin wewnętrzny:</strong>{' '}
-								{student.internalExamPassed ? '✓ Zdany' : '✗ Nie zdany'}
-							</div>
-							<div>
-								<strong>Kurs uzupełniający:</strong>{' '}
-								{student.isSupplementaryCourse ? 'Tak' : 'Nie'}
-							</div>
-							<div>
-								<strong>Auto na egzamin:</strong> {student.car ? 'Tak' : 'Nie'}
-							</div>
-							{student.courseStartDate && (
-								<div>
-									<strong>Rozpoczęcie:</strong>{' '}
-									{format(new Date(student.courseStartDate), 'dd.MM.yyyy')}
-								</div>
-							)}
-						</CardContent>
-					</Card>
+							<Card>
+								<CardHeader className="pb-3 sm:pb-6">
+									<CardTitle className="text-base sm:text-2xl">
+										Notatki
+									</CardTitle>
+								</CardHeader>
+								<CardContent className="text-sm">
+									{student.notes ? (
+										<p className="whitespace-pre-wrap">{student.notes}</p>
+									) : (
+										<p className="italic text-gray-500">Brak notatek</p>
+									)}
+								</CardContent>
+							</Card>
 
-					<Card className="md:col-span-2">
-						<CardHeader>
-							<div className="flex items-center justify-between">
-								<CardTitle>Płatności</CardTitle>
-								<AddPaymentDialog
-									studentId={student.id}
-									open={dialogOpen}
-									onOpenChange={setDialogOpen}
-									onSuccess={() => id && loadData(id)}
-								/>
-							</div>
-						</CardHeader>
-						<CardContent>
-							<div className="mb-4 grid grid-cols-3 gap-4 rounded-lg bg-muted p-4">
-								<div>
-									<div className="text-sm text-muted-foreground">
-										Cena kursu
-									</div>
-									<div className="text-2xl font-bold">
-										{student.coursePrice.toFixed(2)} zł
-									</div>
-								</div>
-								<div>
-									<div className="text-sm text-muted-foreground">Wpłacono</div>
-									<div className="text-2xl font-bold text-green-600">
-										{totalPaid.toFixed(2)} zł
-									</div>
-								</div>
-								<div>
-									<div className="text-sm text-muted-foreground">
-										Do zapłaty
-									</div>
-									<div
-										className={`text-2xl font-bold ${
-											outstanding > 0 ? 'text-orange-600' : 'text-green-600'
-										}`}>
-										{outstanding.toFixed(2)} zł
-									</div>
-								</div>
-							</div>
-
-							{payments.length === 0 ? (
-								<div className="py-8 text-center text-muted-foreground">
-									Brak płatności
-								</div>
-							) : (
-								<div className="space-y-2">
-									{payments.map((payment) => (
-										<PaymentRow
-											key={payment.id}
-											payment={payment}
+							{/* Płatności - Mobile Optimized */}
+							<Card className="md:col-span-3">
+								<CardHeader className="pb-3 sm:pb-6">
+									<div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+										<CardTitle className="text-base sm:text-2xl">
+											Płatności
+										</CardTitle>
+										<AddPaymentDialog
 											studentId={student.id}
+											open={dialogOpen}
+											onOpenChange={setDialogOpen}
 											onSuccess={() => id && loadData(id)}
 										/>
-									))}
+									</div>
+								</CardHeader>
+								<CardContent>
+									{/* Summary Cards */}
+									<div className="mb-4 grid grid-cols-3 gap-2 rounded-lg bg-muted p-3 sm:gap-4 sm:p-4">
+										<div>
+											<div className="text-xs text-muted-foreground sm:text-sm">
+												Cena kursu
+											</div>
+											<div className="text-lg font-bold sm:text-2xl">
+												{student.coursePrice.toFixed(2)} zł
+											</div>
+										</div>
+										<div>
+											<div className="text-xs text-muted-foreground sm:text-sm">
+												Wpłacono
+											</div>
+											<div className="text-lg font-bold text-green-600 sm:text-2xl">
+												{totalPaid.toFixed(2)} zł
+											</div>
+										</div>
+										<div>
+											<div className="text-xs text-muted-foreground sm:text-sm">
+												Do zapłaty
+											</div>
+											<div
+												className={`text-lg font-bold sm:text-2xl ${
+													outstanding > 0 ? 'text-orange-600' : 'text-green-600'
+												}`}>
+												{outstanding.toFixed(2)} zł
+											</div>
+										</div>
+									</div>
+
+									{/* Payments List */}
+									{payments.length === 0 ? (
+										<div className="py-8 text-center text-sm text-muted-foreground">
+											Brak płatności
+										</div>
+									) : (
+										<div className="space-y-2">
+											{payments.map((payment) => (
+												<PaymentRow
+													key={payment.id}
+													payment={payment}
+													studentId={student.id}
+													onSuccess={() => id && loadData(id)}
+												/>
+											))}
+										</div>
+									)}
+								</CardContent>
+							</Card>
+						</div>
+					) : (
+						<div className="rounded-lg border bg-white p-2 sm:p-4 h-[450px] sm:h-[600px]">
+							<div className="h-[450px] sm:h-[600px]">
+								<Calendar
+									localizer={localizer}
+									events={events}
+									startAccessor="start"
+									endAccessor="end"
+									style={{ height: '100%' }}
+									views={['month']}
+									defaultView="month"
+									eventPropGetter={eventStyleGetter}
+									messages={{
+										next: 'Następny',
+										previous: 'Poprzedni',
+										today: 'Dziś',
+										month: 'Miesiąc',
+									}}
+								/>
+							</div>
+							<div className="mt-4 flex flex-wrap gap-2 text-xs sm:gap-4 sm:text-sm">
+								<div className="flex items-center gap-2">
+									<div
+										className="h-3 w-3 rounded sm:h-4 sm:w-4"
+										style={{ backgroundColor: '#f59e0b' }}
+									/>
+									<span>Zaplanowana</span>
 								</div>
-							)}
-						</CardContent>
-					</Card>
+								<div className="flex items-center gap-2">
+									<div
+										className="h-3 w-3 rounded sm:h-4 sm:w-4"
+										style={{ backgroundColor: '#10b981' }}
+									/>
+									<span>Ukończona</span>
+								</div>
+								<div className="flex items-center gap-2">
+									<div
+										className="h-3 w-3 rounded sm:h-4 sm:w-4"
+										style={{ backgroundColor: '#6b7280' }}
+									/>
+									<span>Anulowana</span>
+								</div>
+							</div>
+						</div>
+					)}
 				</div>
-			) : (
-				<div className="rounded-lg border bg-white p-4">
-					<Calendar
-						localizer={localizer}
-						events={events}
-						startAccessor="start"
-						endAccessor="end"
-						style={{ height: 600 }}
-						views={['month']}
-						defaultView="month"
-						eventPropGetter={eventStyleGetter}
-						messages={{
-							next: 'Następny',
-							previous: 'Poprzedni',
-							today: 'Dziś',
-							month: 'Miesiąc',
-						}}
-					/>
-					<div className="mt-4 flex gap-4 text-sm">
-						<div className="flex items-center gap-2">
-							<div
-								className="h-4 w-4 rounded"
-								style={{ backgroundColor: '#f59e0b' }}
-							/>
-							<span>Zaplanowana</span>
-						</div>
-						<div className="flex items-center gap-2">
-							<div
-								className="h-4 w-4 rounded"
-								style={{ backgroundColor: '#10b981' }}
-							/>
-							<span>Ukończona</span>
-						</div>
-						<div className="flex items-center gap-2">
-							<div
-								className="h-4 w-4 rounded"
-								style={{ backgroundColor: '#6b7280' }}
-							/>
-							<span>Anulowana</span>
-						</div>
-					</div>
-				</div>
-			)}
+			</div>
 		</div>
 	);
 }
@@ -425,10 +489,10 @@ function PaymentRow({
 	}
 
 	return (
-		<div className="flex items-center justify-between rounded-lg border p-3">
-			<div>
+		<div className="flex flex-col gap-2 rounded-lg border p-3 sm:flex-row sm:items-center sm:justify-between">
+			<div className="flex-1">
 				<div className="font-medium">{payment.amount.toFixed(2)} zł</div>
-				<div className="text-sm text-muted-foreground">
+				<div className="text-xs text-muted-foreground sm:text-sm">
 					{format(new Date(payment.createdAt), 'dd.MM.yyyy HH:mm')} •{' '}
 					{payment.type === 'course' ? 'Kurs' : 'Dodatkowe'} •{' '}
 					{payment.method === 'cash'
@@ -438,7 +502,7 @@ function PaymentRow({
 						: 'Przelew'}
 				</div>
 				{(payment.createdByName || payment.updatedByName) && (
-					<div className="text-xs text-gray-500 mt-1">
+					<div className="mt-1 text-xs text-gray-500">
 						{payment.createdByName && `Dodano: ${payment.createdByName}`}
 						{payment.updatedByName && ` • Edytowano: ${payment.updatedByName}`}
 					</div>

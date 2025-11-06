@@ -86,3 +86,24 @@ export interface NotificationSettings {
     paymentAdded: boolean
     studentAdded: boolean
 }
+
+export interface Car {
+    id: string
+    name: string
+    year: number
+    inspectionDate: string | null
+    insuranceDate: string | null
+    active: boolean
+}
+
+export interface CarReservation {
+    id: string
+    carId: string
+    studentIds: string[]
+    date: string
+    startTime: string
+    endTime: string
+    notes: string | null
+    createdAt: string
+    createdBy: string | null
+}

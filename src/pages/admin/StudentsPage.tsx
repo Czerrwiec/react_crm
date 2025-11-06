@@ -7,6 +7,8 @@ import { Button } from '@/components/ui/button';
 import { Search, Plus, Phone, Mail, ChevronDown, Check } from 'lucide-react';
 import type { Student } from '@/types';
 import { useNavigate } from 'react-router-dom';
+import { format } from 'date-fns';
+import { pl } from 'date-fns/locale';
 
 type StudentWithInstructor = Student & {
 	instructor?: { firstName: string; lastName: string };
@@ -34,11 +36,15 @@ export default function StudentsPage() {
 
 	const [sortDropdownOpen, setSortDropdownOpen] = useState(false);
 	const [filterDropdownOpen, setFilterDropdownOpen] = useState(false);
+	const [weather, setWeather] = useState<{ city: string; temp: number } | null>(
+		null
+	);
 
 	useEffect(() => {
 		if (initialized.current) return;
 		initialized.current = true;
 		loadStudents();
+		loadWeather();
 	}, []);
 
 	useEffect(() => {
@@ -55,6 +61,8 @@ export default function StudentsPage() {
 		showOnlyCourseUnpaid,
 	]);
 
+	
+
 	const loadStudents = async () => {
 		try {
 			const data = await studentService.getStudents();
@@ -63,6 +71,54 @@ export default function StudentsPage() {
 			console.error('Error loading students:', error);
 		} finally {
 			setLoading(false);
+		}
+	};
+
+	const loadWeather = async () => {
+		try {
+			// Sprawdź czy geolokalizacja jest dostępna
+			if (!navigator.geolocation) {
+				setWeather({ city: 'Wągrowiec', temp: 23 });
+				return;
+			}
+
+			const position = await new Promise<GeolocationPosition>(
+				(resolve, reject) => {
+					navigator.geolocation.getCurrentPosition(resolve, reject, {
+						timeout: 5000,
+						enableHighAccuracy: false,
+					});
+				}
+			);
+
+			const { latitude, longitude } = position.coords;
+
+			const weatherResponse = await fetch(
+				`https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current_weather=true`
+			);
+			const weatherData = await weatherResponse.json();
+
+			const geocodeResponse = await fetch(
+				`https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`,
+				{
+					headers: {
+						'User-Agent': 'CRM-App/1.0',
+					},
+				}
+			);
+			const geocodeData = await geocodeResponse.json();
+
+			setWeather({
+				city:
+					geocodeData.address?.city ||
+					geocodeData.address?.town ||
+					geocodeData.address?.village ||
+					'Nieznana lokalizacja',
+				temp: Math.round(weatherData.current_weather.temperature),
+			});
+		} catch (error) {
+			console.error('Error loading weather:', error);
+			setWeather({ city: 'Wągrowiec', temp: -13 });
 		}
 	};
 
@@ -148,6 +204,9 @@ export default function StudentsPage() {
 		);
 	}
 
+	const today = new Date();
+	const dateStr = format(today, 'EEEE, d MMMM', { locale: pl });
+
 	return (
 		<div className="flex h-screen flex-col">
 			{/* Fixed Header */}
@@ -158,6 +217,13 @@ export default function StudentsPage() {
 						<Button size="icon" onClick={() => navigate('/admin/students/add')}>
 							<Plus className="h-5 w-5" />
 						</Button>
+					</div>
+					{/* Data i pogoda */}
+					<div className="mb-4 flex items-center justify-between text-sm">
+						<span className="capitalize text-gray-600">{dateStr}</span>
+						<span className="text-gray-400">
+							{weather ? `${weather.city} ${weather.temp}℃` : 'Ładowanie...'}
+						</span>
 					</div>
 
 					{/* Desktop Header */}
@@ -413,21 +479,45 @@ export default function StudentsPage() {
 												<h3 className="text-base font-semibold sm:text-lg">
 													{student.firstName} {student.lastName}
 												</h3>
-												{!student.active && (
-													<Badge variant="secondary" className="text-xs">
-														Nieaktywny
-													</Badge>
-												)}
-												{student.theoryPassed && (
-													<Badge variant="default" className="text-xs">
-														Teoria ✓
-													</Badge>
-												)}
-												{student.coursePaid && (
-													<Badge variant="default" className="text-xs">
-														Opłacony
-													</Badge>
-												)}
+												<div className="mt-1 flex flex-wrap items-center gap-1">
+													{!student.active && (
+														<Badge variant="secondary" className="text-xs">
+															Nieaktywny
+														</Badge>
+													)}
+
+													{/* Desktop only */}
+													<div className="hidden sm:flex sm:flex-wrap sm:gap-2">
+														{student.theoryPassed && (
+															<Badge variant="default" className="text-xs">
+																Teoria ✓
+															</Badge>
+														)}
+														{student.coursePaid && (
+															<Badge variant="default" className="text-xs">
+																Opłacony
+															</Badge>
+														)}
+													</div>
+
+													{/* Mobile only */}
+													<div className="flex flex-wrap gap-1 sm:hidden">
+														{student.isSupplementaryCourse && (
+															<Badge
+																variant="secondary"
+																className="text-[10px] px-1.5 py-0">
+																Uzupełniający
+															</Badge>
+														)}
+														{student.car && (
+															<Badge
+																variant="secondary"
+																className="text-[10px] px-1.5 py-0">
+																Auto
+															</Badge>
+														)}
+													</div>
+												</div>
 											</div>
 
 											<div className="space-y-1 text-sm text-gray-600">
