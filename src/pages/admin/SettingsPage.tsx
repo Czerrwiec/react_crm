@@ -12,6 +12,9 @@ interface NotificationSettings {
 	lessonUpdated: boolean;
 	lessonCancelled: boolean;
 	paymentAdded: boolean;
+	carReservationCreated: boolean;
+	carReservationUpdated: boolean;
+	carReservationDeleted: boolean;
 }
 
 export default function SettingsPage() {
@@ -23,6 +26,9 @@ export default function SettingsPage() {
 			lessonUpdated: true,
 			lessonCancelled: true,
 			paymentAdded: true,
+			carReservationCreated: true,
+			carReservationUpdated: true,
+			carReservationDeleted: true,
 		});
 	const [loading, setLoading] = useState(true);
 	const [saving, setSaving] = useState(false);
@@ -54,6 +60,9 @@ export default function SettingsPage() {
 					lessonUpdated: data.lesson_updated,
 					lessonCancelled: data.lesson_cancelled,
 					paymentAdded: data.payment_added,
+					carReservationCreated: data.car_reservation_created ?? true,
+					carReservationUpdated: data.car_reservation_updated ?? true,
+					carReservationDeleted: data.car_reservation_deleted ?? true,
 				});
 			}
 		} catch (error) {
@@ -75,6 +84,9 @@ export default function SettingsPage() {
 				lesson_updated: notificationSettings.lessonUpdated,
 				lesson_cancelled: notificationSettings.lessonCancelled,
 				payment_added: notificationSettings.paymentAdded,
+				car_reservation_created: notificationSettings.carReservationCreated,
+				car_reservation_updated: notificationSettings.carReservationUpdated,
+				car_reservation_deleted: notificationSettings.carReservationDeleted,
 			});
 
 			if (error) throw error;
@@ -212,6 +224,54 @@ export default function SettingsPage() {
 								/>
 								<Label className="cursor-pointer">
 									Dodanie/edycja/usunięcie płatności
+								</Label>
+							</label>
+
+							<label className="flex cursor-pointer items-center gap-2">
+								<Checkbox
+									checked={notificationSettings.carReservationCreated}
+									onChange={(e) =>
+										setNotificationSettings({
+											...notificationSettings,
+											carReservationCreated: e.target.checked,
+										})
+									}
+									disabled={!notificationSettings.enabled}
+								/>
+								<Label className="cursor-pointer">
+									Dodanie rezerwacji samochodu
+								</Label>
+							</label>
+
+							<label className="flex cursor-pointer items-center gap-2">
+								<Checkbox
+									checked={notificationSettings.carReservationUpdated}
+									onChange={(e) =>
+										setNotificationSettings({
+											...notificationSettings,
+											carReservationUpdated: e.target.checked,
+										})
+									}
+									disabled={!notificationSettings.enabled}
+								/>
+								<Label className="cursor-pointer">
+									Edycja rezerwacji samochodu
+								</Label>
+							</label>
+
+							<label className="flex cursor-pointer items-center gap-2">
+								<Checkbox
+									checked={notificationSettings.carReservationDeleted}
+									onChange={(e) =>
+										setNotificationSettings({
+											...notificationSettings,
+											carReservationDeleted: e.target.checked,
+										})
+									}
+									disabled={!notificationSettings.enabled}
+								/>
+								<Label className="cursor-pointer">
+									Usunięcie rezerwacji samochodu
 								</Label>
 							</label>
 						</div>

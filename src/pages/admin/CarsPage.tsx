@@ -1,45 +1,249 @@
 import { useEffect, useState } from 'react';
-import { carService } from '@/services/car.service';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Plus } from 'lucide-react';
-import { format } from 'date-fns';
+import { useLocation } from 'react-router-dom';
+import { Calendar, dateFnsLocalizer, View } from 'react-big-calendar';
+import {
+	format,
+	parse,
+	startOfWeek,
+	getDay,
+	addMonths,
+	subMonths,
+	addWeeks,
+	subWeeks,
+} from 'date-fns';
 import { pl } from 'date-fns/locale';
-import type { Car } from '@/types';
+import { carService } from '@/services/car.service';
+import { studentService } from '@/services/student.service';
+import { Button } from '@/components/ui/button';
+import { Select } from '@/components/ui/select';
+import { Plus, ChevronLeft, ChevronRight } from 'lucide-react';
 import CarDialog from '@/components/CarDialog';
+import CarReservationDialog from '@/components/CarReservationDialog';
+import CarReservationDetailDialog from '@/components/CarReservationDetailDialog';
+import type { Car, CarReservation, Student } from '@/types';
+import 'react-big-calendar/lib/css/react-big-calendar.css';
+import '../admin/calendar.css';
 
-console.log('CarsPage loaded');
+const locales = { pl };
+const localizer = dateFnsLocalizer({
+	format,
+	parse,
+	startOfWeek: () => startOfWeek(new Date(), { locale: pl }),
+	getDay,
+	locales,
+});
+
+interface CalendarEvent {
+	id: string;
+	title: string;
+	start: Date;
+	end: Date;
+	resource: CarReservation;
+}
 
 export default function CarsPage() {
+	const location = useLocation();
 	const [cars, setCars] = useState<Car[]>([]);
+	const [students, setStudents] = useState<Student[]>([]);
+	const [reservations, setReservations] = useState<CarReservation[]>([]);
+	const [selectedCar, setSelectedCar] = useState<string>('all');
+	const [currentDate, setCurrentDate] = useState(new Date());
+	const [selectedDay, setSelectedDay] = useState(new Date());
 	const [loading, setLoading] = useState(true);
-	const [dialogOpen, setDialogOpen] = useState(false);
-	const [editingCar, setEditingCar] = useState<Car | null>(null);
+	const [view, setView] = useState<View>('month');
 	const [activeTab, setActiveTab] = useState<'calendar' | 'fleet'>('calendar');
 
+	// Dialogs
+	const [carDialogOpen, setCarDialogOpen] = useState(false);
+	const [editingCar, setEditingCar] = useState<Car | null>(null);
+	const [reservationDialogOpen, setReservationDialogOpen] = useState(false);
+	const [editingReservation, setEditingReservation] =
+		useState<CarReservation | null>(null);
+	const [detailDialogOpen, setDetailDialogOpen] = useState(false);
+	const [selectedReservation, setSelectedReservation] =
+		useState<CarReservation | null>(null);
+
 	useEffect(() => {
-		loadCars();
+		loadInitialData();
 	}, []);
 
-	const loadCars = async () => {
+	useEffect(() => {
+		if (cars.length > 0) {
+			loadReservations();
+		}
+	}, [selectedCar, currentDate]);
+
+	const loadInitialData = async () => {
 		try {
-			const data = await carService.getAllCars();
-			setCars(data);
+			const [carsData, studentsData] = await Promise.all([
+				carService.getAllCars(),
+				studentService.getStudents(),
+			]);
+			setCars(carsData);
+			setStudents(studentsData);
+
+			if (carsData.length > 0) {
+				setSelectedCar(carsData[0].id);
+			}
 		} catch (error) {
-			console.error('Error loading cars:', error);
+			console.error('Error loading data:', error);
 		} finally {
 			setLoading(false);
 		}
 	};
 
+	const loadReservations = async () => {
+		try {
+			// Pobierz poprzedni, obecny i następny miesiąc
+			const prevMonth = new Date(
+				currentDate.getFullYear(),
+				currentDate.getMonth() - 1,
+				1
+			);
+			const nextMonth = new Date(
+				currentDate.getFullYear(),
+				currentDate.getMonth() + 1,
+				1
+			);
+
+			const [prevReservations, currentReservations, nextReservations] =
+				await Promise.all([
+					carService.getReservationsByMonth(prevMonth),
+					carService.getReservationsByMonth(currentDate),
+					carService.getReservationsByMonth(nextMonth),
+				]);
+
+			const allReservations = [
+				...prevReservations,
+				...currentReservations,
+				...nextReservations,
+			];
+			const uniqueReservations = Array.from(
+				new Map(allReservations.map((r) => [r.id, r])).values()
+			);
+
+			// Filtruj po samochodzie jeśli wybrany
+			const filtered =
+				selectedCar === 'all'
+					? uniqueReservations
+					: uniqueReservations.filter((r) => r.carId === selectedCar);
+
+			setReservations(filtered);
+		} catch (error) {
+			console.error('Error loading reservations:', error);
+		}
+	};
+
+	const studentNamesMap = new Map(
+		students.map((s) => [s.id, `${s.firstName} ${s.lastName}`])
+	);
+
+	
+
+	const carNamesMap = new Map(cars.map((c) => [c.id, c.name]));
+	const carColorsMap = new Map(cars.map((c) => [c.id, c.color || '#3b82f6']));
+
+
+	const events: CalendarEvent[] = reservations.map((reservation) => {
+		const [startHour, startMinute] = reservation.startTime
+			.split(':')
+			.map(Number);
+		const [endHour, endMinute] = reservation.endTime.split(':').map(Number);
+
+		const date = new Date(reservation.date);
+		const start = new Date(
+			date.getFullYear(),
+			date.getMonth(),
+			date.getDate(),
+			startHour,
+			startMinute
+		);
+		const end = new Date(
+			date.getFullYear(),
+			date.getMonth(),
+			date.getDate(),
+			endHour,
+			endMinute
+		);
+
+		const carName = carNamesMap.get(reservation.carId) || 'Nieznany';
+		const studentNames = reservation.studentIds
+			.map((id) => studentNamesMap.get(id) || 'Nieznany')
+			.join(', ');
+
+		return {
+			id: reservation.id,
+			title:
+				selectedCar === 'all'
+					? `${carName} - ${studentNames || 'Bez kursanta'}`
+					: studentNames || 'Bez kursanta',
+			start,
+			end,
+			resource: reservation,
+		};
+	});
+
+	const eventStyleGetter = (event: CalendarEvent) => {
+		const reservation = event.resource;
+		const backgroundColor = carColorsMap.get(reservation.carId) || '#3b82f6';
+
+		return {
+			style: {
+				backgroundColor,
+				borderRadius: '4px',
+				opacity: 0.9,
+				color: 'white',
+				border: '0px',
+				display: 'block',
+			},
+		};
+	};
+
+	const handleNavigate = (direction: 'prev' | 'next' | 'today') => {
+		let newDate = new Date(currentDate);
+
+		if (direction === 'today') {
+			newDate = new Date();
+			setSelectedDay(new Date());
+		} else if (direction === 'prev') {
+			if (view === 'month') newDate = subMonths(currentDate, 1);
+			else newDate = subWeeks(currentDate, 1);
+		} else {
+			if (view === 'month') newDate = addMonths(currentDate, 1);
+			else newDate = addWeeks(currentDate, 1);
+		}
+
+		setCurrentDate(newDate);
+	};
+
+	const handleEventClick = (event: CalendarEvent) => {
+		setSelectedReservation(event.resource);
+		setDetailDialogOpen(true);
+	};
+
+	const handleDayClick = (date: Date) => {
+		setSelectedDay(date);
+	};
+
+	const handleAddReservation = () => {
+		setEditingReservation(null);
+		setReservationDialogOpen(true);
+	};
+
+	const handleEditReservation = (reservation: CarReservation) => {
+		setSelectedCar(reservation.carId);
+		setEditingReservation(reservation);
+		setReservationDialogOpen(true);
+	};
+
 	const handleAddCar = () => {
 		setEditingCar(null);
-		setDialogOpen(true);
+		setCarDialogOpen(true);
 	};
 
 	const handleEditCar = (car: Car) => {
 		setEditingCar(car);
-		setDialogOpen(true);
+		setCarDialogOpen(true);
 	};
 
 	const handleDeleteCar = async (id: string) => {
@@ -47,12 +251,29 @@ export default function CarsPage() {
 
 		try {
 			await carService.deleteCar(id);
-			loadCars();
+			loadInitialData();
 		} catch (error) {
 			console.error('Error deleting car:', error);
 			alert('Błąd usuwania samochodu');
 		}
 	};
+
+	const getDateRangeText = () => {
+		if (view === 'month') {
+			return format(currentDate, 'LLLL yyyy', { locale: pl });
+		} else {
+			const start = startOfWeek(currentDate, { locale: pl });
+			const end = new Date(start);
+			end.setDate(start.getDate() + 6);
+			return `${format(start, 'd MMM', { locale: pl })} - ${format(
+				end,
+				'd MMM yyyy',
+				{ locale: pl }
+			)}`;
+		}
+	};
+
+	const canAddReservation = selectedCar && selectedCar !== 'all';
 
 	if (loading) {
 		return (
@@ -91,10 +312,211 @@ export default function CarsPage() {
 			</div>
 
 			{activeTab === 'calendar' ? (
-				<div className="rounded-lg border bg-gray-50 p-8 text-center">
-					<p className="text-gray-500">Kalendarz rezerwacji - wkrótce</p>
+				<div className="flex h-full flex-col">
+					<div className="mb-4 flex items-center justify-between">
+						<div className="flex items-center gap-4">
+							<Select
+								value={selectedCar}
+								onChange={(e) => setSelectedCar(e.target.value)}>
+								<option value="all">Wszystkie samochody</option>
+								{cars
+									.filter((c) => c.active)
+									.map((car) => (
+										<option key={car.id} value={car.id}>
+											{car.name}
+										</option>
+									))}
+							</Select>
+							<Button
+								onClick={handleAddReservation}
+								disabled={!canAddReservation}>
+								<Plus className="mr-2 h-4 w-4" />
+								Dodaj rezerwację
+							</Button>
+						</div>
+					</div>
+
+					{!canAddReservation && (
+						<div className="mb-4 rounded-lg bg-yellow-50 border border-yellow-200 p-3 text-sm text-yellow-800">
+							Wybierz konkretny samochód, aby dodać rezerwację
+						</div>
+					)}
+
+					{/* Custom toolbar */}
+					<div className="mb-4 flex items-center justify-between rounded-lg border bg-white p-4">
+						<div className="flex items-center gap-2">
+							<Button
+								variant="outline"
+								size="sm"
+								onClick={() => handleNavigate('today')}>
+								Dziś
+							</Button>
+							<Button
+								variant="outline"
+								size="sm"
+								onClick={() => handleNavigate('prev')}>
+								<ChevronLeft className="h-4 w-4" />
+							</Button>
+							<Button
+								variant="outline"
+								size="sm"
+								onClick={() => handleNavigate('next')}>
+								<ChevronRight className="h-4 w-4" />
+							</Button>
+							<span className="ml-4 text-lg font-semibold capitalize">
+								{getDateRangeText()}
+							</span>
+						</div>
+
+						<div className="flex gap-2">
+							<Button
+								variant={view === 'month' ? 'default' : 'outline'}
+								size="sm"
+								onClick={() => setView('month')}>
+								Miesiąc
+							</Button>
+							<Button
+								variant={view === 'week' ? 'default' : 'outline'}
+								size="sm"
+								onClick={() => setView('week')}>
+								Tydzień
+							</Button>
+						</div>
+					</div>
+
+					{/* Calendar views */}
+					{view === 'month' ? (
+						<div className="grid flex-1 gap-4 md:grid-cols-[2fr,1fr]">
+							<div className="rounded-lg border bg-white p-3">
+								<Calendar
+									localizer={localizer}
+									events={events}
+									startAccessor="start"
+									endAccessor="end"
+									style={{ height: 'calc(100vh - 450px)', minHeight: '500px' }}
+									date={currentDate}
+									view="month"
+									onNavigate={(newDate) => setCurrentDate(newDate)}
+									onSelectSlot={(slotInfo) => handleDayClick(slotInfo.start)}
+									selectable
+									toolbar={false}
+									eventPropGetter={eventStyleGetter}
+									onSelectEvent={handleEventClick}
+									formats={{
+										timeGutterFormat: 'HH:mm',
+										eventTimeRangeFormat: (
+											{ start, end },
+											culture,
+											localizer
+										) =>
+											`${localizer?.format(
+												start,
+												'HH:mm',
+												culture
+											)} - ${localizer?.format(end, 'HH:mm', culture)}`,
+										agendaTimeRangeFormat: (
+											{ start, end },
+											culture,
+											localizer
+										) =>
+											`${localizer?.format(
+												start,
+												'HH:mm',
+												culture
+											)} - ${localizer?.format(end, 'HH:mm', culture)}`,
+									}}
+								/>
+							</div>
+
+							<div className="rounded-lg border bg-white p-3">
+								<div className="mb-2 text-center font-semibold">
+									{format(selectedDay, 'd MMMM yyyy', { locale: pl })}
+								</div>
+								<Calendar
+									localizer={localizer}
+									events={events.filter(
+										(e) =>
+											format(e.start, 'yyyy-MM-dd') ===
+											format(selectedDay, 'yyyy-MM-dd')
+									)}
+									startAccessor="start"
+									endAccessor="end"
+									style={{ height: 'calc(100vh - 450px)', minHeight: '500px' }}
+									date={selectedDay}
+									view="day"
+									onNavigate={() => {}}
+									toolbar={false}
+									step={30}
+									timeslots={2}
+									min={new Date(2024, 0, 1, 6, 0)}
+									max={new Date(2024, 0, 1, 22, 0)}
+									eventPropGetter={eventStyleGetter}
+									onSelectEvent={handleEventClick}
+									formats={{
+										timeGutterFormat: 'HH:mm',
+										eventTimeRangeFormat: (
+											{ start, end },
+											culture,
+											localizer
+										) =>
+											`${localizer?.format(
+												start,
+												'HH:mm',
+												culture
+											)} - ${localizer?.format(end, 'HH:mm', culture)}`,
+										agendaTimeRangeFormat: (
+											{ start, end },
+											culture,
+											localizer
+										) =>
+											`${localizer?.format(
+												start,
+												'HH:mm',
+												culture
+											)} - ${localizer?.format(end, 'HH:mm', culture)}`,
+									}}
+								/>
+							</div>
+						</div>
+					) : (
+						<div className="flex-1 rounded-lg border bg-white p-3">
+							<Calendar
+								localizer={localizer}
+								events={events}
+								startAccessor="start"
+								endAccessor="end"
+								style={{ height: 'calc(100vh - 450px)', minHeight: '500px' }}
+								date={currentDate}
+								view="week"
+								onNavigate={(newDate) => setCurrentDate(newDate)}
+								toolbar={false}
+								step={30}
+								timeslots={2}
+								min={new Date(2024, 0, 1, 6, 0)}
+								max={new Date(2024, 0, 1, 22, 0)}
+								eventPropGetter={eventStyleGetter}
+								onSelectEvent={handleEventClick}
+								formats={{
+									timeGutterFormat: 'HH:mm',
+									eventTimeRangeFormat: ({ start, end }, culture, localizer) =>
+										`${localizer?.format(
+											start,
+											'HH:mm',
+											culture
+										)} - ${localizer?.format(end, 'HH:mm', culture)}`,
+									agendaTimeRangeFormat: ({ start, end }, culture, localizer) =>
+										`${localizer?.format(
+											start,
+											'HH:mm',
+											culture
+										)} - ${localizer?.format(end, 'HH:mm', culture)}`,
+								}}
+							/>
+						</div>
+					)}
 				</div>
 			) : (
+				/* Fleet tab - bez zmian */
 				<div>
 					<div className="mb-4 flex justify-end">
 						<Button onClick={handleAddCar}>
@@ -105,45 +527,44 @@ export default function CarsPage() {
 
 					<div className="grid gap-4">
 						{cars.map((car) => (
-							<Card
+							<div
 								key={car.id}
-								className={`cursor-pointer transition-shadow hover:shadow-md ${
+								className={`rounded-lg border bg-white p-4 ${
 									!car.active ? 'opacity-60' : ''
-								}`}
-								onClick={() => handleEditCar(car)}>
-								<CardContent className="p-4">
-									<div className="flex items-start justify-between">
-										<div className="flex-1">
-											<h3 className="text-lg font-semibold">
-												{car.name} ({car.year})
-											</h3>
-											<div className="mt-2 space-y-1 text-sm text-gray-600">
-												{car.inspectionDate && (
-													<div>
-														<strong>Przegląd:</strong>{' '}
-														{format(new Date(car.inspectionDate), 'dd.MM.yyyy')}
-													</div>
-												)}
-												{car.insuranceDate && (
-													<div>
-														<strong>Ubezpieczenie:</strong>{' '}
-														{format(new Date(car.insuranceDate), 'dd.MM.yyyy')}
-													</div>
-												)}
-											</div>
+								}`}>
+								<div className="flex items-start justify-between">
+									<div
+										className="flex-1 cursor-pointer"
+										onClick={() => handleEditCar(car)}>
+										<h3 className="text-lg font-semibold">
+											{car.name} ({car.year})
+										</h3>
+										<div className="mt-2 space-y-1 text-sm text-gray-600">
+											{car.inspectionDate && (
+												<div>
+													<strong>Przegląd:</strong>{' '}
+													{format(new Date(car.inspectionDate), 'dd.MM.yyyy')}
+												</div>
+											)}
+											{car.insuranceDate && (
+												<div>
+													<strong>Ubezpieczenie:</strong>{' '}
+													{format(new Date(car.insuranceDate), 'dd.MM.yyyy')}
+												</div>
+											)}
 										</div>
-										<Button
-											variant="destructive"
-											size="sm"
-											onClick={(e) => {
-												e.stopPropagation();
-												handleDeleteCar(car.id);
-											}}>
-											Usuń
-										</Button>
 									</div>
-								</CardContent>
-							</Card>
+									<Button
+										variant="destructive"
+										size="sm"
+										onClick={(e) => {
+											e.stopPropagation();
+											handleDeleteCar(car.id);
+										}}>
+										Usuń
+									</Button>
+								</div>
+							</div>
 						))}
 
 						{cars.length === 0 && (
@@ -155,12 +576,45 @@ export default function CarsPage() {
 				</div>
 			)}
 
+			{/* Dialogs */}
 			<CarDialog
-				open={dialogOpen}
-				onOpenChange={setDialogOpen}
+				open={carDialogOpen}
+				onOpenChange={setCarDialogOpen}
 				car={editingCar}
-				onSuccess={loadCars}
+				onSuccess={loadInitialData}
 			/>
+
+			{canAddReservation && (
+				<CarReservationDialog
+					open={reservationDialogOpen}
+					onOpenChange={setReservationDialogOpen}
+					carId={selectedCar}
+					reservation={editingReservation}
+					preselectedDate={selectedDay}
+					onSuccess={loadReservations}
+				/>
+			)}
+
+			<CarReservationDetailDialog
+				open={detailDialogOpen}
+				onOpenChange={setDetailDialogOpen}
+				reservation={selectedReservation}
+				carNames={carNamesMap}
+				studentNames={studentNamesMap}
+				onEdit={handleEditReservation}
+				onSuccess={loadReservations}
+			/>
+
+			{(selectedCar !== 'all' || editingReservation) && (
+				<CarReservationDialog
+					open={reservationDialogOpen}
+					onOpenChange={setReservationDialogOpen}
+					carId={editingReservation ? editingReservation.carId : selectedCar}
+					reservation={editingReservation}
+					preselectedDate={selectedDay}
+					onSuccess={loadReservations}
+				/>
+			)}
 		</div>
 	);
 }

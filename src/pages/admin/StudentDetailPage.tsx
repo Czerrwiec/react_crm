@@ -20,7 +20,8 @@ import {
 	DialogTrigger,
 } from '@/components/ui/dialog';
 import { ArrowLeft, Plus, Trash2, Pencil } from 'lucide-react';
-import type { Student, Payment, Lesson } from '@/types';
+import { carService } from '@/services/car.service';
+import type { Student, Payment, Lesson, CarReservation, Car } from '@/types';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 
 const locales = { pl };
@@ -46,6 +47,10 @@ export default function StudentDetailPage() {
 	const [loading, setLoading] = useState(true);
 	const [dialogOpen, setDialogOpen] = useState(false);
 	const [activeTab, setActiveTab] = useState<'info' | 'calendar'>('info');
+	const [carReservation, setCarReservation] = useState<CarReservation | null>(
+		null
+	);
+	const [reservedCar, setReservedCar] = useState<Car | null>(null);
 
 	useEffect(() => {
 		if (id) loadData(id);
@@ -86,6 +91,15 @@ export default function StudentDetailPage() {
 					l.studentIds.includes(studentId)
 				);
 				setLessons(studentLessons);
+			}
+
+			if (studentData.car) {
+				const reservation = await carService.getReservationByStudent(studentId);
+				if (reservation) {
+					setCarReservation(reservation);
+					const car = await carService.getCar(reservation.carId);
+					setReservedCar(car);
+				}
 			}
 		} catch (error) {
 			console.error('Error loading data:', error);
@@ -307,7 +321,27 @@ export default function StudentDetailPage() {
 									</div>
 									<div>
 										<strong>Auto na egzamin:</strong>{' '}
-										{student.car ? 'Tak' : 'Nie'}
+										{student.car ? (
+											<>
+												Tak
+												{carReservation && reservedCar && (
+													<span className="text-primary">
+														{' - '}
+														{reservedCar.name}
+														{', '}
+														{format(
+															new Date(carReservation.date),
+															'dd.MM.yyyy',
+															{ locale: pl }
+														)}
+														{', '}
+														{carReservation.startTime.slice(0, 5)}
+													</span>
+												)}
+											</>
+										) : (
+											'Nie'
+										)}
 									</div>
 									{student.courseStartDate && (
 										<div>

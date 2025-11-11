@@ -25,6 +25,7 @@ const initialFormData = {
 	inspectionDate: '',
 	insuranceDate: '',
 	active: true,
+	color: '#3b82f6',
 };
 
 export default function CarDialog({
@@ -45,6 +46,7 @@ export default function CarDialog({
 					inspectionDate: car.inspectionDate || '',
 					insuranceDate: car.insuranceDate || '',
 					active: car.active,
+					color: car.color,
 				});
 			} else {
 				setFormData(initialFormData);
@@ -63,6 +65,7 @@ export default function CarDialog({
 				inspectionDate: formData.inspectionDate || null,
 				insuranceDate: formData.insuranceDate || null,
 				active: formData.active,
+				color: formData.color,
 			};
 
 			if (car) {
@@ -117,6 +120,22 @@ export default function CarDialog({
 								setFormData({ ...formData, year: parseInt(e.target.value) })
 							}
 						/>
+					</div>
+
+					<div>
+						<Label htmlFor="color">Kolor w kalendarzu</Label>
+						<div className="flex items-center gap-3">
+							<Input
+								id="color"
+								type="color"
+								value={formData.color}
+								onChange={(e) =>
+									setFormData({ ...formData, color: e.target.value })
+								}
+								className="h-10 w-20"
+							/>
+							<span className="text-sm text-gray-600">{formData.color}</span>
+						</div>
 					</div>
 
 					<div>

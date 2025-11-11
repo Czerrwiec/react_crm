@@ -94,6 +94,7 @@ export interface Car {
     inspectionDate: string | null
     insuranceDate: string | null
     active: boolean
+    color: string
 }
 
 export interface CarReservation {
