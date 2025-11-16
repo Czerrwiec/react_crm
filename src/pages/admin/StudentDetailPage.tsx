@@ -435,47 +435,140 @@ export default function StudentDetailPage() {
 							</Card>
 						</div>
 					) : (
-						<div className="rounded-lg border bg-white p-2 sm:p-4 h-[450px] sm:h-[600px]">
-							<div className="h-[450px] sm:h-[600px]">
-								<Calendar
-									localizer={localizer}
-									events={events}
-									startAccessor="start"
-									endAccessor="end"
-									style={{ height: '100%' }}
-									views={['month']}
-									defaultView="month"
-									eventPropGetter={eventStyleGetter}
-									messages={{
-										next: 'Następny',
-										previous: 'Poprzedni',
-										today: 'Dziś',
-										month: 'Miesiąc',
-									}}
-								/>
+						<div className="grid gap-4 md:grid-cols-[2fr,1fr]">
+							{/* Kalendarz */}
+							<div className="rounded-lg border bg-white p-2 sm:p-4 h-[450px] sm:h-[600px]">
+								<div className="h-[450px] sm:h-[600px]">
+									<Calendar
+										localizer={localizer}
+										events={events}
+										startAccessor="start"
+										endAccessor="end"
+										style={{ height: '100%' }}
+										views={['month']}
+										defaultView="month"
+										eventPropGetter={eventStyleGetter}
+										messages={{
+											next: 'Następny',
+											previous: 'Poprzedni',
+											today: 'Dziś',
+											month: 'Miesiąc',
+										}}
+									/>
+								</div>
+								<div className="mt-4 flex flex-wrap gap-2 text-xs sm:gap-4 sm:text-sm">
+									<div className="flex items-center gap-2">
+										<div
+											className="h-3 w-3 rounded sm:h-4 sm:w-4"
+											style={{ backgroundColor: '#f59e0b' }}
+										/>
+										<span>Zaplanowana</span>
+									</div>
+									<div className="flex items-center gap-2">
+										<div
+											className="h-3 w-3 rounded sm:h-4 sm:w-4"
+											style={{ backgroundColor: '#10b981' }}
+										/>
+										<span>Ukończona</span>
+									</div>
+									<div className="flex items-center gap-2">
+										<div
+											className="h-3 w-3 rounded sm:h-4 sm:w-4"
+											style={{ backgroundColor: '#6b7280' }}
+										/>
+										<span>Anulowana</span>
+									</div>
+								</div>
 							</div>
-							<div className="mt-4 flex flex-wrap gap-2 text-xs sm:gap-4 sm:text-sm">
-								<div className="flex items-center gap-2">
-									<div
-										className="h-3 w-3 rounded sm:h-4 sm:w-4"
-										style={{ backgroundColor: '#f59e0b' }}
-									/>
-									<span>Zaplanowana</span>
-								</div>
-								<div className="flex items-center gap-2">
-									<div
-										className="h-3 w-3 rounded sm:h-4 sm:w-4"
-										style={{ backgroundColor: '#10b981' }}
-									/>
-									<span>Ukończona</span>
-								</div>
-								<div className="flex items-center gap-2">
-									<div
-										className="h-3 w-3 rounded sm:h-4 sm:w-4"
-										style={{ backgroundColor: '#6b7280' }}
-									/>
-									<span>Anulowana</span>
-								</div>
+
+							{/* Lista lekcji - desktop */}
+							<div className="hidden md:block rounded-lg border bg-white p-4">
+								<h3 className="font-semibold mb-3">Lekcje</h3>
+								{lessons.length === 0 ? (
+									<div className="text-sm text-gray-500 py-8 text-center">
+										Brak zaplanowanych lekcji
+									</div>
+								) : (
+									<div className="space-y-3 max-h-[530px] overflow-y-auto">
+										{lessons
+											.sort((a, b) => {
+												const dateCompare = a.date.localeCompare(b.date);
+												if (dateCompare !== 0) return dateCompare;
+												return a.startTime.localeCompare(b.startTime);
+											})
+											.map((lesson) => (
+												<div
+													key={lesson.id}
+													className={`p-3 rounded-lg border ${
+														lesson.status === 'completed'
+															? 'bg-green-50 border-green-200'
+															: lesson.status === 'cancelled'
+															? 'bg-gray-50 border-gray-200'
+															: 'bg-amber-50 border-amber-200'
+													}`}>
+													<div className="text-sm font-medium">
+														{format(new Date(lesson.date), 'dd.MM.yyyy', {
+															locale: pl,
+														})}
+													</div>
+													<div className="text-sm text-gray-600 mt-1">
+														{lesson.startTime.slice(0, 5)} -{' '}
+														{lesson.endTime.slice(0, 5)}
+													</div>
+													<div className="text-xs text-gray-500 mt-1">
+														{formatHours(lesson.duration)} 
+													</div>
+													{lesson.status === 'cancelled' && (
+														<div className="text-xs text-gray-500 mt-1">
+															Anulowana
+														</div>
+													)}
+												</div>
+											))}
+									</div>
+								)}
+							</div>
+
+							{/* Lista lekcji - mobile (pod kalendarzem) */}
+							<div className="md:hidden rounded-lg border bg-white p-4">
+								<h3 className="font-semibold mb-3">Lekcje</h3>
+								{lessons.length === 0 ? (
+									<div className="text-sm text-gray-500 py-8 text-center">
+										Brak zaplanowanych lekcji
+									</div>
+								) : (
+									<div className="space-y-2 max-h-[400px] overflow-y-auto">
+										{lessons
+											.sort((a, b) => {
+												const dateCompare = a.date.localeCompare(b.date);
+												if (dateCompare !== 0) return dateCompare;
+												return a.startTime.localeCompare(b.startTime);
+											})
+											.map((lesson) => (
+												<div
+													key={lesson.id}
+													className={`p-2 rounded border text-sm ${
+														lesson.status === 'completed'
+															? 'bg-green-50 border-green-200'
+															: lesson.status === 'cancelled'
+															? 'bg-gray-50 border-gray-200'
+															: 'bg-amber-50 border-amber-200'
+													}`}>
+													<div className="font-medium">
+														{format(new Date(lesson.date), 'dd.MM.yyyy', {
+															locale: pl,
+														})}{' '}
+														• {lesson.startTime.slice(0, 5)} -{' '}
+														{lesson.endTime.slice(0, 5)}
+													</div>
+													<div className="text-xs text-gray-600 mt-0.5">
+														{formatHours(lesson.duration)}
+														{lesson.status === 'cancelled' && ' • Anulowana'}
+													</div>
+												</div>
+											))}
+									</div>
+								)}
 							</div>
 						</div>
 					)}

@@ -134,11 +134,31 @@ export default function SettingsPage() {
 		}
 	};
 
-	const copyToClipboard = (text: string | null, field: string) => {
+	const copyToClipboard = async (text: string | null, field: string) => {
 		if (!text) return;
-		navigator.clipboard.writeText(text);
-		setCopiedField(field);
-		setTimeout(() => setCopiedField(null), 2000);
+
+		try {
+			// Nowoczesny API
+			await navigator.clipboard.writeText(text);
+			setCopiedField(field);
+			setTimeout(() => setCopiedField(null), 2000);
+		} catch (err) {
+			// Fallback dla starszych przeglądarek/mobile
+			const textarea = document.createElement('textarea');
+			textarea.value = text;
+			textarea.style.position = 'fixed';
+			textarea.style.opacity = '0';
+			document.body.appendChild(textarea);
+			textarea.select();
+			try {
+				document.execCommand('copy');
+				setCopiedField(field);
+				setTimeout(() => setCopiedField(null), 2000);
+			} catch (e) {
+				console.error('Copy failed:', e);
+			}
+			document.body.removeChild(textarea);
+		}
 	};
 
 	if (loading) {
@@ -151,7 +171,6 @@ export default function SettingsPage() {
 
 	return (
 		<div className="flex h-screen flex-col pt-14">
-
 			{/* Scrollable Content */}
 			<div className="flex-1 overflow-auto">
 				<div className="p-4 sm:p-8">

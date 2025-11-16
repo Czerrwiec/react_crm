@@ -10,7 +10,7 @@ export default defineConfig({
             includeAssets: ['favicon.svg', 'favicon.ico', 'robots.txt', 'apple-touch-icon.png'],
             manifest: {
                 name: 'Easy Drive',
-                short_name: 'ED',
+                short_name: 'Easy Drive',
                 description: 'opis aplikacji',
                 theme_color: '#122454ff',
                 background_color: '#122454ff',

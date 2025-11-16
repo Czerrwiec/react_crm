@@ -25,6 +25,7 @@ import SettingsPage from '@/pages/admin/SettingsPage';
 import NotificationBell from '@/components/NotificationBell';
 import NotificationsPage from '@/pages/admin/NotificationsPage';
 import CarsPage from '@/pages/admin/CarsPage';
+import DashboardPage from '@/pages/admin/DashboardPage';
 
 const navigation = [
 	{ name: 'Dashboard', path: '/admin', icon: LayoutDashboard },
@@ -105,7 +106,9 @@ export default function AdminLayout() {
 			{/* Main content */}
 			<main className="flex-1 overflow-auto">
 				<Routes>
-					<Route index element={<Navigate to="/admin/students" replace />} />
+					{/* <Route index element={<Navigate to="/admin/students" replace />} />
+					<Route index element={<DashboardPage />} /> */}
+					<Route index element={<DashboardPage />} /> {/* zmień z Navigate */}
 					<Route path="students" element={<StudentsPage />} />
 					<Route path="students/add" element={<AddStudentPage />} />
 					<Route path="students/:id/edit" element={<EditStudentPage />} />

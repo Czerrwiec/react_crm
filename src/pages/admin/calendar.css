@@ -99,44 +99,49 @@
 	background-color: #fef3c7dd !important;
 }
 
-
-
-
 /* TYLKO MOBILE WIDOK DZIENNY(max 640px) */
 @media (max-width: 640px) {
+	/* Każdy 30-minutowy slot */
+	.rbc-time-slot {
+		height: 20px !important;
+		min-height: 20px !important;
+	}
 
-  /* Każdy 30-minutowy slot */
-  .rbc-time-slot {
-    height: 20px !important;        
-    min-height: 20px !important;
-  }
-
-  /* Cała godzina (grupa slotów) */
-  .rbc-timeslot-group {
-    height: 20px !important;         
-    min-height: 20px !important;
-  }
+	/* Cała godzina (grupa slotów) */
+	.rbc-timeslot-group {
+		height: 20px !important;
+		min-height: 20px !important;
+	}
 }
- 
 
 @media (max-width: 768px) {
-  .rbc-calendar {
-    max-width: 100%;
-    overflow-x: hidden;
-  }
-  
-  .rbc-month-view,
-  .rbc-time-view {
-    max-width: 100%;
-    overflow-x: auto;
-  }
-  
-  .rbc-event {
-    font-size: 10px;
-    padding: 1px 2px;
-  }
-  
-  .rbc-event-label {
-    display: none;
-  }
+	.rbc-calendar {
+		max-width: 100%;
+		overflow-x: hidden;
+	}
+
+	.rbc-month-view,
+	.rbc-time-view {
+		max-width: 100%;
+		overflow-x: auto;
+	}
+
+	.rbc-event {
+		font-size: 10px;
+		padding: 1px 2px;
+	}
+
+	.rbc-event-label {
+		display: none;
+	}
+
+	.rbc-time-content .rbc-event-content {
+		display: none;
+	}
+}
+
+.rbc-day-slot .rbc-event-content {
+	display: block;
+	font-size: 14px;
+	font-weight: 500;
 }
