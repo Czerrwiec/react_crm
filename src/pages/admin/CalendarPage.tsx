@@ -10,6 +10,8 @@ import {
 	subMonths,
 	addWeeks,
 	subWeeks,
+	addDays,
+	subDays
 } from 'date-fns';
 import { pl } from 'date-fns/locale';
 import { lessonService } from '@/services/lesson.service';
@@ -232,11 +234,21 @@ export default function CalendarPage() {
 			newDate = new Date();
 			setSelectedDay(new Date());
 		} else if (direction === 'prev') {
-			if (view === 'month') newDate = subMonths(currentDate, 1);
-			else newDate = subWeeks(currentDate, 1);
+			if (view === 'month') {
+				newDate = subMonths(currentDate, 1);
+			} else if (view === 'week') {
+				newDate = subWeeks(currentDate, 1);
+			} else if (view === 'day') {
+				newDate = subDays(currentDate, 1);
+			}
 		} else {
-			if (view === 'month') newDate = addMonths(currentDate, 1);
-			else newDate = addWeeks(currentDate, 1);
+			if (view === 'month') {
+				newDate = addMonths(currentDate, 1);
+			} else if (view === 'week') {
+				newDate = addWeeks(currentDate, 1);
+			} else if (view === 'day') {
+				newDate = addDays(currentDate, 1);
+			}
 		}
 
 		setCurrentDate(newDate);
@@ -276,6 +288,15 @@ export default function CalendarPage() {
 		}
 	};
 
+	const dayPropGetter = (date: Date) => {
+		const isSelectedDay =
+			format(date, 'yyyy-MM-dd') === format(selectedDay, 'yyyy-MM-dd');
+
+		return {
+			className: isSelectedDay ? 'rbc-selected-day' : '',
+		};
+	};
+
 	if (loading) {
 		return (
 			<div className="flex h-full items-center justify-center">
@@ -286,86 +307,178 @@ export default function CalendarPage() {
 
 	const canAddLesson = selectedInstructor && selectedInstructor !== 'all';
 
-	return (
-		<div className="flex h-full flex-col p-8">
-			<div className="mb-6 flex items-center justify-between">
-				<h1 className="text-3xl font-bold">Kalendarz</h1>
-				<div className="flex items-center gap-4">
-					<Select
-						value={selectedInstructor}
-						onChange={(e) => setSelectedInstructor(e.target.value)}>
-						<option value="all">Wszyscy instruktorzy</option>
-						{instructors.map((instructor) => (
-							<option key={instructor.id} value={instructor.id}>
-								{instructor.firstName} {instructor.lastName}
-							</option>
-						))}
-					</Select>
-					<Button onClick={handleAddLesson} disabled={!canAddLesson}>
-						<Plus className="mr-2 h-4 w-4" />
-						Dodaj lekcję
-					</Button>
-				</div>
-			</div>
+	const handleViewChange = (newView: View) => {
+		setView(newView);
 
+		// Gdy przełączamy na dzień/tydzień, ustaw currentDate na wybrany dzień
+		if (newView === 'day' || newView === 'week') {
+			setCurrentDate(selectedDay);
+		}
+	};
+
+	return (
+		<div className="flex h-full flex-col p-4 sm:p-8 pt-16">
 			{!canAddLesson && (
 				<div className="mb-4 rounded-lg bg-yellow-50 border border-yellow-200 p-3 text-sm text-yellow-800">
 					Wybierz konkretnego instruktora, aby dodać lekcję
 				</div>
 			)}
 
-			{/* Custom toolbar */}
-			<div className="mb-4 flex items-center justify-between rounded-lg border bg-white p-4">
-				<div className="flex items-center gap-2">
-					<Button
-						variant="outline"
-						size="sm"
-						onClick={() => handleNavigate('today')}>
-						Dziś
-					</Button>
-					<Button
-						variant="outline"
-						size="sm"
-						onClick={() => handleNavigate('prev')}>
-						<ChevronLeft className="h-4 w-4" />
-					</Button>
-					<Button
-						variant="outline"
-						size="sm"
-						onClick={() => handleNavigate('next')}>
-						<ChevronRight className="h-4 w-4" />
-					</Button>
-					<span className="ml-4 text-lg font-semibold capitalize">
-						{getDateRangeText()}
-					</span>
+			{/* Custom toolbar - RESPONSIVE */}
+			<div className="mb-4 rounded-lg border bg-white p-3 sm:p-4">
+				{/* Mobile - stacked layout */}
+				<div className="flex flex-col gap-3 md:hidden">
+					{/* Row 1: Dropdown + Button */}
+					<div className="flex gap-2">
+						<Select
+							value={selectedInstructor}
+							onChange={(e) => setSelectedInstructor(e.target.value)}
+							className="flex-1">
+							<option value="all">Wszyscy instruktorzy</option>
+							{instructors.map((instructor) => (
+								<option key={instructor.id} value={instructor.id}>
+									{instructor.firstName} {instructor.lastName}
+								</option>
+							))}
+						</Select>
+						<Button
+							onClick={handleAddLesson}
+							disabled={!canAddLesson}
+							size="sm">
+							<Plus className="h-4 w-4" />
+						</Button>
+					</div>
+
+					{/* Row 2: Navigation */}
+					<div className="flex items-center justify-between">
+						<div className="flex items-center gap-1">
+							<Button
+								variant="outline"
+								size="sm"
+								onClick={() => handleNavigate('today')}>
+								Dziś
+							</Button>
+							<Button
+								variant="outline"
+								size="sm"
+								onClick={() => handleNavigate('prev')}>
+								<ChevronLeft className="h-4 w-4" />
+							</Button>
+							<Button
+								variant="outline"
+								size="sm"
+								onClick={() => handleNavigate('next')}>
+								<ChevronRight className="h-4 w-4" />
+							</Button>
+						</div>
+						{view != 'day' && (
+							<span className="text-sm font-semibold">
+								{getDateRangeText()}
+							</span>
+						)}
+					</div>
+
+					{/* Row 3: View switcher */}
+					<div className="flex gap-2">
+						<Button
+							variant={view === 'month' ? 'default' : 'outline'}
+							size="sm"
+							className="flex-1"
+							onClick={() => handleViewChange('month')}>
+							Miesiąc
+						</Button>
+						<Button
+							variant={view === 'week' ? 'default' : 'outline'}
+							size="sm"
+							className="flex-1"
+							onClick={() => handleViewChange('week')}>
+							Tydzień
+						</Button>
+						<Button
+							variant={view === 'day' ? 'default' : 'outline'}
+							size="sm"
+							className="flex-1"
+							onClick={() => handleViewChange('day')}>
+							Dzień
+						</Button>
+					</div>
 				</div>
 
-				<div className="flex gap-2">
-					<Button
-						variant={view === 'month' ? 'default' : 'outline'}
-						size="sm"
-						onClick={() => setView('month')}>
-						Miesiąc
-					</Button>
-					<Button
-						variant={view === 'week' ? 'default' : 'outline'}
-						size="sm"
-						onClick={() => setView('week')}>
-						Tydzień
-					</Button>
+				{/* Desktop - horizontal layout */}
+				<div className="hidden md:flex md:items-center md:justify-between">
+					<div className="flex items-center gap-2">
+						<Select
+							value={selectedInstructor}
+							onChange={(e) => setSelectedInstructor(e.target.value)}
+							className="w-48">
+							<option value="all">Wszyscy instruktorzy</option>
+							{instructors.map((instructor) => (
+								<option key={instructor.id} value={instructor.id}>
+									{instructor.firstName} {instructor.lastName}
+								</option>
+							))}
+						</Select>
+						<Button
+							onClick={handleAddLesson}
+							disabled={!canAddLesson}
+							size="sm">
+							<Plus className="mr-2 h-4 w-4" />
+							Dodaj lekcję
+						</Button>
+
+						<div className="ml-4 mr-2 h-8 w-px bg-gray-300" />
+
+						<Button
+							variant="outline"
+							size="sm"
+							onClick={() => handleNavigate('today')}>
+							Dziś
+						</Button>
+						<Button
+							variant="outline"
+							size="sm"
+							onClick={() => handleNavigate('prev')}>
+							<ChevronLeft className="h-4 w-4" />
+						</Button>
+						<Button
+							variant="outline"
+							size="sm"
+							onClick={() => handleNavigate('next')}>
+							<ChevronRight className="h-4 w-4" />
+						</Button>
+						<span className="ml-4 text-lg font-semibold capitalize">
+							{getDateRangeText()}
+						</span>
+					</div>
+
+					<div className="flex gap-2">
+						<Button
+							variant={view === 'month' ? 'default' : 'outline'}
+							size="sm"
+							onClick={() => handleViewChange('month')}>
+							Miesiąc
+						</Button>
+						<Button
+							variant={view === 'week' ? 'default' : 'outline'}
+							size="sm"
+							onClick={() => handleViewChange('week')}>
+							Tydzień
+						</Button>
+					</div>
 				</div>
 			</div>
 
-			{/* Calendar views */}
+			{/* Calendar views - POJEDYNCZE widoki dla mobile */}
 			{view === 'month' ? (
 				<div className="grid flex-1 gap-4 md:grid-cols-[2fr,1fr]">
+					{/* Month view - full width na mobile */}
 					<div className="rounded-lg border bg-white p-3">
 						<Calendar
 							localizer={localizer}
 							events={events}
 							startAccessor="start"
 							endAccessor="end"
-							style={{ height: 'calc(100vh - 350px)', minHeight: '500px' }}
+							style={{ height: 'calc(100vh - 450px)', minHeight: '500px' }}
 							date={currentDate}
 							view="month"
 							onNavigate={(newDate) => setCurrentDate(newDate)}
@@ -374,10 +487,27 @@ export default function CalendarPage() {
 							toolbar={false}
 							eventPropGetter={eventStyleGetter}
 							onSelectEvent={handleEventClick}
+							dayPropGetter={dayPropGetter}
+							formats={{
+								timeGutterFormat: 'HH:mm',
+								eventTimeRangeFormat: ({ start, end }, culture, localizer) =>
+									`${localizer?.format(
+										start,
+										'HH:mm',
+										culture
+									)} - ${localizer?.format(end, 'HH:mm', culture)}`,
+								agendaTimeRangeFormat: ({ start, end }, culture, localizer) =>
+									`${localizer?.format(
+										start,
+										'HH:mm',
+										culture
+									)} - ${localizer?.format(end, 'HH:mm', culture)}`,
+							}}
 						/>
 					</div>
 
-					<div className="rounded-lg border bg-white p-3">
+					{/* Day view sidebar - only desktop */}
+					<div className="hidden rounded-lg border bg-white p-3 md:block">
 						<div className="mb-2 text-center font-semibold">
 							{format(selectedDay, 'd MMMM yyyy', { locale: pl })}
 						</div>
@@ -399,6 +529,8 @@ export default function CalendarPage() {
 							timeslots={2}
 							min={new Date(2024, 0, 1, 6, 0)}
 							max={new Date(2024, 0, 1, 22, 0)}
+							eventPropGetter={eventStyleGetter}
+							onSelectEvent={handleEventClick}
 							formats={{
 								timeGutterFormat: 'HH:mm',
 								eventTimeRangeFormat: ({ start, end }, culture, localizer) =>
@@ -414,12 +546,10 @@ export default function CalendarPage() {
 										culture
 									)} - ${localizer?.format(end, 'HH:mm', culture)}`,
 							}}
-							eventPropGetter={eventStyleGetter}
-							onSelectEvent={handleEventClick}
 						/>
 					</div>
 				</div>
-			) : (
+			) : view === 'week' ? (
 				<div className="flex-1 rounded-lg border bg-white p-3">
 					<Calendar
 						localizer={localizer}
@@ -429,7 +559,7 @@ export default function CalendarPage() {
 						style={{ height: 'calc(100vh - 350px)', minHeight: '500px' }}
 						date={currentDate}
 						view="week"
-						onNavigate={() => {}}
+						onNavigate={(newDate) => setCurrentDate(newDate)}
 						toolbar={false}
 						step={30}
 						timeslots={2}
@@ -437,10 +567,69 @@ export default function CalendarPage() {
 						max={new Date(2024, 0, 1, 22, 0)}
 						eventPropGetter={eventStyleGetter}
 						onSelectEvent={handleEventClick}
+						formats={{
+							timeGutterFormat: 'HH:mm',
+							eventTimeRangeFormat: ({ start, end }, culture, localizer) =>
+								`${localizer?.format(
+									start,
+									'HH:mm',
+									culture
+								)} - ${localizer?.format(end, 'HH:mm', culture)}`,
+							agendaTimeRangeFormat: ({ start, end }, culture, localizer) =>
+								`${localizer?.format(
+									start,
+									'HH:mm',
+									culture
+								)} - ${localizer?.format(end, 'HH:mm', culture)}`,
+						}}
+					/>
+				</div>
+			) : (
+				/* Day view - standalone na mobile */
+				<div className="flex-1 rounded-lg border bg-white p-3">
+					<div className="mb-2 text-center font-semibold">
+						{format(currentDate, 'd MMMM yyyy', { locale: pl })}
+					</div>
+					<Calendar
+						localizer={localizer}
+						events={events.filter(
+							(e) =>
+								format(e.start, 'yyyy-MM-dd') ===
+								format(currentDate, 'yyyy-MM-dd')
+						)}
+						startAccessor="start"
+						endAccessor="end"
+						style={{ height: 'calc(100vh - 350px)', minHeight: '500px' }}
+						date={currentDate}
+						view="day"
+						onNavigate={(newDate) => setCurrentDate(newDate)}
+						toolbar={false}
+						step={30}
+						timeslots={2}
+						min={new Date(2024, 0, 1, 6, 0)}
+						max={new Date(2024, 0, 1, 22, 0)}
+						eventPropGetter={eventStyleGetter}
+						onSelectEvent={handleEventClick}
+						formats={{
+							timeGutterFormat: 'HH:mm',
+							eventTimeRangeFormat: ({ start, end }, culture, localizer) =>
+								`${localizer?.format(
+									start,
+									'HH:mm',
+									culture
+								)} - ${localizer?.format(end, 'HH:mm', culture)}`,
+							agendaTimeRangeFormat: ({ start, end }, culture, localizer) =>
+								`${localizer?.format(
+									start,
+									'HH:mm',
+									culture
+								)} - ${localizer?.format(end, 'HH:mm', culture)}`,
+						}}
 					/>
 				</div>
 			)}
 
+			{/* Legend */}
 			<div className="mt-4 flex gap-4 text-sm">
 				<div className="flex items-center gap-2">
 					<div

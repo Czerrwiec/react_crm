@@ -108,3 +108,13 @@ export interface CarReservation {
     createdAt: string
     createdBy: string | null
 }
+
+export interface SchoolInfo {
+    id: string
+    nip: string | null
+    name: string | null
+    city: string | null
+    street: string | null
+    postalCode: string | null
+    phone: string | null
+}

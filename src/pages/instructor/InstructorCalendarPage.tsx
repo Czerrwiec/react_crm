@@ -9,6 +9,8 @@ import {
 	subMonths,
 	addWeeks,
 	subWeeks,
+	addDays,
+	subDays,
 } from 'date-fns';
 import { pl } from 'date-fns/locale';
 import { lessonService } from '@/services/lesson.service';
@@ -82,7 +84,6 @@ export default function InstructorCalendarPage() {
 		if (!user) return;
 
 		try {
-			// Pobierz poprzedni, obecny i następny miesiąc
 			const prevMonth = new Date(
 				currentDate.getFullYear(),
 				currentDate.getMonth() - 1,
@@ -100,7 +101,6 @@ export default function InstructorCalendarPage() {
 				lessonService.getLessonsByInstructor(user.id, nextMonth),
 			]);
 
-			// Połącz wszystkie lekcje i usuń duplikaty
 			const allLessons = [...prevLessons, ...currentLessons, ...nextLessons];
 			const uniqueLessons = Array.from(
 				new Map(allLessons.map((lesson) => [lesson.id, lesson])).values()
@@ -177,6 +177,15 @@ export default function InstructorCalendarPage() {
 		};
 	};
 
+	const dayPropGetter = (date: Date) => {
+		const isSelectedDay =
+			format(date, 'yyyy-MM-dd') === format(selectedDay, 'yyyy-MM-dd');
+
+		return {
+			className: isSelectedDay ? 'rbc-selected-day' : '',
+		};
+	};
+
 	const handleNavigate = (direction: 'prev' | 'next' | 'today') => {
 		let newDate = new Date(currentDate);
 
@@ -184,11 +193,21 @@ export default function InstructorCalendarPage() {
 			newDate = new Date();
 			setSelectedDay(new Date());
 		} else if (direction === 'prev') {
-			if (view === 'month') newDate = subMonths(currentDate, 1);
-			else newDate = subWeeks(currentDate, 1);
+			if (view === 'month') {
+				newDate = subMonths(currentDate, 1);
+			} else if (view === 'week') {
+				newDate = subWeeks(currentDate, 1);
+			} else if (view === 'day') {
+				newDate = subDays(currentDate, 1);
+			}
 		} else {
-			if (view === 'month') newDate = addMonths(currentDate, 1);
-			else newDate = addWeeks(currentDate, 1);
+			if (view === 'month') {
+				newDate = addMonths(currentDate, 1);
+			} else if (view === 'week') {
+				newDate = addWeeks(currentDate, 1);
+			} else if (view === 'day') {
+				newDate = addDays(currentDate, 1);
+			}
 		}
 
 		setCurrentDate(newDate);
@@ -205,6 +224,7 @@ export default function InstructorCalendarPage() {
 
 	const handleAddLesson = () => {
 		setEditingLesson(null);
+		setSelectedDay(currentDate);
 		setLessonDialogOpen(true);
 	};
 
@@ -228,6 +248,34 @@ export default function InstructorCalendarPage() {
 		}
 	};
 
+	const getDateRangeTextMobile = () => {
+		if (view === 'day') {
+			return format(currentDate, 'd MMM', { locale: pl });
+		}
+		return '';
+	};
+
+	const handleViewChange = (newView: View) => {
+		setView(newView);
+
+		// Gdy przełączamy na dzień/tydzień, ustaw currentDate na wybrany dzień
+		if (newView === 'day' || newView === 'week') {
+			setCurrentDate(selectedDay);
+		}
+	};
+
+	const messages = {
+		week: 'Tydzień',
+		work_week: 'Tydzień pracy',
+		day: 'Dzień',
+		month: 'Miesiąc',
+		previous: 'Poprzedni',
+		next: 'Następny',
+		today: 'Dziś',
+		agenda: 'Agenda',
+		showMore: (total: number) => `+${total} więcej`,
+	};
+
 	if (loading) {
 		return (
 			<div className="flex h-full items-center justify-center">
@@ -235,56 +283,120 @@ export default function InstructorCalendarPage() {
 			</div>
 		);
 	}
+	
 
 	return (
-		<div className="flex h-full flex-col p-8">
-			<div className="mb-6 flex items-center justify-between">
-				<h1 className="text-3xl font-bold">Moje lekcje</h1>
-				<Button onClick={handleAddLesson}>
-					<Plus className="mr-2 h-4 w-4" />
-					Dodaj lekcję
-				</Button>
-			</div>
-
+		<div className="flex h-full flex-col p-4 sm:p-8">
 			{/* Custom toolbar */}
-			<div className="mb-4 flex items-center justify-between rounded-lg border bg-white p-4">
-				<div className="flex items-center gap-2">
-					<Button
-						variant="outline"
-						size="sm"
-						onClick={() => handleNavigate('today')}>
-						Dziś
-					</Button>
-					<Button
-						variant="outline"
-						size="sm"
-						onClick={() => handleNavigate('prev')}>
-						<ChevronLeft className="h-4 w-4" />
-					</Button>
-					<Button
-						variant="outline"
-						size="sm"
-						onClick={() => handleNavigate('next')}>
-						<ChevronRight className="h-4 w-4" />
-					</Button>
-					<span className="ml-4 text-lg font-semibold capitalize">
-						{getDateRangeText()}
-					</span>
+			<div className="mb-4 rounded-lg border bg-white p-3 sm:p-4">
+				{/* Mobile */}
+				<div className="flex flex-col gap-3 md:hidden">
+					<div className="flex items-center gap-2">
+						<Button onClick={handleAddLesson} size="sm" className="ml-auto">
+							<Plus className="h-4 w-4" />
+						</Button>
+					</div>
+
+					<div className="flex items-center justify-between">
+						<div className="flex items-center gap-1">
+							<Button
+								variant="outline"
+								size="sm"
+								onClick={() => handleNavigate('today')}>
+								Dziś
+							</Button>
+							<Button
+								variant="outline"
+								size="sm"
+								onClick={() => handleNavigate('prev')}>
+								<ChevronLeft className="h-4 w-4" />
+							</Button>
+							<Button
+								variant="outline"
+								size="sm"
+								onClick={() => handleNavigate('next')}>
+								<ChevronRight className="h-4 w-4" />
+							</Button>
+						</div>
+						{view === 'day' && (
+							<span className="text-sm font-semibold">
+								{getDateRangeTextMobile()}
+							</span>
+						)}
+					</div>
+
+					<div className="flex gap-2">
+						<Button
+							variant={view === 'month' ? 'default' : 'outline'}
+							size="sm"
+							className="flex-1"
+							onClick={() => handleViewChange('month')}>
+							Miesiąc
+						</Button>
+						<Button
+							variant={view === 'week' ? 'default' : 'outline'}
+							size="sm"
+							className="flex-1"
+							onClick={() => handleViewChange('week')}>
+							Tydzień
+						</Button>
+						<Button
+							variant={view === 'day' ? 'default' : 'outline'}
+							size="sm"
+							className="flex-1"
+							onClick={() => handleViewChange('day')}>
+							Dzień
+						</Button>
+					</div>
 				</div>
 
-				<div className="flex gap-2">
-					<Button
-						variant={view === 'month' ? 'default' : 'outline'}
-						size="sm"
-						onClick={() => setView('month')}>
-						Miesiąc
-					</Button>
-					<Button
-						variant={view === 'week' ? 'default' : 'outline'}
-						size="sm"
-						onClick={() => setView('week')}>
-						Tydzień
-					</Button>
+				{/* Desktop */}
+				<div className="hidden md:flex md:items-center md:justify-between">
+					<div className="flex items-center gap-2">
+						<Button onClick={handleAddLesson} size="sm">
+							<Plus className="mr-2 h-4 w-4" />
+							Dodaj lekcję
+						</Button>
+
+						<div className="ml-4 mr-2 h-8 w-px bg-gray-300" />
+
+						<Button
+							variant="outline"
+							size="sm"
+							onClick={() => handleNavigate('today')}>
+							Dziś
+						</Button>
+						<Button
+							variant="outline"
+							size="sm"
+							onClick={() => handleNavigate('prev')}>
+							<ChevronLeft className="h-4 w-4" />
+						</Button>
+						<Button
+							variant="outline"
+							size="sm"
+							onClick={() => handleNavigate('next')}>
+							<ChevronRight className="h-4 w-4" />
+						</Button>
+						<span className="ml-4 text-lg font-semibold capitalize">
+							{getDateRangeText()}
+						</span>
+					</div>
+
+					<div className="flex gap-2">
+						<Button
+							variant={view === 'month' ? 'default' : 'outline'}
+							size="sm"
+							onClick={() => handleViewChange('month')}>
+							Miesiąc
+						</Button>
+						<Button
+							variant={view === 'week' ? 'default' : 'outline'}
+							size="sm"
+							onClick={() => handleViewChange('week')}>
+							Tydzień
+						</Button>
+					</div>
 				</div>
 			</div>
 
@@ -306,10 +418,28 @@ export default function InstructorCalendarPage() {
 							toolbar={false}
 							eventPropGetter={eventStyleGetter}
 							onSelectEvent={handleEventClick}
+							dayPropGetter={dayPropGetter}
+							messages={messages}
+							culture="pl"
+							formats={{
+								timeGutterFormat: 'HH:mm',
+								eventTimeRangeFormat: ({ start, end }, culture, localizer) =>
+									`${localizer?.format(
+										start,
+										'HH:mm',
+										culture
+									)} - ${localizer?.format(end, 'HH:mm', culture)}`,
+								agendaTimeRangeFormat: ({ start, end }, culture, localizer) =>
+									`${localizer?.format(
+										start,
+										'HH:mm',
+										culture
+									)} - ${localizer?.format(end, 'HH:mm', culture)}`,
+							}}
 						/>
 					</div>
 
-					<div className="rounded-lg border bg-white p-3">
+					<div className="hidden rounded-lg border bg-white p-3 md:block">
 						<div className="mb-2 text-center font-semibold">
 							{format(selectedDay, 'd MMMM yyyy', { locale: pl })}
 						</div>
@@ -331,6 +461,10 @@ export default function InstructorCalendarPage() {
 							timeslots={2}
 							min={new Date(2024, 0, 1, 6, 0)}
 							max={new Date(2024, 0, 1, 22, 0)}
+							eventPropGetter={eventStyleGetter}
+							onSelectEvent={handleEventClick}
+							messages={messages}
+							culture="pl"
 							formats={{
 								timeGutterFormat: 'HH:mm',
 								eventTimeRangeFormat: ({ start, end }, culture, localizer) =>
@@ -346,12 +480,10 @@ export default function InstructorCalendarPage() {
 										culture
 									)} - ${localizer?.format(end, 'HH:mm', culture)}`,
 							}}
-							eventPropGetter={eventStyleGetter}
-							onSelectEvent={handleEventClick}
 						/>
 					</div>
 				</div>
-			) : (
+			) : view === 'week' ? (
 				<div className="flex-1 rounded-lg border bg-white p-3">
 					<Calendar
 						localizer={localizer}
@@ -361,7 +493,7 @@ export default function InstructorCalendarPage() {
 						style={{ height: 'calc(100vh - 350px)', minHeight: '500px' }}
 						date={currentDate}
 						view="week"
-						onNavigate={() => {}}
+						onNavigate={(newDate) => setCurrentDate(newDate)}
 						toolbar={false}
 						step={30}
 						timeslots={2}
@@ -369,6 +501,75 @@ export default function InstructorCalendarPage() {
 						max={new Date(2024, 0, 1, 22, 0)}
 						eventPropGetter={eventStyleGetter}
 						onSelectEvent={handleEventClick}
+						messages={messages}
+						culture="pl"
+						formats={{
+							timeGutterFormat: 'HH:mm',
+							eventTimeRangeFormat: ({ start, end }, culture, localizer) =>
+								`${localizer?.format(
+									start,
+									'HH:mm',
+									culture
+								)} - ${localizer?.format(end, 'HH:mm', culture)}`,
+							agendaTimeRangeFormat: ({ start, end }, culture, localizer) =>
+								`${localizer?.format(
+									start,
+									'HH:mm',
+									culture
+								)} - ${localizer?.format(end, 'HH:mm', culture)}`,
+							weekdayFormat: (date, culture, localizer) =>
+								localizer?.format(date, 'EEE', culture) || '',
+							dayHeaderFormat: (date, culture, localizer) =>
+								`${localizer?.format(date, 'EEE', culture)} ${localizer?.format(
+									date,
+									'd',
+									culture
+								)}`,
+						}}
+					/>
+				</div>
+			) : (
+				<div className="flex-1 rounded-lg border bg-white p-3">
+					<div className="mb-2 text-center font-semibold md:hidden">
+						{format(currentDate, 'd MMMM yyyy', { locale: pl })}
+					</div>
+					<Calendar
+						localizer={localizer}
+						events={events.filter(
+							(e) =>
+								format(e.start, 'yyyy-MM-dd') ===
+								format(currentDate, 'yyyy-MM-dd')
+						)}
+						startAccessor="start"
+						endAccessor="end"
+						style={{ height: 'calc(100vh - 350px)', minHeight: '500px' }}
+						date={currentDate}
+						view="day"
+						onNavigate={(newDate) => setCurrentDate(newDate)}
+						toolbar={false}
+						step={30}
+						timeslots={2}
+						min={new Date(2024, 0, 1, 6, 0)}
+						max={new Date(2024, 0, 1, 22, 0)}
+						eventPropGetter={eventStyleGetter}
+						onSelectEvent={handleEventClick}
+						messages={messages}
+						culture="pl"
+						formats={{
+							timeGutterFormat: 'HH:mm',
+							eventTimeRangeFormat: ({ start, end }, culture, localizer) =>
+								`${localizer?.format(
+									start,
+									'HH:mm',
+									culture
+								)} - ${localizer?.format(end, 'HH:mm', culture)}`,
+							agendaTimeRangeFormat: ({ start, end }, culture, localizer) =>
+								`${localizer?.format(
+									start,
+									'HH:mm',
+									culture
+								)} - ${localizer?.format(end, 'HH:mm', culture)}`,
+						}}
 					/>
 				</div>
 			)}

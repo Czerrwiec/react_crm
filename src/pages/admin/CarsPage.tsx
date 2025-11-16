@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { useLocation } from 'react-router-dom';
 import { Calendar, dateFnsLocalizer, View } from 'react-big-calendar';
 import {
 	format,
@@ -10,6 +9,8 @@ import {
 	subMonths,
 	addWeeks,
 	subWeeks,
+	addDays,
+	subDays,
 } from 'date-fns';
 import { pl } from 'date-fns/locale';
 import { carService } from '@/services/car.service';
@@ -42,7 +43,6 @@ interface CalendarEvent {
 }
 
 export default function CarsPage() {
-	const location = useLocation();
 	const [cars, setCars] = useState<Car[]>([]);
 	const [students, setStudents] = useState<Student[]>([]);
 	const [reservations, setReservations] = useState<CarReservation[]>([]);
@@ -138,11 +138,8 @@ export default function CarsPage() {
 		students.map((s) => [s.id, `${s.firstName} ${s.lastName}`])
 	);
 
-	
-
 	const carNamesMap = new Map(cars.map((c) => [c.id, c.name]));
 	const carColorsMap = new Map(cars.map((c) => [c.id, c.color || '#3b82f6']));
-
 
 	const events: CalendarEvent[] = reservations.map((reservation) => {
 		const [startHour, startMinute] = reservation.startTime
@@ -199,6 +196,15 @@ export default function CarsPage() {
 		};
 	};
 
+	const dayPropGetter = (date: Date) => {
+		const isSelectedDay =
+			format(date, 'yyyy-MM-dd') === format(selectedDay, 'yyyy-MM-dd');
+
+		return {
+			className: isSelectedDay ? 'rbc-selected-day' : '',
+		};
+	};
+
 	const handleNavigate = (direction: 'prev' | 'next' | 'today') => {
 		let newDate = new Date(currentDate);
 
@@ -206,11 +212,21 @@ export default function CarsPage() {
 			newDate = new Date();
 			setSelectedDay(new Date());
 		} else if (direction === 'prev') {
-			if (view === 'month') newDate = subMonths(currentDate, 1);
-			else newDate = subWeeks(currentDate, 1);
+			if (view === 'month') {
+				newDate = subMonths(currentDate, 1);
+			} else if (view === 'week') {
+				newDate = subWeeks(currentDate, 1);
+			} else if (view === 'day') {
+				newDate = subDays(currentDate, 1);
+			}
 		} else {
-			if (view === 'month') newDate = addMonths(currentDate, 1);
-			else newDate = addWeeks(currentDate, 1);
+			if (view === 'month') {
+				newDate = addMonths(currentDate, 1);
+			} else if (view === 'week') {
+				newDate = addWeeks(currentDate, 1);
+			} else if (view === 'day') {
+				newDate = addDays(currentDate, 1);
+			}
 		}
 
 		setCurrentDate(newDate);
@@ -273,6 +289,15 @@ export default function CarsPage() {
 		}
 	};
 
+	const handleViewChange = (newView: View) => {
+		setView(newView);
+
+		// Gdy przełączamy na dzień/tydzień, ustaw currentDate na wybrany dzień
+		if (newView === 'day' || newView === 'week') {
+			setCurrentDate(selectedDay);
+		}
+	};
+
 	const canAddReservation = selectedCar && selectedCar !== 'all';
 
 	if (loading) {
@@ -283,12 +308,20 @@ export default function CarsPage() {
 		);
 	}
 
-	return (
-		<div className="p-8">
-			<div className="mb-6 flex items-center justify-between">
-				<h1 className="text-3xl font-bold">Samochody</h1>
-			</div>
+	const messages = {
+		week: 'Tydzień',
+		work_week: 'Tydzień pracy',
+		day: 'Dzień',
+		month: 'Miesiąc',
+		previous: 'Poprzedni',
+		next: 'Następny',
+		today: 'Dziś',
+		agenda: 'Agenda',
+		showMore: (total: number) => `+${total} więcej`,
+	};
 
+	return (
+		<div className="p-4 sm:p-8 pt-14">
 			{/* Tabs */}
 			<div className="mb-6 flex gap-2 border-b">
 				<button
@@ -313,74 +346,157 @@ export default function CarsPage() {
 
 			{activeTab === 'calendar' ? (
 				<div className="flex h-full flex-col">
-					<div className="mb-4 flex items-center justify-between">
-						<div className="flex items-center gap-4">
-							<Select
-								value={selectedCar}
-								onChange={(e) => setSelectedCar(e.target.value)}>
-								<option value="all">Wszystkie samochody</option>
-								{cars
-									.filter((c) => c.active)
-									.map((car) => (
-										<option key={car.id} value={car.id}>
-											{car.name}
-										</option>
-									))}
-							</Select>
-							<Button
-								onClick={handleAddReservation}
-								disabled={!canAddReservation}>
-								<Plus className="mr-2 h-4 w-4" />
-								Dodaj rezerwację
-							</Button>
-						</div>
-					</div>
-
 					{!canAddReservation && (
 						<div className="mb-4 rounded-lg bg-yellow-50 border border-yellow-200 p-3 text-sm text-yellow-800">
 							Wybierz konkretny samochód, aby dodać rezerwację
 						</div>
 					)}
 
-					{/* Custom toolbar */}
-					<div className="mb-4 flex items-center justify-between rounded-lg border bg-white p-4">
-						<div className="flex items-center gap-2">
-							<Button
-								variant="outline"
-								size="sm"
-								onClick={() => handleNavigate('today')}>
-								Dziś
-							</Button>
-							<Button
-								variant="outline"
-								size="sm"
-								onClick={() => handleNavigate('prev')}>
-								<ChevronLeft className="h-4 w-4" />
-							</Button>
-							<Button
-								variant="outline"
-								size="sm"
-								onClick={() => handleNavigate('next')}>
-								<ChevronRight className="h-4 w-4" />
-							</Button>
-							<span className="ml-4 text-lg font-semibold capitalize">
-								{getDateRangeText()}
-							</span>
+					{/* Custom toolbar - RESPONSIVE */}
+					<div className="mb-4 rounded-lg border bg-white p-3 sm:p-4">
+						{/* Mobile */}
+						<div className="flex flex-col gap-3 md:hidden">
+							{/* Row 1: Dropdown + Button w linii z hamburgerem */}
+							<div className="flex items-center gap-2">
+								<Select
+									value={selectedCar}
+									onChange={(e) => setSelectedCar(e.target.value)}
+									className="flex-1 text-sm">
+									<option value="all">Wszystkie</option>
+									{cars
+										.filter((c) => c.active)
+										.map((car) => (
+											<option key={car.id} value={car.id}>
+												{car.name}
+											</option>
+										))}
+								</Select>
+								<Button
+									onClick={handleAddReservation}
+									disabled={!canAddReservation}
+									size="sm">
+									<Plus className="h-4 w-4" />
+								</Button>
+							</div>
+
+							{/* Row 2: Navigation */}
+							<div className="flex items-center justify-between">
+								<div className="flex items-center gap-1">
+									<Button
+										variant="outline"
+										size="sm"
+										onClick={() => handleNavigate('today')}>
+										Dziś
+									</Button>
+									<Button
+										variant="outline"
+										size="sm"
+										onClick={() => handleNavigate('prev')}>
+										<ChevronLeft className="h-4 w-4" />
+									</Button>
+									<Button
+										variant="outline"
+										size="sm"
+										onClick={() => handleNavigate('next')}>
+										<ChevronRight className="h-4 w-4" />
+									</Button>
+								</div>
+								{view != 'day' && (
+									<span className="text-sm font-semibold">
+										{getDateRangeText()}
+									</span>
+								)}
+							</div>
+
+							{/* Row 3: View switcher */}
+							<div className="flex gap-2">
+								<Button
+									variant={view === 'month' ? 'default' : 'outline'}
+									size="sm"
+									className="flex-1"
+									onClick={() => handleViewChange('month')}>
+									Miesiąc
+								</Button>
+								<Button
+									variant={view === 'week' ? 'default' : 'outline'}
+									size="sm"
+									className="flex-1"
+									onClick={() => handleViewChange('week')}>
+									Tydzień
+								</Button>
+								<Button
+									variant={view === 'day' ? 'default' : 'outline'}
+									size="sm"
+									className="flex-1"
+									onClick={() => handleViewChange('day')}>
+									Dzień
+								</Button>
+							</div>
 						</div>
 
-						<div className="flex gap-2">
-							<Button
-								variant={view === 'month' ? 'default' : 'outline'}
-								size="sm"
-								onClick={() => setView('month')}>
-								Miesiąc
-							</Button>
-							<Button
-								variant={view === 'week' ? 'default' : 'outline'}
-								size="sm"
-								onClick={() => setView('week')}>
-								Tydzień
-							</Button>
+						{/* Desktop */}
+						<div className="hidden md:flex md:items-center md:justify-between">
+							<div className="flex items-center gap-2">
+								<Select
+									value={selectedCar}
+									onChange={(e) => setSelectedCar(e.target.value)}
+									className="w-48">
+									<option value="all">Wszystkie samochody</option>
+									{cars
+										.filter((c) => c.active)
+										.map((car) => (
+											<option key={car.id} value={car.id}>
+												{car.name}
+											</option>
+										))}
+								</Select>
+								<Button
+									onClick={handleAddReservation}
+									disabled={!canAddReservation}
+									size="sm">
+									<Plus className="mr-2 h-4 w-4" />
+									Dodaj rezerwację
+								</Button>
+
+								<div className="ml-4 mr-2 h-8 w-px bg-gray-300" />
+
+								<Button
+									variant="outline"
+									size="sm"
+									onClick={() => handleNavigate('today')}>
+									Dziś
+								</Button>
+								<Button
+									variant="outline"
+									size="sm"
+									onClick={() => handleNavigate('prev')}>
+									<ChevronLeft className="h-4 w-4" />
+								</Button>
+								<Button
+									variant="outline"
+									size="sm"
+									onClick={() => handleNavigate('next')}>
+									<ChevronRight className="h-4 w-4" />
+								</Button>
+								<span className="ml-4 text-lg font-semibold capitalize">
+									{getDateRangeText()}
+								</span>
+							</div>
+
+							<div className="flex gap-2">
+								<Button
+									variant={view === 'month' ? 'default' : 'outline'}
+									size="sm"
+									onClick={() => handleViewChange('month')}>
+									Miesiąc
+								</Button>
+								<Button
+									variant={view === 'week' ? 'default' : 'outline'}
+									size="sm"
+									onClick={() => handleViewChange('week')}>
+									Tydzień
+								</Button>
+							</div>
 						</div>
 					</div>
 
@@ -389,6 +505,8 @@ export default function CarsPage() {
 						<div className="grid flex-1 gap-4 md:grid-cols-[2fr,1fr]">
 							<div className="rounded-lg border bg-white p-3">
 								<Calendar
+									messages={messages}
+									culture="pl"
 									localizer={localizer}
 									events={events}
 									startAccessor="start"
@@ -402,6 +520,7 @@ export default function CarsPage() {
 									toolbar={false}
 									eventPropGetter={eventStyleGetter}
 									onSelectEvent={handleEventClick}
+									dayPropGetter={dayPropGetter}
 									formats={{
 										timeGutterFormat: 'HH:mm',
 										eventTimeRangeFormat: (
@@ -428,7 +547,7 @@ export default function CarsPage() {
 								/>
 							</div>
 
-							<div className="rounded-lg border bg-white p-3">
+							<div className="hidden rounded-lg border bg-white p-3 md:block">
 								<div className="mb-2 text-center font-semibold">
 									{format(selectedDay, 'd MMMM yyyy', { locale: pl })}
 								</div>
@@ -478,16 +597,68 @@ export default function CarsPage() {
 								/>
 							</div>
 						</div>
-					) : (
+					) : view === 'week' ? (
 						<div className="flex-1 rounded-lg border bg-white p-3">
 							<Calendar
+								culture="pl"
+								messages={messages}
 								localizer={localizer}
 								events={events}
 								startAccessor="start"
 								endAccessor="end"
-								style={{ height: 'calc(100vh - 450px)', minHeight: '500px' }}
+								style={{ height: 'calc(100vh - 400px)', minHeight: '500px' }}
 								date={currentDate}
 								view="week"
+								onNavigate={(newDate) => setCurrentDate(newDate)}
+								toolbar={false}
+								step={30}
+								timeslots={2}
+								min={new Date(2024, 0, 1, 6, 0)}
+								max={new Date(2024, 0, 1, 22, 0)}
+								eventPropGetter={eventStyleGetter}
+								onSelectEvent={handleEventClick}
+								formats={{
+									timeGutterFormat: 'HH:mm',
+									eventTimeRangeFormat: ({ start, end }, culture, localizer) =>
+										`${localizer?.format(
+											start,
+											'HH:mm',
+											culture
+										)} - ${localizer?.format(end, 'HH:mm', culture)}`,
+									agendaTimeRangeFormat: ({ start, end }, culture, localizer) =>
+										`${localizer?.format(
+											start,
+											'HH:mm',
+											culture
+										)} - ${localizer?.format(end, 'HH:mm', culture)}`,
+									weekdayFormat: (date, culture, localizer) =>
+										localizer?.format(date, 'EEE', culture) || '',
+									dayHeaderFormat: (date, culture, localizer) =>
+										`${localizer?.format(
+											date,
+											'EEE',
+											culture
+										)} ${localizer?.format(date, 'd', culture)}`,
+								}}
+							/>
+						</div>
+					) : (
+						<div className="flex-1 rounded-lg border bg-white p-3">
+							<div className="mb-2 text-center font-semibold md:hidden">
+								{format(currentDate, 'd MMMM yyyy', { locale: pl })}
+							</div>
+							<Calendar
+								localizer={localizer}
+								events={events.filter(
+									(e) =>
+										format(e.start, 'yyyy-MM-dd') ===
+										format(currentDate, 'yyyy-MM-dd')
+								)}
+								startAccessor="start"
+								endAccessor="end"
+								style={{ height: 'calc(100vh - 400px)', minHeight: '500px' }}
+								date={currentDate}
+								view="day"
 								onNavigate={(newDate) => setCurrentDate(newDate)}
 								toolbar={false}
 								step={30}
@@ -516,7 +687,7 @@ export default function CarsPage() {
 					)}
 				</div>
 			) : (
-				/* Fleet tab - bez zmian */
+				/* Fleet tab */
 				<div>
 					<div className="mb-4 flex justify-end">
 						<Button onClick={handleAddCar}>

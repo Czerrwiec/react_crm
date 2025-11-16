@@ -13,7 +13,7 @@ export default defineConfig({
         name: 'Easy Drive',
         short_name: 'ED',
         description: 'opis aplikacji',
-        theme_color: '#daaa19ff',
+        theme_color: '#122454ff',
         background_color: '#122454ff',
         display: 'standalone',
         start_url: '/',
