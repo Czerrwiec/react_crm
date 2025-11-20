@@ -1,4 +1,4 @@
-import type { Student, Payment, User, Lesson, Notification, CarReservation, Car, SchoolInfo } from '@/types'
+import type { Student, Payment, User, Lesson, Notification, CarReservation, Car, SchoolInfo, InstructorHours } from '@/types'
 
 export function mapStudent(data: any): Student {
     return {
@@ -9,7 +9,7 @@ export function mapStudent(data: any): Student {
         email: data.email,
         pkkNumber: data.pkk_number,
         city: data.city,
-        instructorId: data.instructor_id,
+        instructorIds: data.instructor_ids || [],
         coursePrice: data.course_price,
         coursePaid: data.course_paid,
         theoryPassed: data.theory_passed,
@@ -20,7 +20,16 @@ export function mapStudent(data: any): Student {
         totalHoursDriven: data.total_hours_driven,
         courseStartDate: data.course_start_date,
         notes: data.notes,
-    }
+    };
+}
+
+export function mapInstructorHours(data: any): InstructorHours {
+    return {
+        id: data.id,
+        studentId: data.student_id,
+        instructorId: data.instructor_id,
+        hoursDriven: data.hours_driven,
+    };
 }
 
 export function mapStudentWithInstructor(data: any) {

@@ -5,7 +5,7 @@ import { instructorService } from '@/services/instructor.service';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select } from '@/components/ui/select';
+import InstructorMultiSelect from '@/components/InstructorMultiSelect';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -30,7 +30,7 @@ export default function EditStudentPage() {
 				studentService.getStudent(studentId),
 				instructorService.getInstructors(),
 			]);
-			setFormData(student);
+			setFormData(student); // to już obsłuży instructorIds z mapStudent
 			setInstructors(instructorsData);
 		} catch (error) {
 			console.error('Error loading data:', error);
@@ -190,21 +190,13 @@ export default function EditStudentPage() {
 						</CardHeader>
 						<CardContent className="space-y-4">
 							<div>
-								<Label htmlFor="instructorId">Instruktor *</Label>
-								<Select
-									id="instructorId"
-									required
-									value={formData.instructorId || ''}
-									onChange={(e) =>
-										setFormData({ ...formData, instructorId: e.target.value })
-									}>
-									<option value="">Wybierz instruktora</option>
-									{instructors.map((instructor) => (
-										<option key={instructor.id} value={instructor.id}>
-											{instructor.firstName} {instructor.lastName}
-										</option>
-									))}
-								</Select>
+								<InstructorMultiSelect
+									instructors={instructors}
+									selectedIds={formData.instructorIds}
+									onChange={(ids) =>
+										setFormData({ ...formData, instructorIds: ids })
+									}
+								/>
 							</div>
 
 							<div className="grid grid-cols-2 gap-4">

@@ -11,24 +11,24 @@ export interface User {
 }
 
 export interface Student {
-    id: string
-    firstName: string
-    lastName: string
-    phone: string | null
-    email: string | null
-    pkkNumber: string | null
-    city: string | null
-    instructorId: string | null
-    coursePrice: number
-    coursePaid: boolean
-    theoryPassed: boolean
-    internalExamPassed: boolean
-    isSupplementaryCourse: boolean
-    car: boolean
-    active: boolean
-    totalHoursDriven: number
-    courseStartDate: string | null
-    notes: string | null
+    id: string;
+    firstName: string;
+    lastName: string;
+    phone: string | null;
+    email: string | null;
+    pkkNumber: string | null;
+    city: string | null;
+    instructorIds: string[];
+    coursePrice: number;
+    coursePaid: boolean;
+    theoryPassed: boolean;
+    internalExamPassed: boolean;
+    isSupplementaryCourse: boolean;
+    car: boolean;
+    active: boolean;
+    totalHoursDriven: number;
+    courseStartDate: string | null;
+    notes: string | null;
 }
 
 export interface Lesson {
@@ -117,4 +117,11 @@ export interface SchoolInfo {
     street: string | null
     postalCode: string | null
     phone: string | null
+}
+
+export interface InstructorHours {
+    id: string;
+    studentId: string;
+    instructorId: string;
+    hoursDriven: number;
 }

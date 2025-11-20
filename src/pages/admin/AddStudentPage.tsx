@@ -5,12 +5,12 @@ import { instructorService } from '@/services/instructor.service';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ArrowLeft } from 'lucide-react';
 import type { User } from '@/types';
+import InstructorMultiSelect from '@/components/InstructorMultiSelect';
 
 export default function AddStudentPage() {
 	const navigate = useNavigate();
@@ -23,7 +23,7 @@ export default function AddStudentPage() {
 		email: '',
 		pkkNumber: '',
 		city: '',
-		instructorId: '',
+		instructorIds: [] as string[],
 		coursePrice: '3200',
 		courseStartDate: new Date().toISOString().split('T')[0],
 		theoryPassed: false,
@@ -63,7 +63,7 @@ export default function AddStudentPage() {
 				email: formData.email || null,
 				pkkNumber: formData.pkkNumber || null,
 				city: formData.city || null,
-				instructorId: formData.instructorId || null,
+				instructorIds: formData.instructorIds,
 				coursePrice: parseFloat(formData.coursePrice),
 				courseStartDate: formData.courseStartDate,
 				theoryPassed: formData.theoryPassed,
@@ -185,21 +185,13 @@ export default function AddStudentPage() {
 						</CardHeader>
 						<CardContent className="space-y-4">
 							<div>
-								<Label htmlFor="instructorId">Instruktor *</Label>
-								<Select
-									id="instructorId"
-									required
-									value={formData.instructorId}
-									onChange={(e) =>
-										setFormData({ ...formData, instructorId: e.target.value })
-									}>
-									<option value="">Wybierz instruktora</option>
-									{instructors.map((instructor) => (
-										<option key={instructor.id} value={instructor.id}>
-											{instructor.firstName} {instructor.lastName}
-										</option>
-									))}
-								</Select>
+								<InstructorMultiSelect
+									instructors={instructors}
+									selectedIds={formData.instructorIds}
+									onChange={(ids) =>
+										setFormData({ ...formData, instructorIds: ids })
+									}
+								/>
 							</div>
 
 							<div className="grid grid-cols-2 gap-4">

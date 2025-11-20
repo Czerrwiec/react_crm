@@ -6,14 +6,31 @@ export const studentService = {
     async getStudents() {
         const { data, error } = await supabase
             .from('students')
-            .select(`
-        *,
-        instructor:users!instructor_id(first_name, last_name)
-      `)
-            .order('last_name')
+            .select('*') // UPROSZCZENIE - nie pobieraj instructors przez join
+            .order('last_name');
 
-        if (error) throw error
-        return data.map(mapStudentWithInstructor)
+        if (error) throw error;
+
+        // Pobierz instruktorów osobno
+        const { data: allInstructors } = await supabase
+            .from('users')
+            .select('id, first_name, last_name')
+            .eq('role', 'instructor');
+
+        const instructorsMap = new Map(
+            allInstructors?.map(i => [i.id, { firstName: i.first_name, lastName: i.last_name }]) || []
+        );
+
+        return data.map(student => {
+            const mapped = mapStudent(student);
+            return {
+                ...mapped,
+                instructors: (student.instructor_ids || []).map((id: string) => {
+                    const instructor = instructorsMap.get(id);
+                    return instructor ? { id, ...instructor } : null;
+                }).filter(Boolean)
+            };
+        });
     },
 
     async getActiveStudents() {
@@ -21,10 +38,10 @@ export const studentService = {
             .from('students')
             .select('*')
             .eq('active', true)
-            .order('last_name')
+            .order('last_name');
 
-        if (error) throw error
-        return data.map(mapStudent)
+        if (error) throw error;
+        return data.map(mapStudent);
     },
 
     async getStudent(id: string) {
@@ -49,7 +66,7 @@ export const studentService = {
                 email: student.email,
                 pkk_number: student.pkkNumber,
                 city: student.city,
-                instructor_id: student.instructorId,
+                instructor_ids: student.instructorIds,
                 course_price: student.coursePrice,
                 course_paid: student.coursePaid,
                 theory_passed: student.theoryPassed,
@@ -78,7 +95,7 @@ export const studentService = {
         if (updates.email !== undefined) snakeCaseUpdates.email = updates.email
         if (updates.pkkNumber !== undefined) snakeCaseUpdates.pkk_number = updates.pkkNumber
         if (updates.city !== undefined) snakeCaseUpdates.city = updates.city
-        if (updates.instructorId !== undefined) snakeCaseUpdates.instructor_id = updates.instructorId
+        if (updates.instructorIds !== undefined) snakeCaseUpdates.instructor_ids = updates.instructorIds;
         if (updates.coursePrice !== undefined) snakeCaseUpdates.course_price = updates.coursePrice
         if (updates.coursePaid !== undefined) snakeCaseUpdates.course_paid = updates.coursePaid
         if (updates.theoryPassed !== undefined) snakeCaseUpdates.theory_passed = updates.theoryPassed
