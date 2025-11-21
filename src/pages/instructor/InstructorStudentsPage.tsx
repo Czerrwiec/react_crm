@@ -7,13 +7,16 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Search, Phone, Mail } from 'lucide-react';
-import type { Student } from '@/types';
+import type { StudentWithInstructors } from '@/types';
 
 export default function InstructorStudentsPage() {
 	const navigate = useNavigate();
 	const { user } = useAuth();
-	const [students, setStudents] = useState<Student[]>([]);
-	const [filteredStudents, setFilteredStudents] = useState<Student[]>([]);
+	const [students, setStudents] = useState<StudentWithInstructors[]>([]);
+	const [filteredStudents, setFilteredStudents] = useState<
+		StudentWithInstructors[]
+	>([]);
+
 	const [search, setSearch] = useState('');
 	const [loading, setLoading] = useState(true);
 	const [showInactive, setShowInactive] = useState(false);
@@ -34,7 +37,12 @@ export default function InstructorStudentsPage() {
 
 		try {
 			const allStudents = await studentService.getStudents();
-			const myStudents = allStudents.filter((s) => s.instructorId === user.id);
+			console.log('All students:', allStudents); // DEBUG
+
+			const myStudents = allStudents.filter(
+				(s) => s.instructorIds.includes(user.id) && s.active
+			);
+
 			setStudents(myStudents);
 		} catch (error) {
 			console.error('Error loading students:', error);

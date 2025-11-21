@@ -3,127 +3,138 @@ import type { Student } from '@/types'
 import { mapStudent, mapStudentWithInstructor } from '@/lib/mappers'
 
 export const studentService = {
-    async getStudents() {
-        const { data, error } = await supabase
-            .from('students')
-            .select('*') // UPROSZCZENIE - nie pobieraj instructors przez join
-            .order('last_name');
+  async getStudents() {
+    // Krok 1: Pobierz studentów
+    const { data, error } = await supabase
+      .from('students')
+      .select('*')
+      .order('last_name');
 
-        if (error) throw error;
+    if (error) throw error;
 
-        // Pobierz instruktorów osobno
-        const { data: allInstructors } = await supabase
-            .from('users')
-            .select('id, first_name, last_name')
-            .eq('role', 'instructor');
+    // Krok 2: Pobierz wszystkich instruktorów
+    const { data: allInstructors } = await supabase
+      .from('users')
+      .select('id, first_name, last_name')
+      .eq('role', 'instructor');
 
-        const instructorsMap = new Map(
-            allInstructors?.map(i => [i.id, { firstName: i.first_name, lastName: i.last_name }]) || []
-        );
+    const instructorsMap = new Map(
+      allInstructors?.map(i => [i.id, {
+        id: i.id,
+        firstName: i.first_name,
+        lastName: i.last_name
+      }]) || []
+    );
 
-        return data.map(student => {
-            const mapped = mapStudent(student);
-            return {
-                ...mapped,
-                instructors: (student.instructor_ids || []).map((id: string) => {
-                    const instructor = instructorsMap.get(id);
-                    return instructor ? { id, ...instructor } : null;
-                }).filter(Boolean)
-            };
-        });
-    },
+    // Krok 3: Mapuj studentów z ich instruktorami
+    return data.map(student => {
+      const mapped = mapStudent(student);
+      return {
+        ...mapped,
+        instructors: (mapped.instructorIds || [])
+          .map(id => instructorsMap.get(id))
+          .filter(Boolean) as Array<{ id: string; firstName: string; lastName: string }>
+      };
+    });
+  },
 
-    async getActiveStudents() {
-        const { data, error } = await supabase
-            .from('students')
-            .select('*')
-            .eq('active', true)
-            .order('last_name');
+  async getActiveStudents() {
+    const { data, error } = await supabase
+      .from('students')
+      .select('*')
+      .eq('active', true)
+      .order('last_name');
 
-        if (error) throw error;
-        return data.map(mapStudent);
-    },
+    if (error) throw error;
+    return data.map(mapStudent);
+  },
 
-    async getStudent(id: string) {
-        const { data, error } = await supabase
-            .from('students')
-            .select('*')
-            .eq('id', id)
-            .single()
+  async getStudent(id: string) {
+    const { data, error } = await supabase
+      .from('students')
+      .select('*')
+      .eq('id', id)
+      .single()
 
-        if (error) throw error
-        return mapStudent(data)
-    },
+    if (error) throw error
+    return mapStudent(data)
+  },
 
-    async createStudent(student: Omit<Student, 'id'>) {
-        // Przekształć camelCase → snake_case
-        const { data, error } = await supabase
-            .from('students')
-            .insert({
-                first_name: student.firstName,
-                last_name: student.lastName,
-                phone: student.phone,
-                email: student.email,
-                pkk_number: student.pkkNumber,
-                city: student.city,
-                instructor_ids: student.instructorIds,
-                course_price: student.coursePrice,
-                course_paid: student.coursePaid,
-                theory_passed: student.theoryPassed,
-                internal_exam_passed: student.internalExamPassed,
-                is_supplementary_course: student.isSupplementaryCourse,
-                car: student.car,
-                active: student.active,
-                total_hours_driven: student.totalHoursDriven,
-                course_start_date: student.courseStartDate,
-                notes: student.notes,
-            })
-            .select()
-            .single()
+  async createStudent(student: Omit<Student, 'id'>) {
+    const { data, error } = await supabase
+      .from('students')
+      .insert({
+        first_name: student.firstName,
+        last_name: student.lastName,
+        phone: student.phone,
+        email: student.email,
+        pesel: student.pesel, // NOWE
+        pkk_number: student.pkkNumber,
+        city: student.city,
+        instructor_ids: student.instructorIds,
+        course_price: student.coursePrice,
+        course_paid: student.coursePaid,
+        profile_updated: student.profileUpdated, // NOWE
+        internal_theory_passed: student.internalTheoryPassed, // NOWE
+        internal_practice_passed: student.internalPracticePassed, // NOWE
+        state_exam_status: student.stateExamStatus, // NOWE
+        state_exam_attempts: student.stateExamAttempts, // NOWE
+        is_supplementary_course: student.isSupplementaryCourse,
+        car: student.car,
+        active: student.active,
+        total_hours_driven: student.totalHoursDriven,
+        course_start_date: student.courseStartDate,
+        notes: student.notes,
+      })
+      .select()
+      .single();
 
-        if (error) throw error
-        return mapStudent(data)
-    },
+    if (error) throw error;
+    return mapStudent(data);
+  },
 
-    async updateStudent(id: string, updates: Partial<Student>) {
-        // Przekształć camelCase → snake_case
-        const snakeCaseUpdates: any = {}
+  async updateStudent(id: string, updates: Partial<Student>) {
+    const snakeCaseUpdates: any = {};
 
-        if (updates.firstName !== undefined) snakeCaseUpdates.first_name = updates.firstName
-        if (updates.lastName !== undefined) snakeCaseUpdates.last_name = updates.lastName
-        if (updates.phone !== undefined) snakeCaseUpdates.phone = updates.phone
-        if (updates.email !== undefined) snakeCaseUpdates.email = updates.email
-        if (updates.pkkNumber !== undefined) snakeCaseUpdates.pkk_number = updates.pkkNumber
-        if (updates.city !== undefined) snakeCaseUpdates.city = updates.city
-        if (updates.instructorIds !== undefined) snakeCaseUpdates.instructor_ids = updates.instructorIds;
-        if (updates.coursePrice !== undefined) snakeCaseUpdates.course_price = updates.coursePrice
-        if (updates.coursePaid !== undefined) snakeCaseUpdates.course_paid = updates.coursePaid
-        if (updates.theoryPassed !== undefined) snakeCaseUpdates.theory_passed = updates.theoryPassed
-        if (updates.internalExamPassed !== undefined) snakeCaseUpdates.internal_exam_passed = updates.internalExamPassed
-        if (updates.isSupplementaryCourse !== undefined) snakeCaseUpdates.is_supplementary_course = updates.isSupplementaryCourse
-        if (updates.car !== undefined) snakeCaseUpdates.car = updates.car
-        if (updates.active !== undefined) snakeCaseUpdates.active = updates.active
-        if (updates.totalHoursDriven !== undefined) snakeCaseUpdates.total_hours_driven = updates.totalHoursDriven
-        if (updates.courseStartDate !== undefined) snakeCaseUpdates.course_start_date = updates.courseStartDate
-        if (updates.notes !== undefined) snakeCaseUpdates.notes = updates.notes
+    if (updates.firstName !== undefined) snakeCaseUpdates.first_name = updates.firstName;
+    if (updates.lastName !== undefined) snakeCaseUpdates.last_name = updates.lastName;
+    if (updates.phone !== undefined) snakeCaseUpdates.phone = updates.phone;
+    if (updates.email !== undefined) snakeCaseUpdates.email = updates.email;
+    if (updates.pesel !== undefined) snakeCaseUpdates.pesel = updates.pesel; // NOWE
+    if (updates.pkkNumber !== undefined) snakeCaseUpdates.pkk_number = updates.pkkNumber;
+    if (updates.city !== undefined) snakeCaseUpdates.city = updates.city;
+    if (updates.instructorIds !== undefined) snakeCaseUpdates.instructor_ids = updates.instructorIds;
+    if (updates.coursePrice !== undefined) snakeCaseUpdates.course_price = updates.coursePrice;
+    if (updates.coursePaid !== undefined) snakeCaseUpdates.course_paid = updates.coursePaid;
+    if (updates.profileUpdated !== undefined) snakeCaseUpdates.profile_updated = updates.profileUpdated; // NOWE
+    if (updates.internalTheoryPassed !== undefined) snakeCaseUpdates.internal_theory_passed = updates.internalTheoryPassed; // NOWE
+    if (updates.internalPracticePassed !== undefined) snakeCaseUpdates.internal_practice_passed = updates.internalPracticePassed; // NOWE
+    if (updates.stateExamStatus !== undefined) snakeCaseUpdates.state_exam_status = updates.stateExamStatus; // NOWE
+    if (updates.stateExamAttempts !== undefined) snakeCaseUpdates.state_exam_attempts = updates.stateExamAttempts; // NOWE
+    if (updates.isSupplementaryCourse !== undefined) snakeCaseUpdates.is_supplementary_course = updates.isSupplementaryCourse;
+    if (updates.car !== undefined) snakeCaseUpdates.car = updates.car;
+    if (updates.active !== undefined) snakeCaseUpdates.active = updates.active;
+    if (updates.totalHoursDriven !== undefined) snakeCaseUpdates.total_hours_driven = updates.totalHoursDriven;
+    if (updates.courseStartDate !== undefined) snakeCaseUpdates.course_start_date = updates.courseStartDate;
+    if (updates.notes !== undefined) snakeCaseUpdates.notes = updates.notes;
 
-        const { data, error } = await supabase
-            .from('students')
-            .update(snakeCaseUpdates)
-            .eq('id', id)
-            .select()
-            .single()
+    const { data, error } = await supabase
+      .from('students')
+      .update(snakeCaseUpdates)
+      .eq('id', id)
+      .select()
+      .single();
 
-        if (error) throw error
-        return mapStudent(data)
-    },
+    if (error) throw error;
+    return mapStudent(data);
+  },
 
-    async deleteStudent(id: string) {
-        const { error } = await supabase
-            .from('students')
-            .delete()
-            .eq('id', id)
+  async deleteStudent(id: string) {
+    const { error } = await supabase
+      .from('students')
+      .delete()
+      .eq('id', id)
 
-        if (error) throw error
-    },
+    if (error) throw error
+  },
 }

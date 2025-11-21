@@ -11,6 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ArrowLeft } from 'lucide-react';
 import type { User } from '@/types';
 import InstructorMultiSelect from '@/components/InstructorMultiSelect';
+import { Select } from '@/components/ui/select';
 
 export default function AddStudentPage() {
 	const navigate = useNavigate();
@@ -21,13 +22,17 @@ export default function AddStudentPage() {
 		lastName: '',
 		phone: '',
 		email: '',
+		pesel: '', // NOWE
 		pkkNumber: '',
 		city: '',
 		instructorIds: [] as string[],
 		coursePrice: '3200',
 		courseStartDate: new Date().toISOString().split('T')[0],
-		theoryPassed: false,
-		internalExamPassed: false,
+		profileUpdated: false, // NOWE
+		internalTheoryPassed: false, // NOWE
+		internalPracticePassed: false, // NOWE
+		stateExamStatus: 'not_allowed' as 'not_allowed' | 'failed' | 'passed', // NOWE
+		stateExamAttempts: 0, // NOWE
 		isSupplementaryCourse: false,
 		car: false,
 		active: true,
@@ -39,7 +44,6 @@ export default function AddStudentPage() {
 	}, []);
 
 	const loadInstructors = async () => {
-		
 		try {
 			const data = await instructorService.getInstructors();
 			setInstructors(data);
@@ -61,13 +65,17 @@ export default function AddStudentPage() {
 				lastName: formData.lastName,
 				phone: formData.phone || null,
 				email: formData.email || null,
+				pesel: formData.pesel || null, // NOWE
 				pkkNumber: formData.pkkNumber || null,
 				city: formData.city || null,
 				instructorIds: formData.instructorIds,
 				coursePrice: parseFloat(formData.coursePrice),
 				courseStartDate: formData.courseStartDate,
-				theoryPassed: formData.theoryPassed,
-				internalExamPassed: formData.internalExamPassed,
+				profileUpdated: formData.profileUpdated, // NOWE
+				internalTheoryPassed: formData.internalTheoryPassed, // NOWE
+				internalPracticePassed: formData.internalPracticePassed, // NOWE
+				stateExamStatus: formData.stateExamStatus, // NOWE
+				stateExamAttempts: formData.stateExamAttempts, // NOWE
 				isSupplementaryCourse: formData.isSupplementaryCourse,
 				car: formData.car,
 				active: formData.active,
@@ -84,6 +92,11 @@ export default function AddStudentPage() {
 			setLoading(false);
 		}
 	};
+
+	const canEditStateExam =
+		formData.profileUpdated &&
+		formData.internalTheoryPassed &&
+		formData.internalPracticePassed;
 
 	return (
 		<div className="p-8">
@@ -138,6 +151,18 @@ export default function AddStudentPage() {
 										value={formData.phone}
 										onChange={(e) =>
 											setFormData({ ...formData, phone: e.target.value })
+										}
+									/>
+								</div>
+
+								<div>
+									<Label htmlFor="pesel">PESEL</Label>
+									<Input
+										id="pesel"
+										maxLength={11}
+										value={formData.pesel}
+										onChange={(e) =>
+											setFormData({ ...formData, pesel: e.target.value })
 										}
 									/>
 								</div>
@@ -227,27 +252,41 @@ export default function AddStudentPage() {
 							<div className="space-y-2">
 								<label className="flex items-center gap-2">
 									<Checkbox
-										checked={formData.theoryPassed}
+										checked={formData.profileUpdated}
 										onChange={(e) =>
 											setFormData({
 												...formData,
-												theoryPassed: e.target.checked,
+												profileUpdated: e.target.checked,
 											})
 										}
 									/>
-									<span className="text-sm">Teoria zdana</span>
+									<span className="text-sm">Profil zaktualizowany</span>
 								</label>
+
 								<label className="flex items-center gap-2">
 									<Checkbox
-										checked={formData.internalExamPassed}
+										checked={formData.internalTheoryPassed}
 										onChange={(e) =>
 											setFormData({
 												...formData,
-												internalExamPassed: e.target.checked,
+												internalTheoryPassed: e.target.checked,
 											})
 										}
 									/>
-									<span className="text-sm">Egzamin wewnętrzny zdany</span>
+									<span className="text-sm">Egzamin wewnętrzny - teoria</span>
+								</label>
+
+								<label className="flex items-center gap-2">
+									<Checkbox
+										checked={formData.internalPracticePassed}
+										onChange={(e) =>
+											setFormData({
+												...formData,
+												internalPracticePassed: e.target.checked,
+											})
+										}
+									/>
+									<span className="text-sm">Egzamin wewnętrzny - praktyka</span>
 								</label>
 								<label className="flex items-center gap-2">
 									<Checkbox
@@ -279,6 +318,62 @@ export default function AddStudentPage() {
 									/>
 									<span className="text-sm">Kursant aktywny</span>
 								</label>
+							</div>
+
+							<div className="space-y-2 pt-4 border-t">
+								<Label>Egzamin państwowy</Label>
+
+								{!canEditStateExam && (
+									<p className="text-xs text-amber-600">
+										Aby edytować egzamin państwowy, zaznacz: profil
+										zaktualizowany, egzamin wewnętrzny teoria i praktyka
+									</p>
+								)}
+								<div>
+									<Label
+										htmlFor="stateExamStatus"
+										className="text-xs text-gray-600">
+										Status
+									</Label>
+									<Select
+										id="stateExamStatus"
+										value={formData.stateExamStatus}
+										disabled={!canEditStateExam} // DODAJ
+										onChange={(e) =>
+											setFormData({
+												...formData,
+												stateExamStatus: e.target.value as any,
+											})
+										}>
+										<option value="not_allowed">Niedopuszczony</option>
+										<option value="failed">Niezdany</option>
+										<option value="passed">Zdany</option>
+									</Select>
+								</div>
+
+								{(formData.stateExamStatus === 'failed' ||
+									formData.stateExamStatus === 'passed') && (
+									<div>
+										<Label
+											htmlFor="stateExamAttempts"
+											className="text-xs text-gray-600">
+											Liczba prób
+										</Label>
+										<Input
+											id="stateExamAttempts"
+											type="number"
+											min="0"
+											disabled={!canEditStateExam} // DODAJ
+											value={formData.stateExamAttempts}
+											onChange={(e) =>
+												setFormData({
+													...formData,
+													stateExamAttempts: parseInt(e.target.value) || 0,
+												})
+											}
+										/>
+									</div>
+								)}
 							</div>
 						</CardContent>
 					</Card>

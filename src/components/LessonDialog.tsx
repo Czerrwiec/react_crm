@@ -88,8 +88,9 @@ export default function LessonDialog({
 	const loadStudents = async () => {
 		try {
 			const allStudents = await studentService.getActiveStudents();
+			// Filtruj po instructorIds (array)
 			const instructorStudents = allStudents.filter(
-				(s) => s.instructorId === instructorId && s.active
+				(s) => s.instructorIds.includes(instructorId) && s.active
 			);
 			setStudents(instructorStudents);
 		} catch (error) {

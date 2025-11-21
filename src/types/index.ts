@@ -10,19 +10,24 @@ export interface User {
     active: boolean
 }
 
+
 export interface Student {
     id: string;
     firstName: string;
     lastName: string;
     phone: string | null;
     email: string | null;
+    pesel: string | null; // NOWE
     pkkNumber: string | null;
     city: string | null;
     instructorIds: string[];
     coursePrice: number;
     coursePaid: boolean;
-    theoryPassed: boolean;
-    internalExamPassed: boolean;
+    profileUpdated: boolean; // NOWE
+    internalTheoryPassed: boolean; // NOWE (zastępuje internalExamPassed)
+    internalPracticePassed: boolean; // NOWE
+    stateExamStatus: 'not_allowed' | 'failed' | 'passed'; // NOWE
+    stateExamAttempts: number; // NOWE
     isSupplementaryCourse: boolean;
     car: boolean;
     active: boolean;
@@ -91,6 +96,7 @@ export interface Car {
     id: string
     name: string
     year: number
+    registrationNumber: string | null
     inspectionDate: string | null
     insuranceDate: string | null
     active: boolean
@@ -124,4 +130,8 @@ export interface InstructorHours {
     studentId: string;
     instructorId: string;
     hoursDriven: number;
+}
+
+export interface StudentWithInstructors extends Student {
+    instructors: Array<{ id: string; firstName: string; lastName: string }>;
 }

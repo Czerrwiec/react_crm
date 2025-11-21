@@ -46,7 +46,8 @@ export default function CarsPage() {
 	const [cars, setCars] = useState<Car[]>([]);
 	const [students, setStudents] = useState<Student[]>([]);
 	const [reservations, setReservations] = useState<CarReservation[]>([]);
-	const [selectedCar, setSelectedCar] = useState<string>('all');
+
+
 	const [currentDate, setCurrentDate] = useState(new Date());
 	const [selectedDay, setSelectedDay] = useState(new Date());
 	const [loading, setLoading] = useState(true);
@@ -71,7 +72,7 @@ export default function CarsPage() {
 		if (cars.length > 0) {
 			loadReservations();
 		}
-	}, [selectedCar, currentDate]);
+	}, [currentDate]);
 
 	const loadInitialData = async () => {
 		try {
@@ -94,7 +95,6 @@ export default function CarsPage() {
 
 	const loadReservations = async () => {
 		try {
-			// Pobierz poprzedni, obecny i następny miesiąc
 			const prevMonth = new Date(
 				currentDate.getFullYear(),
 				currentDate.getMonth() - 1,
@@ -122,13 +122,7 @@ export default function CarsPage() {
 				new Map(allReservations.map((r) => [r.id, r])).values()
 			);
 
-			// Filtruj po samochodzie jeśli wybrany
-			const filtered =
-				selectedCar === 'all'
-					? uniqueReservations
-					: uniqueReservations.filter((r) => r.carId === selectedCar);
-
-			setReservations(filtered);
+			setReservations(uniqueReservations);
 		} catch (error) {
 			console.error('Error loading reservations:', error);
 		}
@@ -163,17 +157,15 @@ export default function CarsPage() {
 			endMinute
 		);
 
-		const carName = carNamesMap.get(reservation.carId) || 'Nieznany';
+		const car = cars.find((c) => c.id === reservation.carId);
+		const carLabel = car?.registrationNumber || car?.name || 'Nieznany';
 		const studentNames = reservation.studentIds
 			.map((id) => studentNamesMap.get(id) || 'Nieznany')
 			.join(', ');
 
 		return {
 			id: reservation.id,
-			title:
-				selectedCar === 'all'
-					? `${carName} - ${studentNames || 'Bez kursanta'}`
-					: studentNames || 'Bez kursanta',
+			title: `${carLabel} - ${studentNames || 'Bez kursanta'}`,
 			start,
 			end,
 			resource: reservation,

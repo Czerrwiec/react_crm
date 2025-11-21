@@ -5,22 +5,20 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Search, Plus, Phone, Mail, ChevronDown, Check } from 'lucide-react';
-import type { Student } from '@/types';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { pl } from 'date-fns/locale';
+import type { StudentWithInstructors } from '@/types';
 
-type StudentWithInstructor = Student & {
-	instructor?: { firstName: string; lastName: string };
-};
+
 
 type SortField = 'lastName' | 'firstName' | 'courseStart';
 type SortDirection = 'asc' | 'desc';
 
 export default function StudentsPage() {
-	const [students, setStudents] = useState<StudentWithInstructor[]>([]);
+	const [students, setStudents] = useState<StudentWithInstructors[]>([]);
 	const [filteredStudents, setFilteredStudents] = useState<
-		StudentWithInstructor[]
+		StudentWithInstructors[]
 	>([]);
 	const [search, setSearch] = useState('');
 	const [loading, setLoading] = useState(true);
@@ -33,6 +31,7 @@ export default function StudentsPage() {
 	const [showOnlyTheoryPassed, setShowOnlyTheoryPassed] = useState(false);
 	const [showOnlyCoursePaid, setShowOnlyCoursePaid] = useState(false);
 	const [showOnlyCourseUnpaid, setShowOnlyCourseUnpaid] = useState(false);
+	
 
 	const [sortDropdownOpen, setSortDropdownOpen] = useState(false);
 	const [filterDropdownOpen, setFilterDropdownOpen] = useState(false);
@@ -60,8 +59,6 @@ export default function StudentsPage() {
 		showOnlyCoursePaid,
 		showOnlyCourseUnpaid,
 	]);
-
-	
 
 	const loadStudents = async () => {
 		try {
@@ -533,12 +530,16 @@ export default function StudentsPage() {
 														<span className="truncate">{student.email}</span>
 													</div>
 												)}
-												{student.instructor && (
-													<div className="text-xs text-gray-500 sm:text-sm">
-														Instruktor: {student.instructor.firstName}{' '}
-														{student.instructor.lastName}
-													</div>
-												)}
+												{student.instructors &&
+													student.instructors.length > 0 && (
+														<div className="text-xs text-gray-500 sm:text-sm">
+															Instruktor
+															{student.instructors.length > 1 ? 'zy' : ''}:{' '}
+															{student.instructors
+																.map((i: any) => `${i.firstName} ${i.lastName}`)
+																.join(', ')}
+														</div>
+													)}
 											</div>
 										</div>
 

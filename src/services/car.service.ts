@@ -41,36 +41,39 @@ export const carService = {
             .insert({
                 name: car.name,
                 year: car.year,
+                registration_number: car.registrationNumber, // NOWE
                 inspection_date: car.inspectionDate,
                 insurance_date: car.insuranceDate,
                 active: car.active,
+                color: car.color,
             })
             .select()
-            .single()
+            .single();
 
-        if (error) throw error
-        return mapCar(data)
+        if (error) throw error;
+        return mapCar(data);
     },
 
     async updateCar(id: string, updates: Partial<Car>) {
-        const snakeCaseUpdates: any = {}
+        const snakeCaseUpdates: any = {};
 
-        if (updates.name !== undefined) snakeCaseUpdates.name = updates.name
-        if (updates.year !== undefined) snakeCaseUpdates.year = updates.year
-        if (updates.inspectionDate !== undefined) snakeCaseUpdates.inspection_date = updates.inspectionDate
-        if (updates.insuranceDate !== undefined) snakeCaseUpdates.insurance_date = updates.insuranceDate
-        if (updates.active !== undefined) snakeCaseUpdates.active = updates.active
-        if (updates.color !== undefined) snakeCaseUpdates.color = updates.color
+        if (updates.name !== undefined) snakeCaseUpdates.name = updates.name;
+        if (updates.year !== undefined) snakeCaseUpdates.year = updates.year;
+        if (updates.registrationNumber !== undefined) snakeCaseUpdates.registration_number = updates.registrationNumber; // NOWE
+        if (updates.inspectionDate !== undefined) snakeCaseUpdates.inspection_date = updates.inspectionDate;
+        if (updates.insuranceDate !== undefined) snakeCaseUpdates.insurance_date = updates.insuranceDate;
+        if (updates.active !== undefined) snakeCaseUpdates.active = updates.active;
+        if (updates.color !== undefined) snakeCaseUpdates.color = updates.color;
 
         const { data, error } = await supabase
             .from('cars')
             .update(snakeCaseUpdates)
             .eq('id', id)
             .select()
-            .single()
+            .single();
 
-        if (error) throw error
-        return mapCar(data)
+        if (error) throw error;
+        return mapCar(data);
     },
 
     async deleteCar(id: string) {

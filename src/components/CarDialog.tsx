@@ -22,6 +22,7 @@ interface CarDialogProps {
 const initialFormData = {
 	name: '',
 	year: new Date().getFullYear(),
+	registrationNumber: '',
 	inspectionDate: '',
 	insuranceDate: '',
 	active: true,
@@ -44,6 +45,7 @@ export default function CarDialog({
 					name: car.name,
 					year: car.year,
 					inspectionDate: car.inspectionDate || '',
+					registrationNumber: car.registrationNumber || '',
 					insuranceDate: car.insuranceDate || '',
 					active: car.active,
 					color: car.color,
@@ -62,6 +64,7 @@ export default function CarDialog({
 			const carData = {
 				name: formData.name,
 				year: formData.year,
+				registrationNumber: formData.registrationNumber || null,
 				inspectionDate: formData.inspectionDate || null,
 				insuranceDate: formData.insuranceDate || null,
 				active: formData.active,
@@ -119,6 +122,18 @@ export default function CarDialog({
 							onChange={(e) =>
 								setFormData({ ...formData, year: parseInt(e.target.value) })
 							}
+						/>
+					</div>
+
+					<div>
+						<Label htmlFor="registrationNumber">Numer rejestracyjny</Label>
+						<Input
+							id="registrationNumber"
+							value={formData.registrationNumber}
+							onChange={(e) =>
+								setFormData({ ...formData, registrationNumber: e.target.value })
+							}
+							placeholder="np. ABC 1234"
 						/>
 					</div>
 

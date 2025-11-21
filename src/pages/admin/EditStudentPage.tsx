@@ -11,6 +11,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ArrowLeft, Trash2 } from 'lucide-react';
 import type { User, Student } from '@/types';
+import { Select } from '@/components/ui/select';
 
 export default function EditStudentPage() {
 	const { id } = useParams<{ id: string }>();
@@ -74,6 +75,12 @@ export default function EditStudentPage() {
 			alert('Błąd usuwania kursanta');
 		}
 	};
+
+	const canEditStateExam = formData
+		? formData.profileUpdated &&
+		  formData.internalTheoryPassed &&
+		  formData.internalPracticePassed
+		: false;
 
 	if (loading || !formData) {
 		return (
@@ -143,6 +150,17 @@ export default function EditStudentPage() {
 										value={formData.phone || ''}
 										onChange={(e) =>
 											setFormData({ ...formData, phone: e.target.value })
+										}
+									/>
+								</div>
+								<div>
+									<Label htmlFor="pesel">PESEL</Label>
+									<Input
+										id="pesel"
+										maxLength={11}
+										value={formData.pesel || ''}
+										onChange={(e) =>
+											setFormData({ ...formData, pesel: e.target.value })
 										}
 									/>
 								</div>
@@ -251,28 +269,43 @@ export default function EditStudentPage() {
 							<div className="space-y-2">
 								<label className="flex items-center gap-2">
 									<Checkbox
-										checked={formData.theoryPassed}
+										checked={formData.profileUpdated}
 										onChange={(e) =>
 											setFormData({
 												...formData,
-												theoryPassed: e.target.checked,
+												profileUpdated: e.target.checked,
 											})
 										}
 									/>
-									<span className="text-sm">Teoria zdana</span>
+									<span className="text-sm">Profil zaktualizowany</span>
 								</label>
+
 								<label className="flex items-center gap-2">
 									<Checkbox
-										checked={formData.internalExamPassed}
+										checked={formData.internalTheoryPassed}
 										onChange={(e) =>
 											setFormData({
 												...formData,
-												internalExamPassed: e.target.checked,
+												internalTheoryPassed: e.target.checked,
 											})
 										}
 									/>
-									<span className="text-sm">Egzamin wewnętrzny zdany</span>
+									<span className="text-sm">Egzamin wewnętrzny - teoria</span>
 								</label>
+
+								<label className="flex items-center gap-2">
+									<Checkbox
+										checked={formData.internalPracticePassed}
+										onChange={(e) =>
+											setFormData({
+												...formData,
+												internalPracticePassed: e.target.checked,
+											})
+										}
+									/>
+									<span className="text-sm">Egzamin wewnętrzny - praktyka</span>
+								</label>
+
 								<label className="flex items-center gap-2">
 									<Checkbox
 										checked={formData.isSupplementaryCourse}
@@ -285,6 +318,7 @@ export default function EditStudentPage() {
 									/>
 									<span className="text-sm">Kurs uzupełniający</span>
 								</label>
+
 								<label className="flex items-center gap-2">
 									<Checkbox
 										checked={formData.car}
@@ -294,6 +328,7 @@ export default function EditStudentPage() {
 									/>
 									<span className="text-sm">Auto na egzamin</span>
 								</label>
+
 								<label className="flex items-center gap-2">
 									<Checkbox
 										checked={formData.active}
@@ -303,6 +338,62 @@ export default function EditStudentPage() {
 									/>
 									<span className="text-sm">Kursant aktywny</span>
 								</label>
+							</div>
+
+							<div className="space-y-2 pt-4 border-t">
+								<Label>Egzamin państwowy</Label>
+
+								{!canEditStateExam && (
+									<p className="text-xs text-amber-600">
+										Aby edytować egzamin państwowy, zaznacz: profil
+										zaktualizowany, egzamin wewnętrzny teoria i praktyka
+									</p>
+								)}
+								<div>
+									<Label
+										htmlFor="stateExamStatus"
+										className="text-xs text-gray-600">
+										Status
+									</Label>
+									<Select
+										id="stateExamStatus"
+										value={formData.stateExamStatus}
+										disabled={!canEditStateExam} // DODAJ
+										onChange={(e) =>
+											setFormData({
+												...formData,
+												stateExamStatus: e.target.value as any,
+											})
+										}>
+										<option value="not_allowed">Niedopuszczony</option>
+										<option value="failed">Niezdany</option>
+										<option value="passed">Zdany</option>
+									</Select>
+								</div>
+
+								{(formData.stateExamStatus === 'failed' ||
+									formData.stateExamStatus === 'passed') && (
+									<div>
+										<Label
+											htmlFor="stateExamAttempts"
+											className="text-xs text-gray-600">
+											Liczba prób
+										</Label>
+										<Input
+											id="stateExamAttempts"
+											type="number"
+											min="0"
+											disabled={!canEditStateExam} // DODAJ
+											value={formData.stateExamAttempts}
+											onChange={(e) =>
+												setFormData({
+													...formData,
+													stateExamAttempts: parseInt(e.target.value) || 0,
+												})
+											}
+										/>
+									</div>
+								)}
 							</div>
 						</CardContent>
 					</Card>

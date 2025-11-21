@@ -23,6 +23,12 @@ import { ArrowLeft, Plus, Trash2, Pencil } from 'lucide-react';
 import { carService } from '@/services/car.service';
 import type { Student, Payment, Lesson, CarReservation, Car } from '@/types';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
+import { supabase } from '@/lib/supabase';
+import { useAuth } from '@/hooks/useAuth';
+import {
+	getStateExamDisplayStatus,
+	getStateExamStatusColor,
+} from '@/lib/student-utilis';
 
 const locales = { pl };
 const localizer = dateFnsLocalizer({
@@ -41,6 +47,7 @@ interface PaymentWithCreator extends Payment {
 export default function StudentDetailPage() {
 	const { id } = useParams<{ id: string }>();
 	const navigate = useNavigate();
+	const { user, role } = useAuth(); //
 	const [student, setStudent] = useState<Student | null>(null);
 	const [payments, setPayments] = useState<PaymentWithCreator[]>([]);
 	const [lessons, setLessons] = useState<Lesson[]>([]);
@@ -51,6 +58,9 @@ export default function StudentDetailPage() {
 		null
 	);
 	const [reservedCar, setReservedCar] = useState<Car | null>(null);
+	const [instructorsMap, setInstructorsMap] = useState<Map<string, string>>(
+		new Map()
+	);
 
 	useEffect(() => {
 		if (id) loadData(id);
@@ -63,6 +73,16 @@ export default function StudentDetailPage() {
 				paymentService.getPaymentsByStudent(studentId),
 			]);
 			setStudent(studentData);
+
+			const { data: instructors } = await supabase
+				.from('users')
+				.select('id, first_name, last_name')
+				.eq('role', 'instructor');
+
+			const map = new Map(
+				instructors?.map((i) => [i.id, `${i.first_name} ${i.last_name}`]) || []
+			);
+			setInstructorsMap(map);
 
 			const paymentsWithCreators = await Promise.all(
 				paymentsData.map(async (payment) => {
@@ -82,15 +102,36 @@ export default function StudentDetailPage() {
 
 			setPayments(paymentsWithCreators);
 
-			if (studentData.instructorId) {
-				const lessonsData = await lessonService.getLessonsByInstructor(
-					studentData.instructorId,
-					new Date()
-				);
-				const studentLessons = lessonsData.filter((l) =>
+			if (studentData.instructorIds.length > 0) {
+				const allLessons = [];
+
+				// Pobierz po 3 miesiące dla każdego instruktora
+				for (const instructorId of studentData.instructorIds) {
+					const prevMonth = new Date();
+					prevMonth.setMonth(prevMonth.getMonth() - 1);
+					const nextMonth = new Date();
+					nextMonth.setMonth(nextMonth.getMonth() + 1);
+
+					const [prev, current, next] = await Promise.all([
+						lessonService.getLessonsByInstructor(instructorId, prevMonth),
+						lessonService.getLessonsByInstructor(instructorId, new Date()),
+						lessonService.getLessonsByInstructor(instructorId, nextMonth),
+					]);
+
+					allLessons.push(...prev, ...current, ...next);
+				}
+
+				// Filtruj tylko lekcje tego studenta
+				const studentLessons = allLessons.filter((l) =>
 					l.studentIds.includes(studentId)
 				);
-				setLessons(studentLessons);
+
+				// Usuń duplikaty
+				const uniqueLessons = Array.from(
+					new Map(studentLessons.map((lesson) => [lesson.id, lesson])).values()
+				);
+
+				setLessons(uniqueLessons);
 			}
 
 			if (studentData.car) {
@@ -164,6 +205,9 @@ export default function StudentDetailPage() {
 	const totalPaid = payments
 		.filter((p) => p.type === 'course')
 		.reduce((sum, p) => sum + p.amount, 0);
+	const extraHoursPaid = payments
+		.filter((p) => p.type === 'extra_lessons')
+		.reduce((sum, p) => sum + p.amount, 0);
 	const outstanding = student ? student.coursePrice - totalPaid : 0;
 
 	const formatHours = (hours: number) => {
@@ -190,9 +234,7 @@ export default function StudentDetailPage() {
 							{student.firstName} {student.lastName}
 						</h1>
 						<div className="mt-2 flex flex-wrap gap-2">
-							{student.theoryPassed && (
-								<Badge className="text-xs">Teoria ✓</Badge>
-							)}
+							
 							{student.coursePaid && (
 								<Badge className="text-xs">Opłacony</Badge>
 							)}
@@ -307,18 +349,38 @@ export default function StudentDetailPage() {
 										<strong>Wyjezdzone:</strong>{' '}
 										{formatHours(student.totalHoursDriven)}
 									</div>
+
+									{/* USUŃ sekcję "Teoria" całkowicie */}
+
 									<div>
-										<strong>Teoria:</strong>{' '}
-										{student.theoryPassed ? '✓ Zdana' : '✗ Nie zdana'}
+										<strong>Profil:</strong>{' '}
+										{student.profileUpdated
+											? '✓ Zaktualizowany'
+											: '✗ Niezaktualizowany'}
 									</div>
+
 									<div>
-										<strong>Egzamin wewnętrzny:</strong>{' '}
-										{student.internalExamPassed ? '✓ Zdany' : '✗ Nie zdany'}
+										<strong>Egzamin wewnętrzny teoria:</strong>{' '}
+										{student.internalTheoryPassed ? '✓ Zdany' : '✗ Nie zdany'}
 									</div>
+
+									<div>
+										<strong>Egzamin wewnętrzny praktyka:</strong>{' '}
+										{student.internalPracticePassed ? '✓ Zdany' : '✗ Nie zdany'}
+									</div>
+
+									<div>
+										<strong>Egzamin państwowy:</strong>{' '}
+										<span className={getStateExamStatusColor(student)}>
+											{getStateExamDisplayStatus(student)}
+										</span>
+									</div>
+
 									<div>
 										<strong>Kurs uzupełniający:</strong>{' '}
 										{student.isSupplementaryCourse ? 'Tak' : 'Nie'}
 									</div>
+
 									<div>
 										<strong>Auto na egzamin:</strong>{' '}
 										{student.car ? (
@@ -343,10 +405,17 @@ export default function StudentDetailPage() {
 											'Nie'
 										)}
 									</div>
+
 									{student.courseStartDate && (
 										<div>
 											<strong>Rozpoczęcie:</strong>{' '}
 											{format(new Date(student.courseStartDate), 'dd.MM.yyyy')}
+										</div>
+									)}
+
+									{student.pesel && (
+										<div>
+											<strong>PESEL:</strong> {student.pesel}
 										</div>
 									)}
 								</CardContent>
@@ -384,7 +453,12 @@ export default function StudentDetailPage() {
 								</CardHeader>
 								<CardContent>
 									{/* Summary Cards */}
-									<div className="mb-4 grid grid-cols-3 gap-2 rounded-lg bg-muted p-3 sm:gap-4 sm:p-4">
+									<div
+										className={`mb-4 grid gap-2 rounded-lg bg-muted p-3 sm:gap-4 sm:p-4 ${
+											extraHoursPaid > 0
+												? 'grid-cols-2 sm:grid-cols-4'
+												: 'grid-cols-3'
+										}`}>
 										<div>
 											<div className="text-xs text-muted-foreground sm:text-sm">
 												Cena kursu
@@ -412,6 +486,16 @@ export default function StudentDetailPage() {
 												{outstanding.toFixed(2)} zł
 											</div>
 										</div>
+										{extraHoursPaid > 0 && (
+											<div>
+												<div className="text-xs text-muted-foreground sm:text-sm">
+													Dodatkowe
+												</div>
+												<div className="text-lg font-bold text-blue-600 sm:text-2xl">
+													{extraHoursPaid.toFixed(2)} zł
+												</div>
+											</div>
+										)}
 									</div>
 
 									{/* Payments List */}
@@ -426,6 +510,8 @@ export default function StudentDetailPage() {
 													key={payment.id}
 													payment={payment}
 													studentId={student.id}
+													currentUserId={user?.id} // DODAJ
+													currentUserRole={role} // DODAJ
 													onSuccess={() => id && loadData(id)}
 												/>
 											))}
@@ -516,7 +602,12 @@ export default function StudentDetailPage() {
 														{lesson.endTime.slice(0, 5)}
 													</div>
 													<div className="text-xs text-gray-500 mt-1">
-														{formatHours(lesson.duration)} 
+														{formatHours(lesson.duration)}
+													</div>
+													{/* NOWE: Instruktor */}
+													<div className="text-xs text-gray-600 mt-1">
+														{instructorsMap.get(lesson.instructorId) ||
+															'Nieznany instruktor'}
 													</div>
 													{lesson.status === 'cancelled' && (
 														<div className="text-xs text-gray-500 mt-1">
@@ -564,6 +655,8 @@ export default function StudentDetailPage() {
 													<div className="text-xs text-gray-600 mt-0.5">
 														{formatHours(lesson.duration)}
 														{lesson.status === 'cancelled' && ' • Anulowana'}
+														{' • '}
+														{instructorsMap.get(lesson.instructorId)}
 													</div>
 												</div>
 											))}
@@ -581,13 +674,22 @@ export default function StudentDetailPage() {
 function PaymentRow({
 	payment,
 	studentId,
+	currentUserId,
+	currentUserRole,
 	onSuccess,
 }: {
 	payment: PaymentWithCreator;
 	studentId: string;
+	currentUserId?: string; // DODAJ
+	currentUserRole: string | null; // DODAJ
 	onSuccess: () => void;
 }) {
 	const [editing, setEditing] = useState(false);
+
+	// Czy użytkownik może edytować/usuwać tę płatność
+
+	const canModify =
+		currentUserRole === 'admin' || payment.createdBy === currentUserId;
 
 	const handleDelete = async () => {
 		if (!confirm('Usunąć płatność?')) return;
@@ -635,14 +737,18 @@ function PaymentRow({
 					</div>
 				)}
 			</div>
-			<div className="flex gap-2">
-				<Button variant="ghost" size="icon" onClick={() => setEditing(true)}>
-					<Pencil className="h-4 w-4" />
-				</Button>
-				<Button variant="ghost" size="icon" onClick={handleDelete}>
-					<Trash2 className="h-4 w-4 text-destructive" />
-				</Button>
-			</div>
+
+			{/* Pokaż przyciski tylko jeśli użytkownik może modyfikować */}
+			{canModify && (
+				<div className="flex gap-2">
+					<Button variant="ghost" size="icon" onClick={() => setEditing(true)}>
+						<Pencil className="h-4 w-4" />
+					</Button>
+					<Button variant="ghost" size="icon" onClick={handleDelete}>
+						<Trash2 className="h-4 w-4 text-destructive" />
+					</Button>
+				</div>
+			)}
 		</div>
 	);
 }

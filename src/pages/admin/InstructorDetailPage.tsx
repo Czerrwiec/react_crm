@@ -40,7 +40,12 @@ export default function InstructorDetailPage() {
 
 			setInstructor(instructorData);
 			setFormData(instructorData);
-			setStudents(allStudents.filter((s) => s.instructorId === instructorId));
+
+			// Filtruj studentów, którzy mają tego instruktora w swoim array
+			const instructorStudents = allStudents.filter((s) =>
+				s.instructorIds.includes(instructorId)
+			);
+			setStudents(instructorStudents);
 		} catch (error) {
 			console.error('Error loading data:', error);
 		} finally {
