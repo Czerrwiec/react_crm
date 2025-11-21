@@ -14,6 +14,7 @@ import { carService } from '@/services/car.service';
 import { studentService } from '@/services/student.service';
 import type { CarReservation, Student } from '@/types';
 import { format } from 'date-fns';
+import { Select } from '@/components/ui/select';
 
 interface CarReservationDialogProps {
 	open: boolean;
@@ -227,6 +228,17 @@ export default function CarReservationDialog({
 					<DialogTitle>
 						{reservation ? 'Edytuj rezerwację' : 'Dodaj rezerwację'}
 					</DialogTitle>
+					<div>
+						<Label htmlFor="carSelect">Samochód *</Label>
+						<Select
+							id="carSelect"
+							value={carId}
+							disabled // Nie można zmieniać po otwarciu
+							onChange={() => {}} // tylko do wyświetlenia
+						>
+							{/* Pobierz listę aut i wyświetl */}
+						</Select>
+					</div>
 				</DialogHeader>
 
 				<form onSubmit={handleSubmit} className="space-y-4">

@@ -9,14 +9,11 @@ import {
 	subMonths,
 	addWeeks,
 	subWeeks,
-	addDays,
-	subDays,
 } from 'date-fns';
 import { pl } from 'date-fns/locale';
 import { carService } from '@/services/car.service';
 import { studentService } from '@/services/student.service';
 import { Button } from '@/components/ui/button';
-import { Select } from '@/components/ui/select';
 import { Plus, ChevronLeft, ChevronRight } from 'lucide-react';
 import CarDialog from '@/components/CarDialog';
 import CarReservationDialog from '@/components/CarReservationDialog';
@@ -46,13 +43,11 @@ export default function CarsPage() {
 	const [cars, setCars] = useState<Car[]>([]);
 	const [students, setStudents] = useState<Student[]>([]);
 	const [reservations, setReservations] = useState<CarReservation[]>([]);
-
-
 	const [currentDate, setCurrentDate] = useState(new Date());
-	const [selectedDay, setSelectedDay] = useState(new Date());
 	const [loading, setLoading] = useState(true);
 	const [view, setView] = useState<View>('month');
 	const [activeTab, setActiveTab] = useState<'calendar' | 'fleet'>('calendar');
+	const [mobileView, setMobileView] = useState<'calendar' | 'list'>('calendar'); // NOWE
 
 	// Dialogs
 	const [carDialogOpen, setCarDialogOpen] = useState(false);
@@ -60,6 +55,8 @@ export default function CarsPage() {
 	const [reservationDialogOpen, setReservationDialogOpen] = useState(false);
 	const [editingReservation, setEditingReservation] =
 		useState<CarReservation | null>(null);
+	const [selectedCarForReservation, setSelectedCarForReservation] =
+		useState<string>(''); // NOWE
 	const [detailDialogOpen, setDetailDialogOpen] = useState(false);
 	const [selectedReservation, setSelectedReservation] =
 		useState<CarReservation | null>(null);
@@ -82,10 +79,6 @@ export default function CarsPage() {
 			]);
 			setCars(carsData);
 			setStudents(studentsData);
-
-			if (carsData.length > 0) {
-				setSelectedCar(carsData[0].id);
-			}
 		} catch (error) {
 			console.error('Error loading data:', error);
 		} finally {
@@ -132,7 +125,11 @@ export default function CarsPage() {
 		students.map((s) => [s.id, `${s.firstName} ${s.lastName}`])
 	);
 
-	const carNamesMap = new Map(cars.map((c) => [c.id, c.name]));
+	const studentCityMap = new Map(students.map((s) => [s.id, s.city || 'Brak']));
+
+	const carNamesMap = new Map(
+		cars.map((c) => [c.id, c.registrationNumber || c.name])
+	);
 	const carColorsMap = new Map(cars.map((c) => [c.id, c.color || '#3b82f6']));
 
 	const events: CalendarEvent[] = reservations.map((reservation) => {
@@ -188,36 +185,22 @@ export default function CarsPage() {
 		};
 	};
 
-	const dayPropGetter = (date: Date) => {
-		const isSelectedDay =
-			format(date, 'yyyy-MM-dd') === format(selectedDay, 'yyyy-MM-dd');
-
-		return {
-			className: isSelectedDay ? 'rbc-selected-day' : '',
-		};
-	};
-
 	const handleNavigate = (direction: 'prev' | 'next' | 'today') => {
 		let newDate = new Date(currentDate);
 
 		if (direction === 'today') {
 			newDate = new Date();
-			setSelectedDay(new Date());
 		} else if (direction === 'prev') {
 			if (view === 'month') {
 				newDate = subMonths(currentDate, 1);
 			} else if (view === 'week') {
 				newDate = subWeeks(currentDate, 1);
-			} else if (view === 'day') {
-				newDate = subDays(currentDate, 1);
 			}
 		} else {
 			if (view === 'month') {
 				newDate = addMonths(currentDate, 1);
 			} else if (view === 'week') {
 				newDate = addWeeks(currentDate, 1);
-			} else if (view === 'day') {
-				newDate = addDays(currentDate, 1);
 			}
 		}
 
@@ -229,17 +212,18 @@ export default function CarsPage() {
 		setDetailDialogOpen(true);
 	};
 
-	const handleDayClick = (date: Date) => {
-		setSelectedDay(date);
-	};
-
 	const handleAddReservation = () => {
+		if (cars.length === 0) {
+			alert('Dodaj najpierw samochód');
+			return;
+		}
 		setEditingReservation(null);
+		setSelectedCarForReservation(cars[0].id); // Domyślnie pierwszy samochód
 		setReservationDialogOpen(true);
 	};
 
 	const handleEditReservation = (reservation: CarReservation) => {
-		setSelectedCar(reservation.carId);
+		setSelectedCarForReservation(reservation.carId);
 		setEditingReservation(reservation);
 		setReservationDialogOpen(true);
 	};
@@ -283,14 +267,22 @@ export default function CarsPage() {
 
 	const handleViewChange = (newView: View) => {
 		setView(newView);
-
-		// Gdy przełączamy na dzień/tydzień, ustaw currentDate na wybrany dzień
-		if (newView === 'day' || newView === 'week') {
-			setCurrentDate(selectedDay);
-		}
 	};
 
-	const canAddReservation = selectedCar && selectedCar !== 'all';
+	// Filtruj rezerwacje dla obecnego miesiąca
+	const currentMonthReservations = reservations
+		.filter((r) => {
+			const resDate = new Date(r.date);
+			return (
+				resDate.getMonth() === currentDate.getMonth() &&
+				resDate.getFullYear() === currentDate.getFullYear()
+			);
+		})
+		.sort((a, b) => {
+			const dateCompare = a.date.localeCompare(b.date);
+			if (dateCompare !== 0) return dateCompare;
+			return a.startTime.localeCompare(b.startTime);
+		});
 
 	if (loading) {
 		return (
@@ -338,40 +330,19 @@ export default function CarsPage() {
 
 			{activeTab === 'calendar' ? (
 				<div className="flex h-full flex-col">
-					{!canAddReservation && (
-						<div className="mb-4 rounded-lg bg-yellow-50 border border-yellow-200 p-3 text-sm text-yellow-800">
-							Wybierz konkretny samochód, aby dodać rezerwację
-						</div>
-					)}
-
-					{/* Custom toolbar - RESPONSIVE */}
+					{/* Custom toolbar */}
 					<div className="mb-4 rounded-lg border bg-white p-3 sm:p-4">
 						{/* Mobile */}
 						<div className="flex flex-col gap-3 md:hidden">
-							{/* Row 1: Dropdown + Button w linii z hamburgerem */}
 							<div className="flex items-center gap-2">
-								<Select
-									value={selectedCar}
-									onChange={(e) => setSelectedCar(e.target.value)}
-									className="flex-1 text-sm">
-									<option value="all">Wszystkie</option>
-									{cars
-										.filter((c) => c.active)
-										.map((car) => (
-											<option key={car.id} value={car.id}>
-												{car.name}
-											</option>
-										))}
-								</Select>
 								<Button
 									onClick={handleAddReservation}
-									disabled={!canAddReservation}
-									size="sm">
+									size="sm"
+									className="ml-auto">
 									<Plus className="h-4 w-4" />
 								</Button>
 							</div>
 
-							{/* Row 2: Navigation */}
 							<div className="flex items-center justify-between">
 								<div className="flex items-center gap-1">
 									<Button
@@ -393,35 +364,26 @@ export default function CarsPage() {
 										<ChevronRight className="h-4 w-4" />
 									</Button>
 								</div>
-								{view != 'day' && (
-									<span className="text-sm font-semibold">
-										{getDateRangeText()}
-									</span>
-								)}
+								<span className="text-sm font-semibold">
+									{format(currentDate, 'MMM yyyy', { locale: pl })}
+								</span>
 							</div>
 
-							{/* Row 3: View switcher */}
+							{/* Mobile - przełącznik kalendarz/lista */}
 							<div className="flex gap-2">
 								<Button
-									variant={view === 'month' ? 'default' : 'outline'}
+									variant={mobileView === 'calendar' ? 'default' : 'outline'}
 									size="sm"
 									className="flex-1"
-									onClick={() => handleViewChange('month')}>
-									Miesiąc
+									onClick={() => setMobileView('calendar')}>
+									Kalendarz
 								</Button>
 								<Button
-									variant={view === 'week' ? 'default' : 'outline'}
+									variant={mobileView === 'list' ? 'default' : 'outline'}
 									size="sm"
 									className="flex-1"
-									onClick={() => handleViewChange('week')}>
-									Tydzień
-								</Button>
-								<Button
-									variant={view === 'day' ? 'default' : 'outline'}
-									size="sm"
-									className="flex-1"
-									onClick={() => handleViewChange('day')}>
-									Dzień
+									onClick={() => setMobileView('list')}>
+									Lista
 								</Button>
 							</div>
 						</div>
@@ -429,23 +391,7 @@ export default function CarsPage() {
 						{/* Desktop */}
 						<div className="hidden md:flex md:items-center md:justify-between">
 							<div className="flex items-center gap-2">
-								<Select
-									value={selectedCar}
-									onChange={(e) => setSelectedCar(e.target.value)}
-									className="w-48">
-									<option value="all">Wszystkie samochody</option>
-									{cars
-										.filter((c) => c.active)
-										.map((car) => (
-											<option key={car.id} value={car.id}>
-												{car.name}
-											</option>
-										))}
-								</Select>
-								<Button
-									onClick={handleAddReservation}
-									disabled={!canAddReservation}
-									size="sm">
+								<Button onClick={handleAddReservation} size="sm">
 									<Plus className="mr-2 h-4 w-4" />
 									Dodaj rezerwację
 								</Button>
@@ -492,9 +438,9 @@ export default function CarsPage() {
 						</div>
 					</div>
 
-					{/* Calendar views */}
-					{view === 'month' ? (
-						<div className="grid flex-1 gap-4 md:grid-cols-[2fr,1fr]">
+					{/* Mobile - kalendarz LUB lista */}
+					<div className="md:hidden">
+						{mobileView === 'calendar' ? (
 							<div className="rounded-lg border bg-white p-3">
 								<Calendar
 									messages={messages}
@@ -507,12 +453,9 @@ export default function CarsPage() {
 									date={currentDate}
 									view="month"
 									onNavigate={(newDate) => setCurrentDate(newDate)}
-									onSelectSlot={(slotInfo) => handleDayClick(slotInfo.start)}
-									selectable
 									toolbar={false}
 									eventPropGetter={eventStyleGetter}
 									onSelectEvent={handleEventClick}
-									dayPropGetter={dayPropGetter}
 									formats={{
 										timeGutterFormat: 'HH:mm',
 										eventTimeRangeFormat: (
@@ -525,82 +468,36 @@ export default function CarsPage() {
 												'HH:mm',
 												culture
 											)} - ${localizer?.format(end, 'HH:mm', culture)}`,
-										agendaTimeRangeFormat: (
-											{ start, end },
-											culture,
-											localizer
-										) =>
-											`${localizer?.format(
-												start,
-												'HH:mm',
-												culture
-											)} - ${localizer?.format(end, 'HH:mm', culture)}`,
 									}}
 								/>
 							</div>
+						) : (
+							<ReservationsList
+								reservations={currentMonthReservations}
+								cars={cars}
+								studentNamesMap={studentNamesMap}
+								studentCityMap={studentCityMap}
+								onReservationClick={(reservation) => {
+									setSelectedReservation(reservation);
+									setDetailDialogOpen(true);
+								}}
+							/>
+						)}
+					</div>
 
-							<div className="hidden rounded-lg border bg-white p-3 md:block">
-								<div className="mb-2 text-center font-semibold">
-									{format(selectedDay, 'd MMMM yyyy', { locale: pl })}
-								</div>
-								<Calendar
-									localizer={localizer}
-									events={events.filter(
-										(e) =>
-											format(e.start, 'yyyy-MM-dd') ===
-											format(selectedDay, 'yyyy-MM-dd')
-									)}
-									startAccessor="start"
-									endAccessor="end"
-									style={{ height: 'calc(100vh - 450px)', minHeight: '500px' }}
-									date={selectedDay}
-									view="day"
-									onNavigate={() => {}}
-									toolbar={false}
-									step={30}
-									timeslots={2}
-									min={new Date(2024, 0, 1, 6, 0)}
-									max={new Date(2024, 0, 1, 22, 0)}
-									eventPropGetter={eventStyleGetter}
-									onSelectEvent={handleEventClick}
-									formats={{
-										timeGutterFormat: 'HH:mm',
-										eventTimeRangeFormat: (
-											{ start, end },
-											culture,
-											localizer
-										) =>
-											`${localizer?.format(
-												start,
-												'HH:mm',
-												culture
-											)} - ${localizer?.format(end, 'HH:mm', culture)}`,
-										agendaTimeRangeFormat: (
-											{ start, end },
-											culture,
-											localizer
-										) =>
-											`${localizer?.format(
-												start,
-												'HH:mm',
-												culture
-											)} - ${localizer?.format(end, 'HH:mm', culture)}`,
-									}}
-								/>
-							</div>
-						</div>
-					) : view === 'week' ? (
-						<div className="flex-1 rounded-lg border bg-white p-3">
+					{/* Desktop - kalendarz + lista */}
+					<div className="hidden md:grid md:grid-cols-[2fr,1fr] md:gap-4">
+						<div className="rounded-lg border bg-white p-3">
 							<Calendar
-								culture="pl"
 								messages={messages}
+								culture="pl"
 								localizer={localizer}
 								events={events}
 								startAccessor="start"
 								endAccessor="end"
 								style={{ height: 'calc(100vh - 400px)', minHeight: '500px' }}
 								date={currentDate}
-								view="week"
+								view={view}
 								onNavigate={(newDate) => setCurrentDate(newDate)}
 								toolbar={false}
 								step={30}
@@ -612,12 +509,6 @@ export default function CarsPage() {
 								formats={{
 									timeGutterFormat: 'HH:mm',
 									eventTimeRangeFormat: ({ start, end }, culture, localizer) =>
-										`${localizer?.format(
-											start,
-											'HH:mm',
-											culture
-										)} - ${localizer?.format(end, 'HH:mm', culture)}`,
-									agendaTimeRangeFormat: ({ start, end }, culture, localizer) =>
 										`${localizer?.format(
 											start,
 											'HH:mm',
@@ -634,49 +525,18 @@ export default function CarsPage() {
 								}}
 							/>
 						</div>
-					) : (
-						<div className="flex-1 rounded-lg border bg-white p-3">
-							<div className="mb-2 text-center font-semibold md:hidden">
-								{format(currentDate, 'd MMMM yyyy', { locale: pl })}
-							</div>
-							<Calendar
-								localizer={localizer}
-								events={events.filter(
-									(e) =>
-										format(e.start, 'yyyy-MM-dd') ===
-										format(currentDate, 'yyyy-MM-dd')
-								)}
-								startAccessor="start"
-								endAccessor="end"
-								style={{ height: 'calc(100vh - 400px)', minHeight: '500px' }}
-								date={currentDate}
-								view="day"
-								onNavigate={(newDate) => setCurrentDate(newDate)}
-								toolbar={false}
-								step={30}
-								timeslots={2}
-								min={new Date(2024, 0, 1, 6, 0)}
-								max={new Date(2024, 0, 1, 22, 0)}
-								eventPropGetter={eventStyleGetter}
-								onSelectEvent={handleEventClick}
-								formats={{
-									timeGutterFormat: 'HH:mm',
-									eventTimeRangeFormat: ({ start, end }, culture, localizer) =>
-										`${localizer?.format(
-											start,
-											'HH:mm',
-											culture
-										)} - ${localizer?.format(end, 'HH:mm', culture)}`,
-									agendaTimeRangeFormat: ({ start, end }, culture, localizer) =>
-										`${localizer?.format(
-											start,
-											'HH:mm',
-											culture
-										)} - ${localizer?.format(end, 'HH:mm', culture)}`,
-								}}
-							/>
-						</div>
-					)}
+
+						<ReservationsList
+							reservations={currentMonthReservations}
+							cars={cars}
+							studentNamesMap={studentNamesMap}
+							studentCityMap={studentCityMap}
+							onReservationClick={(reservation) => {
+								setSelectedReservation(reservation);
+								setDetailDialogOpen(true);
+							}}
+						/>
+					</div>
 				</div>
 			) : (
 				/* Fleet tab */
@@ -702,6 +562,11 @@ export default function CarsPage() {
 										<h3 className="text-lg font-semibold">
 											{car.name} ({car.year})
 										</h3>
+										{car.registrationNumber && (
+											<div className="text-sm text-gray-600 mt-1">
+												<strong>Rejestracja:</strong> {car.registrationNumber}
+											</div>
+										)}
 										<div className="mt-2 space-y-1 text-sm text-gray-600">
 											{car.inspectionDate && (
 												<div>
@@ -747,13 +612,13 @@ export default function CarsPage() {
 				onSuccess={loadInitialData}
 			/>
 
-			{canAddReservation && (
+			{selectedCarForReservation && (
 				<CarReservationDialog
 					open={reservationDialogOpen}
 					onOpenChange={setReservationDialogOpen}
-					carId={selectedCar}
+					carId={selectedCarForReservation}
 					reservation={editingReservation}
-					preselectedDate={selectedDay}
+					preselectedDate={currentDate}
 					onSuccess={loadReservations}
 				/>
 			)}
@@ -767,16 +632,78 @@ export default function CarsPage() {
 				onEdit={handleEditReservation}
 				onSuccess={loadReservations}
 			/>
+		</div>
+	);
+}
 
-			{(selectedCar !== 'all' || editingReservation) && (
-				<CarReservationDialog
-					open={reservationDialogOpen}
-					onOpenChange={setReservationDialogOpen}
-					carId={editingReservation ? editingReservation.carId : selectedCar}
-					reservation={editingReservation}
-					preselectedDate={selectedDay}
-					onSuccess={loadReservations}
-				/>
+// Komponent listy rezerwacji
+function ReservationsList({
+	reservations,
+	cars,
+	studentNamesMap,
+	studentCityMap,
+	onReservationClick,
+}: {
+	reservations: CarReservation[];
+	cars: Car[];
+	studentNamesMap: Map<string, string>;
+	studentCityMap: Map<string, string>;
+	onReservationClick: (reservation: CarReservation) => void;
+}) {
+	return (
+		<div className="rounded-lg border bg-white p-4">
+			<h3 className="font-semibold mb-3">Rezerwacje w tym miesiącu</h3>
+			{reservations.length === 0 ? (
+				<div className="text-sm text-gray-500 py-8 text-center">
+					Brak rezerwacji
+				</div>
+			) : (
+				<div className="space-y-2 max-h-[calc(100vh-400px)] overflow-y-auto">
+					{reservations.map((reservation) => {
+						const car = cars.find((c) => c.id === reservation.carId);
+						const carLabel = car?.registrationNumber || car?.name || 'Nieznany';
+						const studentNames = reservation.studentIds
+							.map((id) => studentNamesMap.get(id))
+							.filter(Boolean)
+							.join(', ');
+						const cities = [
+							...new Set(
+								reservation.studentIds
+									.map((id) => studentCityMap.get(id))
+									.filter(Boolean)
+							),
+						].join(', ');
+
+						return (
+							<div
+								key={reservation.id}
+								className="p-3 rounded-lg border cursor-pointer hover:bg-gray-50"
+								style={{ borderLeftColor: car?.color, borderLeftWidth: '4px' }}
+								onClick={() => onReservationClick(reservation)}>
+								<div className="text-sm font-medium">
+									{format(new Date(reservation.date), 'dd.MM.yyyy', {
+										locale: pl,
+									})}{' '}
+									• {reservation.startTime.slice(0, 5)} -{' '}
+									{reservation.endTime.slice(0, 5)}
+								</div>
+								<div className="text-sm text-gray-700 mt-1">
+									<strong>{carLabel}</strong>
+								</div>
+								{studentNames && (
+									<div className="text-xs text-gray-600 mt-1">
+										{studentNames}
+									</div>
+								)}
+								{cities && (
+									<div className="text-xs text-gray-500 mt-0.5">
+										Miasto: {cities}
+									</div>
+								)}
+							</div>
+						);
+					})}
+				</div>
 			)}
 		</div>
 	);
