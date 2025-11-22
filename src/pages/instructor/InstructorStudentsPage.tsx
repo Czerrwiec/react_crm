@@ -20,6 +20,14 @@ export default function InstructorStudentsPage() {
 	const [search, setSearch] = useState('');
 	const [loading, setLoading] = useState(true);
 	const [showInactive, setShowInactive] = useState(false);
+	const [showOnlyTheoryPassed, setShowOnlyTheoryPassed] = useState(false); // USUŃ TO
+	const [showOnlyCoursePaid, setShowOnlyCoursePaid] = useState(false);
+	const [showOnlyCourseUnpaid, setShowOnlyCourseUnpaid] = useState(false);
+	const [showOnlySupplementary, setShowOnlySupplementary] = useState(false); // NOWE
+	const [showOnlyCar, setShowOnlyCar] = useState(false); // NOWE
+	const [showOnlyInternalTheory, setShowOnlyInternalTheory] = useState(false); // NOWE
+	const [showOnlyInternalPractice, setShowOnlyInternalPractice] =
+		useState(false); // NOWE
 	const initialized = useRef(false);
 
 	useEffect(() => {
@@ -30,7 +38,19 @@ export default function InstructorStudentsPage() {
 
 	useEffect(() => {
 		applyFilters();
-	}, [search, students, showInactive]);
+	}, [
+		search,
+		students,
+		sortField,
+		sortDirection,
+		showInactive,
+		showOnlyCoursePaid,
+		showOnlyCourseUnpaid,
+		showOnlySupplementary,
+		showOnlyCar,
+		showOnlyInternalTheory,
+		showOnlyInternalPractice,
+	]);
 
 	const loadStudents = async () => {
 		if (!user) return;
@@ -53,10 +73,16 @@ export default function InstructorStudentsPage() {
 
 	const applyFilters = () => {
 		let filtered = students;
-
-		if (!showInactive) {
-			filtered = filtered.filter((s) => s.active);
-		}
+		if (!showInactive) filtered = filtered.filter((s) => s.active);
+		if (showOnlyCoursePaid) filtered = filtered.filter((s) => s.coursePaid);
+		if (showOnlyCourseUnpaid) filtered = filtered.filter((s) => !s.coursePaid);
+		if (showOnlySupplementary)
+			filtered = filtered.filter((s) => s.isSupplementaryCourse);
+		if (showOnlyCar) filtered = filtered.filter((s) => s.car);
+		if (showOnlyInternalTheory)
+			filtered = filtered.filter((s) => s.internalTheoryPassed);
+		if (showOnlyInternalPractice)
+			filtered = filtered.filter((s) => s.internalPracticePassed);
 
 		if (search) {
 			const query = search.toLowerCase();
@@ -147,11 +173,6 @@ export default function InstructorStudentsPage() {
 													)}
 													{/* Desktop only */}
 													<div className="hidden sm:flex sm:flex-wrap sm:gap-2">
-														{student.theoryPassed && (
-															<Badge variant="default" className="text-xs">
-																Teoria ✓
-															</Badge>
-														)}
 														{student.coursePaid && (
 															<Badge variant="default" className="text-xs">
 																Opłacony

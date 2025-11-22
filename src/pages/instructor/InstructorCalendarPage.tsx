@@ -416,6 +416,7 @@ export default function InstructorCalendarPage() {
 							onSelectSlot={(slotInfo) => handleDayClick(slotInfo.start)}
 							selectable
 							toolbar={false}
+							dayLayoutAlgorithm="no-overlap"
 							eventPropGetter={eventStyleGetter}
 							onSelectEvent={handleEventClick}
 							dayPropGetter={dayPropGetter}
@@ -461,6 +462,7 @@ export default function InstructorCalendarPage() {
 							timeslots={2}
 							min={new Date(2024, 0, 1, 6, 0)}
 							max={new Date(2024, 0, 1, 22, 0)}
+							dayLayoutAlgorithm="no-overlap"
 							eventPropGetter={eventStyleGetter}
 							onSelectEvent={handleEventClick}
 							messages={messages}
@@ -499,6 +501,7 @@ export default function InstructorCalendarPage() {
 						timeslots={2}
 						min={new Date(2024, 0, 1, 6, 0)}
 						max={new Date(2024, 0, 1, 22, 0)}
+						dayLayoutAlgorithm="no-overlap"
 						eventPropGetter={eventStyleGetter}
 						onSelectEvent={handleEventClick}
 						messages={messages}
@@ -551,6 +554,7 @@ export default function InstructorCalendarPage() {
 						timeslots={2}
 						min={new Date(2024, 0, 1, 6, 0)}
 						max={new Date(2024, 0, 1, 22, 0)}
+						dayLayoutAlgorithm="no-overlap"
 						eventPropGetter={eventStyleGetter}
 						onSelectEvent={handleEventClick}
 						messages={messages}

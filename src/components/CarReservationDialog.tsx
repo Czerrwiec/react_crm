@@ -10,25 +10,26 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Select } from '@/components/ui/select';
 import { carService } from '@/services/car.service';
 import { studentService } from '@/services/student.service';
-import type { CarReservation, Student } from '@/types';
+import type { CarReservation, Student, Car } from '@/types';
 import { format } from 'date-fns';
-import { Select } from '@/components/ui/select';
 
 interface CarReservationDialogProps {
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
-	carId: string;
+	carId?: string; // opcjonalne teraz
 	reservation?: CarReservation | null;
 	preselectedDate?: Date;
 	onSuccess: () => void;
 }
 
 const initialFormData = {
+	carId: '',
 	date: format(new Date(), 'yyyy-MM-dd'),
 	startTime: '10:00',
-	endTime: '12:00',
+	duration: 2,
 	studentIds: [] as string[],
 	notes: '',
 };
@@ -43,24 +44,33 @@ export default function CarReservationDialog({
 }: CarReservationDialogProps) {
 	const [loading, setLoading] = useState(false);
 	const [students, setStudents] = useState<Student[]>([]);
+	const [cars, setCars] = useState<Car[]>([]);
 	const [formData, setFormData] = useState(initialFormData);
 	const [conflictWarning, setConflictWarning] = useState(false);
 
 	useEffect(() => {
 		if (open) {
-			loadStudents();
+			loadData();
 
 			if (reservation) {
+				// Oblicz duration z istniejącej rezerwacji
+				const [startH, startM] = reservation.startTime.split(':').map(Number);
+				const [endH, endM] = reservation.endTime.split(':').map(Number);
+				const durationMinutes = endH * 60 + endM - (startH * 60 + startM);
+				const durationHours = durationMinutes / 60;
+
 				setFormData({
+					carId: reservation.carId,
 					date: reservation.date,
 					startTime: reservation.startTime,
-					endTime: reservation.endTime,
+					duration: durationHours,
 					studentIds: reservation.studentIds,
 					notes: reservation.notes || '',
 				});
 			} else {
 				setFormData({
 					...initialFormData,
+					carId: carId || '',
 					date: preselectedDate
 						? format(preselectedDate, 'yyyy-MM-dd')
 						: format(new Date(), 'yyyy-MM-dd'),
@@ -73,21 +83,42 @@ export default function CarReservationDialog({
 	}, [open, reservation, preselectedDate, carId]);
 
 	useEffect(() => {
-		if (open && formData.date && formData.startTime && formData.endTime) {
+		if (open && formData.date && formData.startTime && formData.duration) {
 			checkConflict();
 		}
-	}, [formData.date, formData.startTime, formData.endTime, open]);
+	}, [
+		formData.date,
+		formData.startTime,
+		formData.duration,
+		formData.carId,
+		open,
+	]);
 
-	const loadStudents = async () => {
+	const loadData = async () => {
 		try {
-			const data = await studentService.getActiveStudents();
-			setStudents(data);
+			const [studentsData, carsData] = await Promise.all([
+				studentService.getActiveStudents(),
+				carService.getCars(),
+			]);
+			setStudents(studentsData);
+			setCars(carsData);
 		} catch (error) {
-			console.error('Error loading students:', error);
+			console.error('Error loading data:', error);
 		}
 	};
 
+	const calculateEndTime = () => {
+		const [h, m] = formData.startTime.split(':').map(Number);
+		const startMinutes = h * 60 + m;
+		const endMinutes = startMinutes + formData.duration * 60;
+		const endH = Math.floor(endMinutes / 60);
+		const endM = endMinutes % 60;
+		return `${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}`;
+	};
+
 	const checkConflict = async () => {
+		if (!formData.carId) return;
+
 		try {
 			const selectedDate = new Date(formData.date);
 			const prevMonth = new Date(
@@ -114,14 +145,16 @@ export default function CarReservationDialog({
 				...nextReservations,
 			];
 
+			const endTime = calculateEndTime();
+
 			const hasConflict = allReservations.some((r) => {
 				if (reservation && r.id === reservation.id) return false;
-				if (r.carId !== carId) return false;
+				if (r.carId !== formData.carId) return false;
 				if (r.date !== formData.date) return false;
 
 				return timeRangesOverlap(
 					formData.startTime,
-					formData.endTime,
+					endTime,
 					r.startTime,
 					r.endTime
 				);
@@ -152,27 +185,16 @@ export default function CarReservationDialog({
 		return h * 60 + m;
 	};
 
-	const calculateDuration = () => {
-		const [startH, startM] = formData.startTime.split(':').map(Number);
-		const [endH, endM] = formData.endTime.split(':').map(Number);
-		const startMinutes = startH * 60 + startM;
-		const endMinutes = endH * 60 + endM;
-		const durationMinutes = endMinutes - startMinutes;
-		return Math.round((durationMinutes / 60) * 4) / 4;
-	};
-
-	const formatDuration = (hours: number) => {
-		const h = Math.floor(hours);
-		const m = Math.round((hours - h) * 60);
-		return m > 0 ? `${h}h ${m}m` : `${h}h`;
-	};
-
 	const handleSubmit = async (e: FormEvent) => {
 		e.preventDefault();
 
-		const duration = calculateDuration();
-		if (duration <= 0) {
-			alert('Godzina zakończenia musi być późniejsza niż rozpoczęcia');
+		if (!formData.carId) {
+			alert('Wybierz samochód');
+			return;
+		}
+
+		if (formData.duration <= 0) {
+			alert('Czas trwania musi być większy od 0');
 			return;
 		}
 
@@ -186,12 +208,14 @@ export default function CarReservationDialog({
 		setLoading(true);
 
 		try {
+			const endTime = calculateEndTime();
+
 			const reservationData = {
-				carId,
+				carId: formData.carId,
 				studentIds: formData.studentIds,
 				date: formData.date,
 				startTime: formData.startTime,
-				endTime: formData.endTime,
+				endTime: endTime,
 				notes: formData.notes || null,
 				createdBy: null,
 			};
@@ -228,20 +252,27 @@ export default function CarReservationDialog({
 					<DialogTitle>
 						{reservation ? 'Edytuj rezerwację' : 'Dodaj rezerwację'}
 					</DialogTitle>
+				</DialogHeader>
+
+				<form onSubmit={handleSubmit} className="space-y-4">
 					<div>
 						<Label htmlFor="carSelect">Samochód *</Label>
 						<Select
 							id="carSelect"
-							value={carId}
-							disabled // Nie można zmieniać po otwarciu
-							onChange={() => {}} // tylko do wyświetlenia
-						>
-							{/* Pobierz listę aut i wyświetl */}
+							required
+							value={formData.carId}
+							onChange={(e) =>
+								setFormData({ ...formData, carId: e.target.value })
+							}>
+							<option value="">Wybierz samochód</option>
+							{cars.map((car) => (
+								<option key={car.id} value={car.id}>
+									{car.registrationNumber || car.name} ({car.year})
+								</option>
+							))}
 						</Select>
 					</div>
-				</DialogHeader>
 
-				<form onSubmit={handleSubmit} className="space-y-4">
 					<div>
 						<Label htmlFor="date">Data *</Label>
 						<Input
@@ -257,7 +288,7 @@ export default function CarReservationDialog({
 
 					<div className="grid grid-cols-2 gap-4">
 						<div>
-							<Label htmlFor="startTime">Godzina rozpoczęcia *</Label>
+							<Label htmlFor="startTime">Godzina *</Label>
 							<Input
 								id="startTime"
 								type="time"
@@ -269,14 +300,19 @@ export default function CarReservationDialog({
 							/>
 						</div>
 						<div>
-							<Label htmlFor="endTime">Godzina zakończenia *</Label>
+							<Label htmlFor="duration">Czas trwania (godz.) *</Label>
 							<Input
-								id="endTime"
-								type="time"
+								id="duration"
+								type="number"
+								step="0.5"
+								min="0.5"
 								required
-								value={formData.endTime}
+								value={formData.duration}
 								onChange={(e) =>
-									setFormData({ ...formData, endTime: e.target.value })
+									setFormData({
+										...formData,
+										duration: parseFloat(e.target.value) || 1,
+									})
 								}
 							/>
 						</div>
@@ -289,7 +325,10 @@ export default function CarReservationDialog({
 					)}
 
 					<div className="text-center text-sm text-gray-600">
-						Czas trwania: <strong>{formatDuration(calculateDuration())}</strong>
+						Rezerwacja:{' '}
+						<strong>
+							{formData.startTime} - {calculateEndTime()}
+						</strong>
 					</div>
 
 					<div>

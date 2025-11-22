@@ -11,7 +11,7 @@ import {
 	addWeeks,
 	subWeeks,
 	addDays,
-	subDays
+	subDays,
 } from 'date-fns';
 import { pl } from 'date-fns/locale';
 import { lessonService } from '@/services/lesson.service';
@@ -26,6 +26,33 @@ import type { Lesson, User, Student } from '@/types';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import './calendar.css';
 // import { useAuth } from '@/hooks/useAuth';
+
+const EventComponent = ({ event }: any) => {
+	const lines = event.resource?.displayLines || [event.title];
+
+	return (
+		<div
+			style={{
+				height: '100%',
+				overflow: 'hidden',
+				fontSize: '12px',
+				lineHeight: '1.3',
+			}}>
+			{lines.map((line: string, idx: number) => (
+				<div
+					key={idx}
+					style={{
+						fontWeight: idx === 0 ? 'bold' : 'normal',
+						fontSize: idx === 0 ? '12px' : '11px',
+						whiteSpace: 'normal', // WAŻNE - pozwala na zawijanie
+						wordBreak: 'break-word',
+					}}>
+					{line}
+				</div>
+			))}
+		</div>
+	);
+};
 
 const locales = { pl };
 
@@ -59,6 +86,9 @@ export default function CalendarPage() {
 	const [highlightedLessonId, setHighlightedLessonId] = useState<string | null>(
 		null
 	);
+	const [instructorsMap, setInstructorsMap] = useState<Map<string, string>>(
+		new Map()
+	);
 
 	// Dialogs
 	const [lessonDialogOpen, setLessonDialogOpen] = useState(false);
@@ -71,10 +101,8 @@ export default function CalendarPage() {
 	}, []);
 
 	useEffect(() => {
-		if (instructors.length > 0) {
-			loadLessons();
-		}
-	}, [selectedInstructor, currentDate]);
+		loadLessons(); // Wywołuj zawsze, nie tylko gdy instructors.length > 0
+	}, [selectedInstructor, currentDate, instructorsMap.size]); 
 
 	// Check for lessonId from navigation state
 	useEffect(() => {
@@ -104,9 +132,11 @@ export default function CalendarPage() {
 			setInstructors(instructorsData);
 			setStudents(studentsData);
 
-			if (instructorsData.length > 0) {
-				setSelectedInstructor(instructorsData[0].id);
-			}
+			// Stwórz mapę instruktorów
+			const map = new Map(
+				instructorsData.map((i) => [i.id, `${i.firstName} ${i.lastName}`])
+			);
+			setInstructorsMap(map);
 		} catch (error) {
 			console.error('Error loading data:', error);
 		} finally {
@@ -163,38 +193,64 @@ export default function CalendarPage() {
 		students.map((s) => [s.id, `${s.firstName} ${s.lastName}`])
 	);
 
-	const events: CalendarEvent[] = lessons.map((lesson) => {
-		const [startHour, startMinute] = lesson.startTime.split(':').map(Number);
-		const [endHour, endMinute] = lesson.endTime.split(':').map(Number);
+	const generateEvents = (forView: View) => {
+		
+		if (instructorsMap.size === 0 || lessons.length === 0) return [];
 
-		const date = new Date(lesson.date);
-		const start = new Date(
-			date.getFullYear(),
-			date.getMonth(),
-			date.getDate(),
-			startHour,
-			startMinute
-		);
-		const end = new Date(
-			date.getFullYear(),
-			date.getMonth(),
-			date.getDate(),
-			endHour,
-			endMinute
-		);
+		return lessons.map((lesson) => {
+			const [startHour, startMinute] = lesson.startTime.split(':').map(Number);
+			const [endHour, endMinute] = lesson.endTime.split(':').map(Number);
 
-		const studentNames = lesson.studentIds
-			.map((id) => studentNamesMap.get(id) || 'Nieznany')
-			.join(', ');
+			const date = new Date(lesson.date);
+			const start = new Date(
+				date.getFullYear(),
+				date.getMonth(),
+				date.getDate(),
+				startHour,
+				startMinute
+			);
+			const end = new Date(
+				date.getFullYear(),
+				date.getMonth(),
+				date.getDate(),
+				endHour,
+				endMinute
+			);
 
-		return {
-			id: lesson.id,
-			title: studentNames || 'Bez kursanta',
-			start,
-			end,
-			resource: lesson,
-		};
-	});
+			const studentNames = lesson.studentIds
+				.map((id) => studentNamesMap.get(id) || 'Nieznany')
+				.join(', ');
+
+			// Format duration
+			const h = Math.floor(lesson.duration);
+			const m = Math.round((lesson.duration - h) * 60);
+			const durationText = m > 0 ? `${h}h ${m}m` : `${h}h`;
+
+			// Instruktor name
+			const instructorName =
+				instructorsMap.get(lesson.instructorId) || 'Nieznany';
+
+			// Linie do wyświetlenia w week/day view
+			const displayLines =
+				forView === 'week' || forView === 'day'
+					? [
+							`${durationText} - ${instructorName}`,
+							`Kursanci: ${studentNames || 'Brak'}`,
+					  ]
+					: [studentNames || 'Bez kursanta'];
+
+			return {
+				id: lesson.id,
+				title: studentNames || 'Bez kursanta',
+				start,
+				end,
+				resource: {
+					...lesson,
+					displayLines,
+				},
+			};
+		});
+	};
 
 	const eventStyleGetter = (event: CalendarEvent) => {
 		const lesson = event.resource;
@@ -316,6 +372,18 @@ export default function CalendarPage() {
 		}
 	};
 
+	const messages = {
+		week: 'Tydzień',
+		work_week: 'Tydzień pracy',
+		day: 'Dzień',
+		month: 'Miesiąc',
+		previous: 'Poprzedni',
+		next: 'Następny',
+		today: 'Dziś',
+		agenda: 'Agenda',
+		showMore: (total: number) => `+${total} więcej`,
+	};
+
 	return (
 		<div className="flex h-full flex-col p-4 sm:p-8 pt-16">
 			{!canAddLesson && (
@@ -387,13 +455,13 @@ export default function CalendarPage() {
 							onClick={() => handleViewChange('month')}>
 							Miesiąc
 						</Button>
-						<Button
+						{/* <Button
 							variant={view === 'week' ? 'default' : 'outline'}
 							size="sm"
 							className="flex-1"
 							onClick={() => handleViewChange('week')}>
 							Tydzień
-						</Button>
+						</Button> */}
 						<Button
 							variant={view === 'day' ? 'default' : 'outline'}
 							size="sm"
@@ -475,10 +543,11 @@ export default function CalendarPage() {
 					<div className="rounded-lg border bg-white p-3">
 						<Calendar
 							localizer={localizer}
-							events={events}
+							events={generateEvents('month')}
+							messages={messages}
 							startAccessor="start"
 							endAccessor="end"
-							style={{ height: 'calc(100vh - 450px)', minHeight: '500px' }}
+							style={{ height: 'calc(100vh - 450px)', minHeight: '700px' }}
 							date={currentDate}
 							view="month"
 							onNavigate={(newDate) => setCurrentDate(newDate)}
@@ -512,8 +581,10 @@ export default function CalendarPage() {
 							{format(selectedDay, 'd MMMM yyyy', { locale: pl })}
 						</div>
 						<Calendar
+							components={{ event: EventComponent }}
 							localizer={localizer}
-							events={events.filter(
+							events={generateEvents('day').filter(
+								// ZMIANA
 								(e) =>
 									format(e.start, 'yyyy-MM-dd') ===
 									format(selectedDay, 'yyyy-MM-dd')
@@ -529,6 +600,7 @@ export default function CalendarPage() {
 							timeslots={2}
 							min={new Date(2024, 0, 1, 6, 0)}
 							max={new Date(2024, 0, 1, 22, 0)}
+							dayLayoutAlgorithm="no-overlap"
 							eventPropGetter={eventStyleGetter}
 							onSelectEvent={handleEventClick}
 							formats={{
@@ -552,8 +624,11 @@ export default function CalendarPage() {
 			) : view === 'week' ? (
 				<div className="flex-1 rounded-lg border bg-white p-3">
 					<Calendar
+						components={{
+							event: EventComponent,
+						}}
 						localizer={localizer}
-						events={events}
+						events={generateEvents('week')}
 						startAccessor="start"
 						endAccessor="end"
 						style={{ height: 'calc(100vh - 350px)', minHeight: '500px' }}
@@ -565,6 +640,7 @@ export default function CalendarPage() {
 						timeslots={2}
 						min={new Date(2024, 0, 1, 6, 0)}
 						max={new Date(2024, 0, 1, 22, 0)}
+						dayLayoutAlgorithm="no-overlap"
 						eventPropGetter={eventStyleGetter}
 						onSelectEvent={handleEventClick}
 						formats={{
@@ -591,8 +667,10 @@ export default function CalendarPage() {
 						{format(currentDate, 'd MMMM yyyy', { locale: pl })}
 					</div>
 					<Calendar
+						components={{ event: EventComponent }} // DODAJ
 						localizer={localizer}
-						events={events.filter(
+						events={generateEvents('day').filter(
+							// ZMIANA
 							(e) =>
 								format(e.start, 'yyyy-MM-dd') ===
 								format(currentDate, 'yyyy-MM-dd')
@@ -608,6 +686,7 @@ export default function CalendarPage() {
 						timeslots={2}
 						min={new Date(2024, 0, 1, 6, 0)}
 						max={new Date(2024, 0, 1, 22, 0)}
+						dayLayoutAlgorithm="no-overlap"
 						eventPropGetter={eventStyleGetter}
 						onSelectEvent={handleEventClick}
 						formats={{

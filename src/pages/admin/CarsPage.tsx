@@ -22,6 +22,7 @@ import type { Car, CarReservation, Student } from '@/types';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import '../admin/calendar.css';
 
+
 const locales = { pl };
 const localizer = dateFnsLocalizer({
 	format,
@@ -48,6 +49,7 @@ export default function CarsPage() {
 	const [view, setView] = useState<View>('month');
 	const [activeTab, setActiveTab] = useState<'calendar' | 'fleet'>('calendar');
 	const [mobileView, setMobileView] = useState<'calendar' | 'list'>('calendar'); // NOWE
+	const [selectedDay, setSelectedDay] = useState(new Date());
 
 	// Dialogs
 	const [carDialogOpen, setCarDialogOpen] = useState(false);
@@ -69,7 +71,7 @@ export default function CarsPage() {
 		if (cars.length > 0) {
 			loadReservations();
 		}
-	}, [currentDate]);
+	}, [currentDate, cars.length]);
 
 	const loadInitialData = async () => {
 		try {
@@ -85,6 +87,16 @@ export default function CarsPage() {
 			setLoading(false);
 		}
 	};
+
+	const dayPropGetter = (date: Date) => {
+		const isSelectedDay =
+			format(date, 'yyyy-MM-dd') === format(selectedDay, 'yyyy-MM-dd');
+
+		return {
+			className: isSelectedDay ? 'rbc-selected-day' : '',
+		};
+	};
+
 
 	const loadReservations = async () => {
 		try {
@@ -183,6 +195,10 @@ export default function CarsPage() {
 				display: 'block',
 			},
 		};
+	};
+
+	const handleDayClick = (date: Date) => {
+		setSelectedDay(date);
 	};
 
 	const handleNavigate = (direction: 'prev' | 'next' | 'today') => {
@@ -301,7 +317,7 @@ export default function CarsPage() {
 		next: 'Następny',
 		today: 'Dziś',
 		agenda: 'Agenda',
-		showMore: (total: number) => `+${total} więcej`,
+		showMore: (total: number) => `+${total}`,
 	};
 
 	return (
@@ -334,16 +350,8 @@ export default function CarsPage() {
 					<div className="mb-4 rounded-lg border bg-white p-3 sm:p-4">
 						{/* Mobile */}
 						<div className="flex flex-col gap-3 md:hidden">
-							<div className="flex items-center gap-2">
-								<Button
-									onClick={handleAddReservation}
-									size="sm"
-									className="ml-auto">
-									<Plus className="h-4 w-4" />
-								</Button>
-							</div>
-
-							<div className="flex items-center justify-between">
+							{/* Row 1: Navigation + Data + Button */}
+							<div className="flex items-center justify-between gap-2">
 								<div className="flex items-center gap-1">
 									<Button
 										variant="outline"
@@ -364,9 +372,14 @@ export default function CarsPage() {
 										<ChevronRight className="h-4 w-4" />
 									</Button>
 								</div>
+
 								<span className="text-sm font-semibold">
 									{format(currentDate, 'MMM yyyy', { locale: pl })}
 								</span>
+
+								<Button onClick={handleAddReservation} size="sm">
+									<Plus className="h-4 w-4" />
+								</Button>
 							</div>
 
 							{/* Mobile - przełącznik kalendarz/lista */}
@@ -489,23 +502,27 @@ export default function CarsPage() {
 					<div className="hidden md:grid md:grid-cols-[2fr,1fr] md:gap-4">
 						<div className="rounded-lg border bg-white p-3">
 							<Calendar
-								messages={messages}
-								culture="pl"
 								localizer={localizer}
 								events={events}
 								startAccessor="start"
 								endAccessor="end"
-								style={{ height: 'calc(100vh - 400px)', minHeight: '500px' }}
+								style={{ height: 'calc(100vh - 450px)', minHeight: '500px' }}
 								date={currentDate}
-								view={view}
+								view={view} // ZMIANA: było view="month", teraz view={view}
 								onNavigate={(newDate) => setCurrentDate(newDate)}
+								onSelectSlot={(slotInfo) => handleDayClick(slotInfo.start)}
+								selectable
 								toolbar={false}
-								step={30}
-								timeslots={2}
-								min={new Date(2024, 0, 1, 6, 0)}
-								max={new Date(2024, 0, 1, 22, 0)}
+								step={30} // potrzebne dla week view
+								timeslots={2} // potrzebne dla week view
+								min={new Date(2024, 0, 1, 6, 0)} // start o 6:00
+								max={new Date(2024, 0, 1, 18, 0)} // ZMIANA: koniec o 18:00 (było 22:00)
+								dayLayoutAlgorithm="no-overlap"
 								eventPropGetter={eventStyleGetter}
 								onSelectEvent={handleEventClick}
+								dayPropGetter={view === 'month' ? dayPropGetter : undefined} // tylko dla month
+								messages={messages}
+								culture="pl"
 								formats={{
 									timeGutterFormat: 'HH:mm',
 									eventTimeRangeFormat: ({ start, end }, culture, localizer) =>
@@ -514,9 +531,16 @@ export default function CarsPage() {
 											'HH:mm',
 											culture
 										)} - ${localizer?.format(end, 'HH:mm', culture)}`,
-									weekdayFormat: (date, culture, localizer) =>
-										localizer?.format(date, 'EEE', culture) || '',
-									dayHeaderFormat: (date, culture, localizer) =>
+									weekdayFormat: (
+										date,
+										culture,
+										localizer // dla week view
+									) => localizer?.format(date, 'EEE', culture) || '',
+									dayHeaderFormat: (
+										date,
+										culture,
+										localizer // dla week view
+									) =>
 										`${localizer?.format(
 											date,
 											'EEE',
@@ -616,9 +640,8 @@ export default function CarsPage() {
 				<CarReservationDialog
 					open={reservationDialogOpen}
 					onOpenChange={setReservationDialogOpen}
-					carId={selectedCarForReservation}
 					reservation={editingReservation}
-					preselectedDate={currentDate}
+					preselectedDate={selectedDay}
 					onSuccess={loadReservations}
 				/>
 			)}

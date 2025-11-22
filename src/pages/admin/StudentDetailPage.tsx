@@ -5,7 +5,7 @@ import { format, parse, startOfWeek, getDay } from 'date-fns';
 import { pl } from 'date-fns/locale';
 import { studentService } from '@/services/student.service';
 import { paymentService } from '@/services/payment.service';
-import { lessonService } from '@/services/lesson.service';
+// import { lessonService } from '@/services/lesson.service';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -103,35 +103,54 @@ export default function StudentDetailPage() {
 			setPayments(paymentsWithCreators);
 
 			if (studentData.instructorIds.length > 0) {
-				const allLessons = [];
+				const prevMonth = new Date();
+				prevMonth.setMonth(prevMonth.getMonth() - 1);
+				const nextMonth = new Date();
+				nextMonth.setMonth(nextMonth.getMonth() + 1);
 
-				// Pobierz po 3 miesiące dla każdego instruktora
-				for (const instructorId of studentData.instructorIds) {
-					const prevMonth = new Date();
-					prevMonth.setMonth(prevMonth.getMonth() - 1);
-					const nextMonth = new Date();
-					nextMonth.setMonth(nextMonth.getMonth() + 1);
+				const startDate = new Date(
+					prevMonth.getFullYear(),
+					prevMonth.getMonth(),
+					1
+				)
+					.toISOString()
+					.split('T')[0];
 
-					const [prev, current, next] = await Promise.all([
-						lessonService.getLessonsByInstructor(instructorId, prevMonth),
-						lessonService.getLessonsByInstructor(instructorId, new Date()),
-						lessonService.getLessonsByInstructor(instructorId, nextMonth),
-					]);
+				const endDate = new Date(
+					nextMonth.getFullYear(),
+					nextMonth.getMonth() + 1,
+					0
+				)
+					.toISOString()
+					.split('T')[0];
 
-					allLessons.push(...prev, ...current, ...next);
-				}
+				// Pobierz WSZYSTKIE lekcje dla tego studenta (omijając RLS filtr po instructorze)
+				const { data: lessonsData, error } = await supabase
+					.from('lessons')
+					.select('*')
+					.contains('student_ids', [studentId])
+					.gte('date', startDate)
+					.lte('date', endDate)
+					.order('date')
+					.order('start_time');
 
-				// Filtruj tylko lekcje tego studenta
-				const studentLessons = allLessons.filter((l) =>
-					l.studentIds.includes(studentId)
-				);
+				if (error) throw error;
 
-				// Usuń duplikaty
-				const uniqueLessons = Array.from(
-					new Map(studentLessons.map((lesson) => [lesson.id, lesson])).values()
-				);
+				const mappedLessons = lessonsData.map((lesson: any) => ({
+					id: lesson.id,
+					studentIds: lesson.student_ids || [],
+					instructorId: lesson.instructor_id,
+					date: lesson.date,
+					startTime: lesson.start_time,
+					endTime: lesson.end_time,
+					duration: lesson.duration,
+					status: lesson.status,
+					notes: lesson.notes,
+					createdAt: lesson.created_at,
+					updatedAt: lesson.updated_at,
+				}));
 
-				setLessons(uniqueLessons);
+				setLessons(mappedLessons);
 			}
 
 			if (studentData.car) {
@@ -234,7 +253,6 @@ export default function StudentDetailPage() {
 							{student.firstName} {student.lastName}
 						</h1>
 						<div className="mt-2 flex flex-wrap gap-2">
-							
 							{student.coursePaid && (
 								<Badge className="text-xs">Opłacony</Badge>
 							)}
@@ -350,8 +368,6 @@ export default function StudentDetailPage() {
 										{formatHours(student.totalHoursDriven)}
 									</div>
 
-									{/* USUŃ sekcję "Teoria" całkowicie */}
-
 									<div>
 										<strong>Profil:</strong>{' '}
 										{student.profileUpdated
@@ -376,10 +392,12 @@ export default function StudentDetailPage() {
 										</span>
 									</div>
 
-									<div>
-										<strong>Kurs uzupełniający:</strong>{' '}
-										{student.isSupplementaryCourse ? 'Tak' : 'Nie'}
-									</div>
+									{/* ZMIANA: wyświetlaj tylko jeśli true */}
+									{student.isSupplementaryCourse && (
+										<div>
+											<strong>Kurs uzupełniający</strong>
+										</div>
+									)}
 
 									<div>
 										<strong>Auto na egzamin:</strong>{' '}

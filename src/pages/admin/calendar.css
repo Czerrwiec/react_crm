@@ -55,7 +55,7 @@
 }
 
 .rbc-label {
-	font-size: 11px;
+	font-size: 12px;
 	padding: 0 5px;
 }
 
@@ -144,4 +144,42 @@
 	display: block;
 	font-size: 14px;
 	font-weight: 500;
+}
+
+/* Kompaktowy tekst w widoku tygodniowym */
+.rbc-time-content .rbc-event-content {
+	font-size: 11px;
+	line-height: 1.2;
+	padding: 2px 4px;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+/* Widok miesięczny - normalny tekst */
+.rbc-month-view .rbc-event-content {
+	font-size: 12px;
+}
+
+/* Krótszy tekst "show more" */
+.rbc-show-more {
+	font-size: 11px;
+	padding: 2px 4px;
+	margin: 2px;
+	background-color: rgba(0, 0, 0, 0.05);
+	border-radius: 3px;
+}
+
+@media (min-width: 768px) {
+	.rbc-time-content .rbc-event-content {
+		font-size: 13px; /* ZMIANA: było 11px */
+		line-height: 1.3;
+		padding: 4px 6px;
+	}
+
+	.rbc-event-label {
+		font-size: 13px !important; /* To jest godzina w kafelku */
+		font-weight: 500;
+		display: block !important; /* pokaż godzinę */
+	}
 }

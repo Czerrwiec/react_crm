@@ -10,8 +10,6 @@ import { format } from 'date-fns';
 import { pl } from 'date-fns/locale';
 import type { StudentWithInstructors } from '@/types';
 
-
-
 type SortField = 'lastName' | 'firstName' | 'courseStart';
 type SortDirection = 'asc' | 'desc';
 
@@ -27,11 +25,16 @@ export default function StudentsPage() {
 
 	const [sortField, setSortField] = useState<SortField>('lastName');
 	const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
+
 	const [showInactive, setShowInactive] = useState(false);
-	const [showOnlyTheoryPassed, setShowOnlyTheoryPassed] = useState(false);
 	const [showOnlyCoursePaid, setShowOnlyCoursePaid] = useState(false);
 	const [showOnlyCourseUnpaid, setShowOnlyCourseUnpaid] = useState(false);
-	
+	const [showOnlySupplementary, setShowOnlySupplementary] = useState(false);
+	const [showOnlyCar, setShowOnlyCar] = useState(false);
+	const [showOnlyInternalTheory, setShowOnlyInternalTheory] = useState(false);
+	const [showOnlyInternalPractice, setShowOnlyInternalPractice] =
+		useState(false);
+	const [showOnlyProfileUpdated, setShowOnlyProfileUpdated] = useState(false);
 
 	const [sortDropdownOpen, setSortDropdownOpen] = useState(false);
 	const [filterDropdownOpen, setFilterDropdownOpen] = useState(false);
@@ -55,9 +58,13 @@ export default function StudentsPage() {
 		sortField,
 		sortDirection,
 		showInactive,
-		showOnlyTheoryPassed,
 		showOnlyCoursePaid,
 		showOnlyCourseUnpaid,
+		showOnlySupplementary,
+		showOnlyCar,
+		showOnlyInternalTheory,
+		showOnlyInternalPractice,
+		showOnlyProfileUpdated,
 	]);
 
 	const loadStudents = async () => {
@@ -123,19 +130,27 @@ export default function StudentsPage() {
 		let filtered = students;
 
 		if (!showInactive) filtered = filtered.filter((s) => s.active);
-		if (showOnlyTheoryPassed) filtered = filtered.filter((s) => s.theoryPassed);
 		if (showOnlyCoursePaid) filtered = filtered.filter((s) => s.coursePaid);
 		if (showOnlyCourseUnpaid) filtered = filtered.filter((s) => !s.coursePaid);
+		if (showOnlySupplementary)
+			filtered = filtered.filter((s) => s.isSupplementaryCourse);
+		if (showOnlyCar) filtered = filtered.filter((s) => s.car);
+		if (showOnlyInternalTheory)
+			filtered = filtered.filter((s) => s.internalTheoryPassed);
+		if (showOnlyInternalPractice)
+			filtered = filtered.filter((s) => s.internalPracticePassed);
+		if (showOnlyProfileUpdated)
+			filtered = filtered.filter((s) => s.profileUpdated);
 
-		if (search) {
-			const query = search.toLowerCase();
-			filtered = filtered.filter(
-				(s) =>
-					`${s.firstName} ${s.lastName}`.toLowerCase().includes(query) ||
-					s.phone?.includes(search) ||
-					s.pkkNumber?.toLowerCase().includes(query)
-			);
-		}
+		  if (search) {
+				const query = search.toLowerCase();
+				filtered = filtered.filter(
+					(s) =>
+						`${s.firstName} ${s.lastName}`.toLowerCase().includes(query) ||
+						s.phone?.includes(search) ||
+						s.pkkNumber?.toLowerCase().includes(query)
+				);
+			}
 
 		filtered.sort((a, b) => {
 			let comparison = 0;
@@ -189,9 +204,13 @@ export default function StudentsPage() {
 
 	const activeFiltersCount =
 		(showInactive ? 1 : 0) +
-		(showOnlyTheoryPassed ? 1 : 0) +
 		(showOnlyCoursePaid ? 1 : 0) +
-		(showOnlyCourseUnpaid ? 1 : 0);
+		(showOnlyCourseUnpaid ? 1 : 0) +
+		(showOnlySupplementary ? 1 : 0) +
+		(showOnlyCar ? 1 : 0) +
+		(showOnlyInternalTheory ? 1 : 0) +
+		(showOnlyInternalPractice ? 1 : 0) +
+		(showOnlyProfileUpdated ? 1 : 0);
 
 	if (loading) {
 		return (
@@ -285,27 +304,17 @@ export default function StudentsPage() {
 									<ChevronDown className="ml-1 h-3 w-3 flex-shrink-0" />
 								</Button>
 								{filterDropdownOpen && (
-									<div className="absolute right-0 z-10 mt-1 w-48 rounded-md border bg-white p-2 shadow-lg">
+									<div className="absolute right-0 z-10 mt-1 w-full rounded-md border bg-white p-2 shadow-lg">
 										<label className="flex cursor-pointer items-center gap-2 rounded px-2 py-2 hover:bg-gray-100">
 											<input
 												type="checkbox"
 												checked={showInactive}
 												onChange={(e) => setShowInactive(e.target.checked)}
-												className="h-3 w-3"
+												className="h-4 w-4"
 											/>
-											<span className="text-xs">Pokaż nieaktywnych</span>
+											<span className="text-sm">Pokaż nieaktywnych</span>
 										</label>
-										<label className="flex cursor-pointer items-center gap-2 rounded px-2 py-2 hover:bg-gray-100">
-											<input
-												type="checkbox"
-												checked={showOnlyTheoryPassed}
-												onChange={(e) =>
-													setShowOnlyTheoryPassed(e.target.checked)
-												}
-												className="h-3 w-3"
-											/>
-											<span className="text-xs">Tylko z teorią</span>
-										</label>
+
 										<label className="flex cursor-pointer items-center gap-2 rounded px-2 py-2 hover:bg-gray-100">
 											<input
 												type="checkbox"
@@ -313,10 +322,11 @@ export default function StudentsPage() {
 												onChange={(e) =>
 													setShowOnlyCoursePaid(e.target.checked)
 												}
-												className="h-3 w-3"
+												className="h-4 w-4"
 											/>
-											<span className="text-xs">Opłacone</span>
+											<span className="text-sm">Tylko opłacone</span>
 										</label>
+
 										<label className="flex cursor-pointer items-center gap-2 rounded px-2 py-2 hover:bg-gray-100">
 											<input
 												type="checkbox"
@@ -324,9 +334,67 @@ export default function StudentsPage() {
 												onChange={(e) =>
 													setShowOnlyCourseUnpaid(e.target.checked)
 												}
-												className="h-3 w-3"
+												className="h-4 w-4"
 											/>
-											<span className="text-xs">Nieopłacone</span>
+											<span className="text-sm">Tylko nieopłacone</span>
+										</label>
+
+										<label className="flex cursor-pointer items-center gap-2 rounded px-2 py-2 hover:bg-gray-100">
+											<input
+												type="checkbox"
+												checked={showOnlySupplementary}
+												onChange={(e) =>
+													setShowOnlySupplementary(e.target.checked)
+												}
+												className="h-4 w-4"
+											/>
+											<span className="text-sm">Kurs uzupełniający</span>
+										</label>
+
+										<label className="flex cursor-pointer items-center gap-2 rounded px-2 py-2 hover:bg-gray-100">
+											<input
+												type="checkbox"
+												checked={showOnlyCar}
+												onChange={(e) => setShowOnlyCar(e.target.checked)}
+												className="h-4 w-4"
+											/>
+											<span className="text-sm">Auto na egzamin</span>
+										</label>
+
+										<label className="flex cursor-pointer items-center gap-2 rounded px-2 py-2 hover:bg-gray-100">
+											<input
+												type="checkbox"
+												checked={showOnlyInternalTheory}
+												onChange={(e) =>
+													setShowOnlyInternalTheory(e.target.checked)
+												}
+												className="h-4 w-4"
+											/>
+											<span className="text-sm">Teoria wewnętrzny</span>
+										</label>
+
+										<label className="flex cursor-pointer items-center gap-2 rounded px-2 py-2 hover:bg-gray-100">
+											<input
+												type="checkbox"
+												checked={showOnlyInternalPractice}
+												onChange={(e) =>
+													setShowOnlyInternalPractice(e.target.checked)
+												}
+												className="h-4 w-4"
+											/>
+											<span className="text-sm">Praktyka wewnętrzny</span>
+										</label>
+
+										<label className="flex cursor-pointer items-center gap-2 rounded px-2 py-2 hover:bg-gray-100">
+											<input
+												type="checkbox"
+												checked={showOnlyProfileUpdated}
+												onChange={(e) =>
+													setShowOnlyProfileUpdated(e.target.checked)
+												}
+												className="h-4 w-4"
+											/>
+											<span className="text-sm">Zaktualizowany</span>
 										</label>
 									</div>
 								)}
@@ -420,17 +488,7 @@ export default function StudentsPage() {
 										/>
 										<span className="text-sm">Pokaż nieaktywnych</span>
 									</label>
-									<label className="flex cursor-pointer items-center gap-2 rounded px-2 py-2 hover:bg-gray-100">
-										<input
-											type="checkbox"
-											checked={showOnlyTheoryPassed}
-											onChange={(e) =>
-												setShowOnlyTheoryPassed(e.target.checked)
-											}
-											className="h-4 w-4"
-										/>
-										<span className="text-sm">Tylko z teorią zdaną</span>
-									</label>
+
 									<label className="flex cursor-pointer items-center gap-2 rounded px-2 py-2 hover:bg-gray-100">
 										<input
 											type="checkbox"
@@ -440,6 +498,7 @@ export default function StudentsPage() {
 										/>
 										<span className="text-sm">Tylko opłacone</span>
 									</label>
+
 									<label className="flex cursor-pointer items-center gap-2 rounded px-2 py-2 hover:bg-gray-100">
 										<input
 											type="checkbox"
@@ -450,6 +509,64 @@ export default function StudentsPage() {
 											className="h-4 w-4"
 										/>
 										<span className="text-sm">Tylko nieopłacone</span>
+									</label>
+
+									<label className="flex cursor-pointer items-center gap-2 rounded px-2 py-2 hover:bg-gray-100">
+										<input
+											type="checkbox"
+											checked={showOnlySupplementary}
+											onChange={(e) =>
+												setShowOnlySupplementary(e.target.checked)
+											}
+											className="h-4 w-4"
+										/>
+										<span className="text-sm">Kurs uzupełniający</span>
+									</label>
+
+									<label className="flex cursor-pointer items-center gap-2 rounded px-2 py-2 hover:bg-gray-100">
+										<input
+											type="checkbox"
+											checked={showOnlyCar}
+											onChange={(e) => setShowOnlyCar(e.target.checked)}
+											className="h-4 w-4"
+										/>
+										<span className="text-sm">Auto na egzamin</span>
+									</label>
+
+									<label className="flex cursor-pointer items-center gap-2 rounded px-2 py-2 hover:bg-gray-100">
+										<input
+											type="checkbox"
+											checked={showOnlyInternalTheory}
+											onChange={(e) =>
+												setShowOnlyInternalTheory(e.target.checked)
+											}
+											className="h-4 w-4"
+										/>
+										<span className="text-sm">Teoria wewnętrzny</span>
+									</label>
+
+									<label className="flex cursor-pointer items-center gap-2 rounded px-2 py-2 hover:bg-gray-100">
+										<input
+											type="checkbox"
+											checked={showOnlyInternalPractice}
+											onChange={(e) =>
+												setShowOnlyInternalPractice(e.target.checked)
+											}
+											className="h-4 w-4"
+										/>
+										<span className="text-sm">Praktyka wewnętrzny</span>
+									</label>
+
+									<label className="flex cursor-pointer items-center gap-2 rounded px-2 py-2 hover:bg-gray-100">
+										<input
+											type="checkbox"
+											checked={showOnlyProfileUpdated}
+											onChange={(e) =>
+												setShowOnlyProfileUpdated(e.target.checked)
+											}
+											className="h-4 w-4"
+										/>
+										<span className="text-sm">Zaktualizowany</span>
 									</label>
 								</div>
 							)}
@@ -485,11 +602,7 @@ export default function StudentsPage() {
 
 													{/* Desktop only */}
 													<div className="hidden sm:flex sm:flex-wrap sm:gap-2">
-														{student.theoryPassed && (
-															<Badge variant="default" className="text-xs">
-																Teoria ✓
-															</Badge>
-														)}
+													
 														{student.coursePaid && (
 															<Badge variant="default" className="text-xs">
 																Opłacony
