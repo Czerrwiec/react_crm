@@ -26,11 +26,7 @@ export default function LoginPage() {
 
 	return (
 		<div className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
-			<div className="w-full max-w-md space-y-8">
-				<div className="text-center">
-					<h2 className="mt-6 text-3xl font-bold">CRM</h2>
-				</div>
-
+			<div className="w-full max-w-md space-y-8 -mt-20">		
 				<form onSubmit={handleSubmit} className="mt-8 space-y-6">
 					{error && (
 						<div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">

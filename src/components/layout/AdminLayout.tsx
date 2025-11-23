@@ -1,4 +1,4 @@
-import { Routes, Route, Link, useLocation, Navigate } from 'react-router-dom';
+import { Routes, Route, Link, useLocation } from 'react-router-dom';
 import { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
@@ -11,7 +11,7 @@ import {
 	LogOut,
 	Menu,
 	X,
-	Car
+	Car,
 } from 'lucide-react';
 import StudentsPage from '@/pages/admin/StudentsPage';
 import AddStudentPage from '@/pages/admin/AddStudentPage';
@@ -26,6 +26,8 @@ import NotificationBell from '@/components/NotificationBell';
 import NotificationsPage from '@/pages/admin/NotificationsPage';
 import CarsPage from '@/pages/admin/CarsPage';
 import DashboardPage from '@/pages/admin/DashboardPage';
+import { Package } from 'lucide-react';
+import PackagesPage from '@/pages/admin/PackagesPage';
 
 const navigation = [
 	{ name: 'Dashboard', path: '/admin', icon: LayoutDashboard },
@@ -33,6 +35,7 @@ const navigation = [
 	{ name: 'Kalendarz', path: '/admin/calendar', icon: Calendar },
 	{ name: 'Samochody', path: '/admin/cars', icon: Car },
 	{ name: 'Instruktorzy', path: '/admin/instructors', icon: UserCog },
+	{ name: 'Cennik', path: '/admin/packages', icon: Package },
 	{ name: 'Ustawienia', path: '/admin/settings', icon: Settings },
 ];
 
@@ -118,6 +121,7 @@ export default function AdminLayout() {
 					<Route path="instructors/:id" element={<InstructorDetailPage />} />
 					<Route path="calendar" element={<CalendarPage />} />
 					<Route path="cars" element={<CarsPage />} />
+					<Route path="packages" element={<PackagesPage />} />
 					<Route path="settings" element={<SettingsPage />} />
 					<Route path="notifications" element={<NotificationsPage />} />
 				</Routes>

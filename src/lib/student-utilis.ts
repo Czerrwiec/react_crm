@@ -35,6 +35,8 @@ export const getStateExamStatusColor = (student: Student): string => {
             return 'text-green-600';
         case 'failed':
             return 'text-red-600';
+        case 'allowed':
+            return 'text-blue-600';
         default:
             return 'text-blue-600';
     }

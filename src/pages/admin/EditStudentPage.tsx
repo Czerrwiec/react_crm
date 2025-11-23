@@ -10,8 +10,9 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ArrowLeft, Trash2 } from 'lucide-react';
-import type { User, Student } from '@/types';
+import type { User, Student, Package } from '@/types';
 import { Select } from '@/components/ui/select';
+import { packageService } from '@/services/package.service';
 
 export default function EditStudentPage() {
 	const { id } = useParams<{ id: string }>();
@@ -20,10 +21,20 @@ export default function EditStudentPage() {
 	const [loading, setLoading] = useState(true);
 	const [saving, setSaving] = useState(false);
 	const [formData, setFormData] = useState<Student | null>(null);
+	const [packages, setPackages] = useState<Package[]>([]);
 
 	useEffect(() => {
 		if (id) loadData(id);
 	}, [id]);
+
+	useEffect(() => {
+		loadPackages();
+	}, []);
+
+	const loadPackages = async () => {
+		const data = await packageService.getPackages();
+		setPackages(data);
+	};
 
 	const loadData = async (studentId: string) => {
 		try {
@@ -91,10 +102,12 @@ export default function EditStudentPage() {
 	}
 
 	return (
-		<div className="p-8">
-			<div className="mb-4 flex items-center justify-between">
+		<div className="p-2 sm:p-4 md:p-8">
+			<div className="mb-4 flex items-center justify-between pt-2">
+				
 				<Button
 					variant="ghost"
+					className="ml-12"
 					onClick={() => navigate(`/admin/students/${id}`)}>
 					<ArrowLeft className="mr-2 h-4 w-4" />
 					Powrót
@@ -219,6 +232,27 @@ export default function EditStudentPage() {
 
 							<div className="grid grid-cols-2 gap-4">
 								<div>
+									<Label htmlFor="packageId">Wariant kursu</Label>
+									<Select
+										id="packageId"
+										value={formData.packageId || ''}
+										onChange={(e) => {
+											const pkg = packages.find((p) => p.id === e.target.value);
+											setFormData({
+												...formData,
+												packageId: e.target.value,
+												coursePrice: pkg ? pkg.price : formData.coursePrice, // usuń .toString()
+											});
+										}}>
+										<option value="">Wybierz pakiet</option>
+										{packages.map((pkg) => (
+											<option key={pkg.id} value={pkg.id}>
+												{pkg.name} ({pkg.price} zł, {pkg.hours}h)
+											</option>
+										))}
+									</Select>
+								</div>
+								<div>
 									<Label htmlFor="coursePrice">Cena kursu (zł) *</Label>
 									<Input
 										id="coursePrice"
@@ -229,11 +263,12 @@ export default function EditStudentPage() {
 										onChange={(e) =>
 											setFormData({
 												...formData,
-												coursePrice: parseFloat(e.target.value),
+												coursePrice: parseFloat(e.target.value), // parsuj do number
 											})
 										}
 									/>
 								</div>
+
 								<div>
 									<Label htmlFor="courseStartDate">Data rozpoczęcia</Label>
 									<Input
@@ -263,6 +298,8 @@ export default function EditStudentPage() {
 											totalHoursDriven: parseFloat(e.target.value),
 										})
 									}
+									disabled // DODAJ
+									className="bg-gray-100" // DODAJ
 								/>
 							</div>
 
@@ -331,9 +368,9 @@ export default function EditStudentPage() {
 
 								<label className="flex items-center gap-2">
 									<Checkbox
-										checked={formData.active}
+										checked={!formData.inactive}
 										onChange={(e) =>
-											setFormData({ ...formData, active: e.target.checked })
+											setFormData({ ...formData, inactive: e.target.checked })
 										}
 									/>
 									<span className="text-sm">Kursant aktywny</span>
@@ -365,7 +402,7 @@ export default function EditStudentPage() {
 												stateExamStatus: e.target.value as any,
 											})
 										}>
-										<option value="not_allowed">Niedopuszczony</option>
+										<option value="allowed">Dopuszczony</option>
 										<option value="failed">Niezdany</option>
 										<option value="passed">Zdany</option>
 									</Select>

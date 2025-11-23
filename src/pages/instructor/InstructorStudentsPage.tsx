@@ -1,3 +1,4 @@
+// src/pages/instructor/InstructorStudentsPage.tsx
 import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { studentService } from '@/services/student.service';
@@ -6,8 +7,11 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Search, Phone, Mail } from 'lucide-react';
+import { Search, Phone, Mail, ChevronDown, Check } from 'lucide-react';
 import type { StudentWithInstructors } from '@/types';
+
+type SortField = 'lastName' | 'firstName' | 'courseStart';
+type SortDirection = 'asc' | 'desc';
 
 export default function InstructorStudentsPage() {
 	const navigate = useNavigate();
@@ -16,19 +20,74 @@ export default function InstructorStudentsPage() {
 	const [filteredStudents, setFilteredStudents] = useState<
 		StudentWithInstructors[]
 	>([]);
-
 	const [search, setSearch] = useState('');
 	const [loading, setLoading] = useState(true);
+	const initialized = useRef(false);
+
+	const [sortField, setSortField] = useState<SortField>('lastName');
+	const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
+	const [sortDropdownOpen, setSortDropdownOpen] = useState(false);
+	const [filterDropdownOpen, setFilterDropdownOpen] = useState(false);
+
 	const [showInactive, setShowInactive] = useState(false);
-	const [showOnlyTheoryPassed, setShowOnlyTheoryPassed] = useState(false); // USUŃ TO
 	const [showOnlyCoursePaid, setShowOnlyCoursePaid] = useState(false);
 	const [showOnlyCourseUnpaid, setShowOnlyCourseUnpaid] = useState(false);
-	const [showOnlySupplementary, setShowOnlySupplementary] = useState(false); // NOWE
-	const [showOnlyCar, setShowOnlyCar] = useState(false); // NOWE
-	const [showOnlyInternalTheory, setShowOnlyInternalTheory] = useState(false); // NOWE
+	const [showOnlySupplementary, setShowOnlySupplementary] = useState(false);
+	const [showOnlyCar, setShowOnlyCar] = useState(false);
+	const [showOnlyInternalTheory, setShowOnlyInternalTheory] = useState(false);
 	const [showOnlyInternalPractice, setShowOnlyInternalPractice] =
-		useState(false); // NOWE
-	const initialized = useRef(false);
+		useState(false);
+
+	// Load from localStorage
+	useEffect(() => {
+		const saved = localStorage.getItem('instructorStudentsFilters');
+		if (saved) {
+			try {
+				const parsed = JSON.parse(saved);
+				setSortField(parsed.sortField || 'lastName');
+				setSortDirection(parsed.sortDirection || 'asc');
+				setShowInactive(parsed.showInactive || false);
+				setShowOnlyCoursePaid(parsed.showOnlyCoursePaid || false);
+				setShowOnlyCourseUnpaid(parsed.showOnlyCourseUnpaid || false);
+				setShowOnlySupplementary(parsed.showOnlySupplementary || false);
+				setShowOnlyCar(parsed.showOnlyCar || false);
+				setShowOnlyInternalTheory(parsed.showOnlyInternalTheory || false);
+				setShowOnlyInternalPractice(parsed.showOnlyInternalPractice || false);
+			} catch (e) {
+				console.error('Error loading filters:', e);
+			}
+		}
+	}, []);
+
+	// Save to localStorage
+	useEffect(() => {
+		if (initialized.current) {
+			localStorage.setItem(
+				'instructorStudentsFilters',
+				JSON.stringify({
+					sortField,
+					sortDirection,
+					showInactive,
+					showOnlyCoursePaid,
+					showOnlyCourseUnpaid,
+					showOnlySupplementary,
+					showOnlyCar,
+					showOnlyInternalTheory,
+					showOnlyInternalPractice,
+				})
+			);
+		}
+	}, [
+		sortField,
+		sortDirection,
+		showInactive,
+		showOnlyCoursePaid,
+		showOnlyCourseUnpaid,
+		showOnlySupplementary,
+		showOnlyCar,
+		showOnlyInternalTheory,
+		showOnlyInternalPractice,
+	]);
 
 	useEffect(() => {
 		if (initialized.current) return;
@@ -37,7 +96,8 @@ export default function InstructorStudentsPage() {
 	}, [user]);
 
 	useEffect(() => {
-		applyFilters();
+		if (students.length === 0) return;
+		applyFiltersAndSort();
 	}, [
 		search,
 		students,
@@ -57,12 +117,9 @@ export default function InstructorStudentsPage() {
 
 		try {
 			const allStudents = await studentService.getStudents();
-			console.log('All students:', allStudents); // DEBUG
-
 			const myStudents = allStudents.filter(
-				(s) => s.instructorIds.includes(user.id) && s.active
+				(s) => s.instructorIds.includes(user.id) && !s.inactive
 			);
-
 			setStudents(myStudents);
 		} catch (error) {
 			console.error('Error loading students:', error);
@@ -71,9 +128,12 @@ export default function InstructorStudentsPage() {
 		}
 	};
 
-	const applyFilters = () => {
+	const applyFiltersAndSort = () => {
 		let filtered = students;
-		if (!showInactive) filtered = filtered.filter((s) => s.active);
+
+		if (!showInactive) {
+			filtered = filtered.filter((s) => !s.inactive);
+		}
 		if (showOnlyCoursePaid) filtered = filtered.filter((s) => s.coursePaid);
 		if (showOnlyCourseUnpaid) filtered = filtered.filter((s) => !s.coursePaid);
 		if (showOnlySupplementary)
@@ -94,7 +154,45 @@ export default function InstructorStudentsPage() {
 			);
 		}
 
+		filtered.sort((a, b) => {
+			let comparison = 0;
+			switch (sortField) {
+				case 'lastName':
+					comparison = a.lastName.localeCompare(b.lastName);
+					break;
+				case 'firstName':
+					comparison = a.firstName.localeCompare(b.firstName);
+					break;
+				case 'courseStart':
+					comparison = (a.courseStartDate || '').localeCompare(
+						b.courseStartDate || ''
+					);
+					break;
+			}
+			return sortDirection === 'asc' ? comparison : -comparison;
+		});
+
 		setFilteredStudents(filtered);
+	};
+
+	const handleSortClick = (field: SortField) => {
+		if (sortField === field) {
+			setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+		} else {
+			setSortField(field);
+			setSortDirection('asc');
+		}
+		setSortDropdownOpen(false);
+	};
+
+	const getSortLabel = () => {
+		const fieldLabel = {
+			lastName: 'Nazwisko',
+			firstName: 'Imię',
+			courseStart: 'Data rozpoczęcia',
+		}[sortField];
+		const directionIcon = sortDirection === 'asc' ? '↑' : '↓';
+		return `${fieldLabel} ${directionIcon}`;
 	};
 
 	const formatHours = (hours: number) => {
@@ -102,6 +200,15 @@ export default function InstructorStudentsPage() {
 		const m = Math.round((hours - h) * 60);
 		return m > 0 ? `${h}h ${m}m` : `${h}h`;
 	};
+
+	const activeFiltersCount =
+		(showInactive ? 1 : 0) +
+		(showOnlyCoursePaid ? 1 : 0) +
+		(showOnlyCourseUnpaid ? 1 : 0) +
+		(showOnlySupplementary ? 1 : 0) +
+		(showOnlyCar ? 1 : 0) +
+		(showOnlyInternalTheory ? 1 : 0) +
+		(showOnlyInternalPractice ? 1 : 0);
 
 	if (loading) {
 		return (
@@ -116,33 +223,303 @@ export default function InstructorStudentsPage() {
 			{/* Fixed Header */}
 			<div className="flex-shrink-0 border-b bg-white">
 				<div className="p-4 sm:p-6">
-					{/* Mobile Header */}
-					<div className="mb-4 flex items-center justify-end md:hidden">
-						<Button
-							variant={showInactive ? 'default' : 'outline'}
-							onClick={() => setShowInactive(!showInactive)}>
-							{showInactive ? 'Ukryj nieaktywnych' : 'Pokaż nieaktywnych'}
-						</Button>
+					{/* Mobile Filters */}
+					<div className="space-y-3 md:hidden pt-12">
+						<div className="grid grid-cols-2 gap-3">
+							<div className="relative">
+								<Button
+									variant="outline"
+									className="w-full justify-between text-xs"
+									onClick={() => {
+										setSortDropdownOpen(!sortDropdownOpen);
+										setFilterDropdownOpen(false);
+									}}>
+									<span className="truncate">{getSortLabel()}</span>
+									<ChevronDown className="ml-1 h-3 w-3 flex-shrink-0" />
+								</Button>
+								{sortDropdownOpen && (
+									<div className="absolute left-0 z-10 mt-1 w-full rounded-md border bg-white shadow-lg">
+										{[
+											{ field: 'lastName' as SortField, label: 'Nazwisko' },
+											{ field: 'firstName' as SortField, label: 'Imię' },
+											{ field: 'courseStart' as SortField, label: 'Data' },
+										].map(({ field, label }) => (
+											<button
+												key={field}
+												className="flex w-full items-center justify-between px-3 py-2 text-left text-xs hover:bg-gray-100"
+												onClick={() => handleSortClick(field)}>
+												<span>
+													{label}{' '}
+													{sortField === field &&
+														(sortDirection === 'asc' ? '↑' : '↓')}
+												</span>
+												{sortField === field && <Check className="h-3 w-3" />}
+											</button>
+										))}
+									</div>
+								)}
+							</div>
+
+							<div className="relative">
+								<Button
+									variant="outline"
+									className="w-full justify-between text-xs"
+									onClick={() => {
+										setFilterDropdownOpen(!filterDropdownOpen);
+										setSortDropdownOpen(false);
+									}}>
+									<span className="truncate">Filtry</span>
+									{activeFiltersCount > 0 && (
+										<span className="ml-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] text-white">
+											{activeFiltersCount}
+										</span>
+									)}
+									<ChevronDown className="ml-1 h-3 w-3 flex-shrink-0" />
+								</Button>
+								{filterDropdownOpen && (
+									<div className="absolute right-0 z-10 mt-1 w-full rounded-md border bg-white p-2 shadow-lg">
+										<label className="flex cursor-pointer items-center gap-2 rounded px-2 py-2 hover:bg-gray-100">
+											<input
+												type="checkbox"
+												checked={showInactive}
+												onChange={(e) => setShowInactive(e.target.checked)}
+												className="h-4 w-4"
+											/>
+											<span className="text-sm">Pokaż nieaktywnych</span>
+										</label>
+
+										<label className="flex cursor-pointer items-center gap-2 rounded px-2 py-2 hover:bg-gray-100">
+											<input
+												type="checkbox"
+												checked={showOnlyCoursePaid}
+												onChange={(e) =>
+													setShowOnlyCoursePaid(e.target.checked)
+												}
+												className="h-4 w-4"
+											/>
+											<span className="text-sm">Tylko opłacone</span>
+										</label>
+
+										<label className="flex cursor-pointer items-center gap-2 rounded px-2 py-2 hover:bg-gray-100">
+											<input
+												type="checkbox"
+												checked={showOnlyCourseUnpaid}
+												onChange={(e) =>
+													setShowOnlyCourseUnpaid(e.target.checked)
+												}
+												className="h-4 w-4"
+											/>
+											<span className="text-sm">Tylko nieopłacone</span>
+										</label>
+
+										<label className="flex cursor-pointer items-center gap-2 rounded px-2 py-2 hover:bg-gray-100">
+											<input
+												type="checkbox"
+												checked={showOnlySupplementary}
+												onChange={(e) =>
+													setShowOnlySupplementary(e.target.checked)
+												}
+												className="h-4 w-4"
+											/>
+											<span className="text-sm">Kurs uzupełniający</span>
+										</label>
+
+										<label className="flex cursor-pointer items-center gap-2 rounded px-2 py-2 hover:bg-gray-100">
+											<input
+												type="checkbox"
+												checked={showOnlyCar}
+												onChange={(e) => setShowOnlyCar(e.target.checked)}
+												className="h-4 w-4"
+											/>
+											<span className="text-sm">Auto na egzamin</span>
+										</label>
+
+										<label className="flex cursor-pointer items-center gap-2 rounded px-2 py-2 hover:bg-gray-100">
+											<input
+												type="checkbox"
+												checked={showOnlyInternalTheory}
+												onChange={(e) =>
+													setShowOnlyInternalTheory(e.target.checked)
+												}
+												className="h-4 w-4"
+											/>
+											<span className="text-sm">Teoria wewnętrzny</span>
+										</label>
+
+										<label className="flex cursor-pointer items-center gap-2 rounded px-2 py-2 hover:bg-gray-100">
+											<input
+												type="checkbox"
+												checked={showOnlyInternalPractice}
+												onChange={(e) =>
+													setShowOnlyInternalPractice(e.target.checked)
+												}
+												className="h-4 w-4"
+											/>
+											<span className="text-sm">Praktyka wewnętrzny</span>
+										</label>
+									</div>
+								)}
+							</div>
+						</div>
+
+						<div className="relative">
+							<Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+							<Input
+								placeholder="Szukaj..."
+								value={search}
+								onChange={(e) => setSearch(e.target.value)}
+								className="pl-10"
+							/>
+						</div>
 					</div>
 
-					{/* Desktop Header */}
-					<div className="mb-4 hidden items-center justify-end md:flex">
-						<Button
-							variant={showInactive ? 'default' : 'outline'}
-							onClick={() => setShowInactive(!showInactive)}>
-							{showInactive ? 'Ukryj nieaktywnych' : 'Pokaż nieaktywnych'}
-						</Button>
-					</div>
+					{/* Desktop Filters */}
+					<div className="hidden gap-4 md:grid md:grid-cols-[1fr,200px,200px]">
+						<div className="relative">
+							<Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+							<Input
+								placeholder="Szukaj po imieniu, nazwisku, telefonie, PKK..."
+								value={search}
+								onChange={(e) => setSearch(e.target.value)}
+								className="pl-10"
+							/>
+						</div>
 
-					{/* Search */}
-					<div className="relative">
-						<Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-						<Input
-							placeholder="Szukaj..."
-							value={search}
-							onChange={(e) => setSearch(e.target.value)}
-							className="pl-10"
-						/>
+						<div className="relative">
+							<Button
+								variant="outline"
+								className="w-full justify-between"
+								onClick={() => {
+									setSortDropdownOpen(!sortDropdownOpen);
+									setFilterDropdownOpen(false);
+								}}>
+								{getSortLabel()}
+								<ChevronDown className="ml-2 h-4 w-4" />
+							</Button>
+							{sortDropdownOpen && (
+								<div className="absolute right-0 z-10 mt-1 w-full rounded-md border bg-white shadow-lg">
+									{[
+										{ field: 'lastName' as SortField, label: 'Nazwisko' },
+										{ field: 'firstName' as SortField, label: 'Imię' },
+										{
+											field: 'courseStart' as SortField,
+											label: 'Data rozpoczęcia',
+										},
+									].map(({ field, label }) => (
+										<button
+											key={field}
+											className="flex w-full items-center justify-between px-4 py-2 text-left hover:bg-gray-100"
+											onClick={() => handleSortClick(field)}>
+											<span>
+												{label}{' '}
+												{sortField === field &&
+													(sortDirection === 'asc' ? '↑' : '↓')}
+											</span>
+											{sortField === field && <Check className="h-4 w-4" />}
+										</button>
+									))}
+								</div>
+							)}
+						</div>
+
+						<div className="relative">
+							<Button
+								variant="outline"
+								className="w-full justify-between"
+								onClick={() => {
+									setFilterDropdownOpen(!filterDropdownOpen);
+									setSortDropdownOpen(false);
+								}}>
+								Filtry
+								{activeFiltersCount > 0 && (
+									<span className="ml-2 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-xs text-white">
+										{activeFiltersCount}
+									</span>
+								)}
+								<ChevronDown className="ml-2 h-4 w-4" />
+							</Button>
+							{filterDropdownOpen && (
+								<div className="absolute right-0 z-10 mt-1 w-full rounded-md border bg-white p-2 shadow-lg">
+									<label className="flex cursor-pointer items-center gap-2 rounded px-2 py-2 hover:bg-gray-100">
+										<input
+											type="checkbox"
+											checked={showInactive}
+											onChange={(e) => setShowInactive(e.target.checked)}
+											className="h-4 w-4"
+										/>
+										<span className="text-sm">Pokaż nieaktywnych</span>
+									</label>
+
+									<label className="flex cursor-pointer items-center gap-2 rounded px-2 py-2 hover:bg-gray-100">
+										<input
+											type="checkbox"
+											checked={showOnlyCoursePaid}
+											onChange={(e) => setShowOnlyCoursePaid(e.target.checked)}
+											className="h-4 w-4"
+										/>
+										<span className="text-sm">Tylko opłacone</span>
+									</label>
+
+									<label className="flex cursor-pointer items-center gap-2 rounded px-2 py-2 hover:bg-gray-100">
+										<input
+											type="checkbox"
+											checked={showOnlyCourseUnpaid}
+											onChange={(e) =>
+												setShowOnlyCourseUnpaid(e.target.checked)
+											}
+											className="h-4 w-4"
+										/>
+										<span className="text-sm">Tylko nieopłacone</span>
+									</label>
+
+									<label className="flex cursor-pointer items-center gap-2 rounded px-2 py-2 hover:bg-gray-100">
+										<input
+											type="checkbox"
+											checked={showOnlySupplementary}
+											onChange={(e) =>
+												setShowOnlySupplementary(e.target.checked)
+											}
+											className="h-4 w-4"
+										/>
+										<span className="text-sm">Kurs uzupełniający</span>
+									</label>
+
+									<label className="flex cursor-pointer items-center gap-2 rounded px-2 py-2 hover:bg-gray-100">
+										<input
+											type="checkbox"
+											checked={showOnlyCar}
+											onChange={(e) => setShowOnlyCar(e.target.checked)}
+											className="h-4 w-4"
+										/>
+										<span className="text-sm">Auto na egzamin</span>
+									</label>
+
+									<label className="flex cursor-pointer items-center gap-2 rounded px-2 py-2 hover:bg-gray-100">
+										<input
+											type="checkbox"
+											checked={showOnlyInternalTheory}
+											onChange={(e) =>
+												setShowOnlyInternalTheory(e.target.checked)
+											}
+											className="h-4 w-4"
+										/>
+										<span className="text-sm">Teoria wewnętrzny</span>
+									</label>
+
+									<label className="flex cursor-pointer items-center gap-2 rounded px-2 py-2 hover:bg-gray-100">
+										<input
+											type="checkbox"
+											checked={showOnlyInternalPractice}
+											onChange={(e) =>
+												setShowOnlyInternalPractice(e.target.checked)
+											}
+											className="h-4 w-4"
+										/>
+										<span className="text-sm">Praktyka wewnętrzny</span>
+									</label>
+								</div>
+							)}
+						</div>
 					</div>
 				</div>
 			</div>
@@ -155,7 +532,7 @@ export default function InstructorStudentsPage() {
 							<Card
 								key={student.id}
 								className={`cursor-pointer transition-shadow hover:shadow-md ${
-									!student.active ? 'opacity-60' : ''
+									student.inactive ? 'opacity-60' : ''
 								}`}
 								onClick={() => navigate(`/instructor/students/${student.id}`)}>
 								<CardContent className="p-4">
@@ -166,12 +543,11 @@ export default function InstructorStudentsPage() {
 													{student.firstName} {student.lastName}
 												</h3>
 												<div className="mt-1 flex flex-wrap items-center gap-1">
-													{!student.active && (
+													{student.inactive && (
 														<Badge variant="secondary" className="text-xs">
 															Nieaktywny
 														</Badge>
 													)}
-													{/* Desktop only */}
 													<div className="hidden sm:flex sm:flex-wrap sm:gap-2">
 														{student.coursePaid && (
 															<Badge variant="default" className="text-xs">
@@ -179,7 +555,6 @@ export default function InstructorStudentsPage() {
 															</Badge>
 														)}
 													</div>
-													{/* Mobile only */}
 													<div className="flex flex-wrap gap-1 sm:hidden">
 														{student.isSupplementaryCourse && (
 															<Badge

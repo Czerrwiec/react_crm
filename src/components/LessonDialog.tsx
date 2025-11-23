@@ -90,7 +90,7 @@ export default function LessonDialog({
 			const allStudents = await studentService.getActiveStudents();
 			// Filtruj po instructorIds (array)
 			const instructorStudents = allStudents.filter(
-				(s) => s.instructorIds.includes(instructorId) && s.active
+				(s) => s.instructorIds.includes(instructorId) && !s.inactive
 			);
 			setStudents(instructorStudents);
 		} catch (error) {
@@ -165,7 +165,7 @@ export default function LessonDialog({
 		const startMinutes = startH * 60 + startM;
 		const endMinutes = endH * 60 + endM;
 		const durationMinutes = endMinutes - startMinutes;
-		return Math.round((durationMinutes / 60) * 4) / 4; // Round to nearest 0.25
+		return durationMinutes / 60; 
 	};
 
 	const formatDuration = (hours: number) => {

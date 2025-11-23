@@ -381,7 +381,7 @@ export default function CalendarPage() {
 		next: 'Następny',
 		today: 'Dziś',
 		agenda: 'Agenda',
-		showMore: (total: number) => `+${total} więcej`,
+		showMore: (total: number) => `+${total}`,
 	};
 
 	return (
@@ -547,7 +547,7 @@ export default function CalendarPage() {
 							messages={messages}
 							startAccessor="start"
 							endAccessor="end"
-							style={{ height: 'calc(100vh - 450px)', minHeight: '700px' }}
+							style={{ height: 'calc(100vh - 450px)', minHeight: '600px' }}
 							date={currentDate}
 							view="month"
 							onNavigate={(newDate) => setCurrentDate(newDate)}

@@ -1,4 +1,4 @@
-import type { Student, Payment, User, Lesson, Notification, CarReservation, Car, SchoolInfo, InstructorHours } from '@/types'
+import type { Student, Payment, User, Lesson, Notification, CarReservation, Car, SchoolInfo, InstructorHours, Package } from '@/types'
 
 export function mapStudent(data: any): Student {
     return {
@@ -22,10 +22,13 @@ export function mapStudent(data: any): Student {
         stateExamAttempts: data.state_exam_attempts,
         isSupplementaryCourse: data.is_supplementary_course,
         car: data.car,
-        active: data.active,
+        inactive: data.inactive,
         totalHoursDriven: data.total_hours_driven,
         courseStartDate: data.course_start_date,
         notes: data.notes,
+        stateExamDate: data.state_exam_date,
+        stateExamTime: data.state_exam_time,
+        packageId: data.package_id,
     };
 }
 
@@ -140,4 +143,14 @@ export function mapSchoolInfo(data: any): SchoolInfo {
         postalCode: data.postal_code,
         phone: data.phone,
     }
+}
+
+export function mapPackage(data: any): Package {
+    return {
+        id: data.id,
+        name: data.name,
+        price: data.price,
+        hours: data.hours,
+        description: data.description,
+    };
 }

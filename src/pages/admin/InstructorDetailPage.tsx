@@ -127,7 +127,7 @@ export default function InstructorDetailPage() {
 		);
 	}
 
-	const activeStudents = students.filter((s) => s.active);
+	const activeStudents = students.filter((s) => !s.inactive);
 	const displayedStudents = showInactive ? students : activeStudents;
 
 	return (
@@ -294,7 +294,7 @@ export default function InstructorDetailPage() {
 									<div
 										key={student.id}
 										className={`flex items-center justify-between rounded-lg border p-3 hover:bg-gray-50 cursor-pointer ${
-											!student.active ? 'opacity-60' : ''
+											student.inactive ? 'opacity-60' : ''
 										}`}
 										onClick={() => navigate(`/admin/students/${student.id}`)}>
 										<div>
@@ -307,7 +307,7 @@ export default function InstructorDetailPage() {
 												</div>
 											)} */}
 										</div>
-										{!student.active && (
+										{student.inactive && (
 											<Badge variant="secondary">Nieaktywny</Badge>
 										)}
 									</div>

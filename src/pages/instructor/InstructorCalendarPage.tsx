@@ -211,6 +211,11 @@ export default function InstructorCalendarPage() {
 		}
 
 		setCurrentDate(newDate);
+
+		// DODAJ TO:
+		if (view === 'day') {
+			setSelectedDay(newDate);
+		}
 	};
 
 	const handleEventClick = (event: CalendarEvent) => {
@@ -224,7 +229,7 @@ export default function InstructorCalendarPage() {
 
 	const handleAddLesson = () => {
 		setEditingLesson(null);
-		setSelectedDay(currentDate);
+		// Używaj selectedDay zamiast currentDate
 		setLessonDialogOpen(true);
 	};
 
@@ -248,20 +253,46 @@ export default function InstructorCalendarPage() {
 		}
 	};
 
-	const getDateRangeTextMobile = () => {
-		if (view === 'day') {
-			return format(currentDate, 'd MMM', { locale: pl });
-		}
-		return '';
+	const DayEventComponent = ({ event }: any) => {
+		const lesson = event.resource;
+		const studentNames = lesson.studentIds
+			.map((id: string) => studentNamesMap.get(id) || 'Nieznany')
+			.join(', ');
+
+		const h = Math.floor(lesson.duration);
+		const m = Math.round((lesson.duration - h) * 60);
+		const durationText = m > 0 ? `${h}h ${m}m` : `${h}h`;
+
+		return (
+			<div style={{ padding: '4px', fontSize: '13px', lineHeight: '1.3' }}>
+				<div style={{ fontWeight: 'bold' }}>
+					{studentNames || 'Bez kursanta'}
+				</div>
+				<div style={{ fontSize: '11px', marginTop: '2px' }}>
+					{durationText}, {lesson.startTime.slice(0, 5)}-
+					{lesson.endTime.slice(0, 5)}
+				</div>
+			</div>
+		);
 	};
 
 	const handleViewChange = (newView: View) => {
 		setView(newView);
 
-		// Gdy przełączamy na dzień/tydzień, ustaw currentDate na wybrany dzień
-		if (newView === 'day' || newView === 'week') {
+		// Gdy przełączamy na dzień/tydzień z miesiąca, ustaw currentDate na wybrany dzień
+		if ((newView === 'day' || newView === 'week') && view === 'month') {
 			setCurrentDate(selectedDay);
+			setSelectedDay(selectedDay); // Synchronizuj
 		}
+
+		// DODAJ: Gdy przełączamy na dzień, ustaw też selectedDay
+		if (newView === 'day' && view !== 'month') {
+			setSelectedDay(currentDate);
+		}
+	};
+
+	const WeekEventComponent = () => {
+		return <div style={{ height: '100%' }} />; // Pusty komponent
 	};
 
 	const messages = {
@@ -273,7 +304,7 @@ export default function InstructorCalendarPage() {
 		next: 'Następny',
 		today: 'Dziś',
 		agenda: 'Agenda',
-		showMore: (total: number) => `+${total} więcej`,
+		showMore: (total: number) => `+${total}`,
 	};
 
 	if (loading) {
@@ -283,20 +314,13 @@ export default function InstructorCalendarPage() {
 			</div>
 		);
 	}
-	
 
 	return (
-		<div className="flex h-full flex-col p-4 sm:p-8">
+		<div className="flex h-full flex-col p-4 sm:p-8 pt-16">
 			{/* Custom toolbar */}
 			<div className="mb-4 rounded-lg border bg-white p-3 sm:p-4">
 				{/* Mobile */}
 				<div className="flex flex-col gap-3 md:hidden">
-					<div className="flex items-center gap-2">
-						<Button onClick={handleAddLesson} size="sm" className="ml-auto">
-							<Plus className="h-4 w-4" />
-						</Button>
-					</div>
-
 					<div className="flex items-center justify-between">
 						<div className="flex items-center gap-1">
 							<Button
@@ -318,11 +342,14 @@ export default function InstructorCalendarPage() {
 								<ChevronRight className="h-4 w-4" />
 							</Button>
 						</div>
-						{view === 'day' && (
-							<span className="text-sm font-semibold">
-								{getDateRangeTextMobile()}
-							</span>
-						)}
+
+						<span className="text-sm font-semibold capitalize">
+							{format(currentDate, 'LLLL', { locale: pl })}
+						</span>
+
+						<Button onClick={handleAddLesson} size="sm">
+							<Plus className="h-4 w-4" />
+						</Button>
 					</div>
 
 					<div className="flex gap-2">
@@ -409,7 +436,7 @@ export default function InstructorCalendarPage() {
 							events={events}
 							startAccessor="start"
 							endAccessor="end"
-							style={{ height: 'calc(100vh - 350px)', minHeight: '500px' }}
+							style={{ height: 'calc(100vh - 350px)', minHeight: '520px' }}
 							date={currentDate}
 							view="month"
 							onNavigate={(newDate) => setCurrentDate(newDate)}
@@ -488,6 +515,9 @@ export default function InstructorCalendarPage() {
 			) : view === 'week' ? (
 				<div className="flex-1 rounded-lg border bg-white p-3">
 					<Calendar
+						components={{
+							event: WeekEventComponent,
+						}}
 						localizer={localizer}
 						events={events}
 						startAccessor="start"
@@ -500,7 +530,7 @@ export default function InstructorCalendarPage() {
 						step={30}
 						timeslots={2}
 						min={new Date(2024, 0, 1, 6, 0)}
-						max={new Date(2024, 0, 1, 22, 0)}
+						max={new Date(2024, 0, 1, 23, 0)}
 						dayLayoutAlgorithm="no-overlap"
 						eventPropGetter={eventStyleGetter}
 						onSelectEvent={handleEventClick}
@@ -537,6 +567,9 @@ export default function InstructorCalendarPage() {
 						{format(currentDate, 'd MMMM yyyy', { locale: pl })}
 					</div>
 					<Calendar
+						components={{
+							event: DayEventComponent,
+						}}
 						localizer={localizer}
 						events={events.filter(
 							(e) =>
@@ -545,7 +578,7 @@ export default function InstructorCalendarPage() {
 						)}
 						startAccessor="start"
 						endAccessor="end"
-						style={{ height: 'calc(100vh - 350px)', minHeight: '500px' }}
+						style={{ height: 'calc(100vh - 350px)', minHeight: '520px' }}
 						date={currentDate}
 						view="day"
 						onNavigate={(newDate) => setCurrentDate(newDate)}
@@ -553,7 +586,7 @@ export default function InstructorCalendarPage() {
 						step={30}
 						timeslots={2}
 						min={new Date(2024, 0, 1, 6, 0)}
-						max={new Date(2024, 0, 1, 22, 0)}
+						max={new Date(2024, 0, 1, 23, 0)}
 						dayLayoutAlgorithm="no-overlap"
 						eventPropGetter={eventStyleGetter}
 						onSelectEvent={handleEventClick}
@@ -578,30 +611,6 @@ export default function InstructorCalendarPage() {
 				</div>
 			)}
 
-			<div className="mt-4 flex gap-4 text-sm">
-				<div className="flex items-center gap-2">
-					<div
-						className="h-4 w-4 rounded"
-						style={{ backgroundColor: '#f59e0b' }}
-					/>
-					<span>Zaplanowana</span>
-				</div>
-				<div className="flex items-center gap-2">
-					<div
-						className="h-4 w-4 rounded"
-						style={{ backgroundColor: '#10b981' }}
-					/>
-					<span>Ukończona</span>
-				</div>
-				<div className="flex items-center gap-2">
-					<div
-						className="h-4 w-4 rounded"
-						style={{ backgroundColor: '#6b7280' }}
-					/>
-					<span>Anulowana</span>
-				</div>
-			</div>
-
 			{/* Dialogs */}
 			{user && (
 				<LessonDialog
@@ -609,7 +618,7 @@ export default function InstructorCalendarPage() {
 					onOpenChange={setLessonDialogOpen}
 					instructorId={user.id}
 					lesson={editingLesson}
-					preselectedDate={selectedDay}
+					preselectedDate={view === 'month' ? selectedDay : currentDate}
 					onSuccess={loadLessons}
 				/>
 			)}

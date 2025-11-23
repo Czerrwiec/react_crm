@@ -14,7 +14,7 @@ export default function DashboardPage() {
 	const loadData = async () => {
 		try {
 			const students = await studentService.getStudents();
-			const activeCount = students.filter((s) => s.active).length;
+			const activeCount = students.filter((s) => !s.inactive).length;
 			setActiveStudentsCount(activeCount);
 		} catch (error) {
 			console.error('Error loading data:', error);

@@ -43,6 +43,58 @@ export default function StudentsPage() {
 	);
 
 	useEffect(() => {
+		const saved = localStorage.getItem('studentsFilters');
+		if (saved) {
+			try {
+				const parsed = JSON.parse(saved);
+				setSortField(parsed.sortField || 'lastName');
+				setSortDirection(parsed.sortDirection || 'asc');
+				setShowInactive(parsed.showInactive || false);
+				setShowOnlyCoursePaid(parsed.showOnlyCoursePaid || false);
+				setShowOnlyCourseUnpaid(parsed.showOnlyCourseUnpaid || false);
+				setShowOnlySupplementary(parsed.showOnlySupplementary || false);
+				setShowOnlyCar(parsed.showOnlyCar || false);
+				setShowOnlyInternalTheory(parsed.showOnlyInternalTheory || false);
+				setShowOnlyInternalPractice(parsed.showOnlyInternalPractice || false);
+				setShowOnlyProfileUpdated(parsed.showOnlyProfileUpdated || false);
+			} catch (e) {
+				console.error('Error loading filters:', e);
+			}
+		}
+	}, []);
+
+	useEffect(() => {
+		if (initialized.current) {
+			localStorage.setItem(
+				'studentsFilters',
+				JSON.stringify({
+					sortField,
+					sortDirection,
+					showInactive,
+					showOnlyCoursePaid,
+					showOnlyCourseUnpaid,
+					showOnlySupplementary,
+					showOnlyCar,
+					showOnlyInternalTheory,
+					showOnlyInternalPractice,
+					showOnlyProfileUpdated,
+				})
+			);
+		}
+	}, [
+		sortField,
+		sortDirection,
+		showInactive,
+		showOnlyCoursePaid,
+		showOnlyCourseUnpaid,
+		showOnlySupplementary,
+		showOnlyCar,
+		showOnlyInternalTheory,
+		showOnlyInternalPractice,
+		showOnlyProfileUpdated,
+	]);
+
+	useEffect(() => {
 		if (initialized.current) return;
 		initialized.current = true;
 		loadStudents();
@@ -129,7 +181,9 @@ export default function StudentsPage() {
 	const applyFiltersAndSort = () => {
 		let filtered = students;
 
-		if (!showInactive) filtered = filtered.filter((s) => s.active);
+		if (!showInactive) {
+			filtered = filtered.filter((s) => !s.inactive);
+		}
 		if (showOnlyCoursePaid) filtered = filtered.filter((s) => s.coursePaid);
 		if (showOnlyCourseUnpaid) filtered = filtered.filter((s) => !s.coursePaid);
 		if (showOnlySupplementary)
@@ -142,15 +196,15 @@ export default function StudentsPage() {
 		if (showOnlyProfileUpdated)
 			filtered = filtered.filter((s) => s.profileUpdated);
 
-		  if (search) {
-				const query = search.toLowerCase();
-				filtered = filtered.filter(
-					(s) =>
-						`${s.firstName} ${s.lastName}`.toLowerCase().includes(query) ||
-						s.phone?.includes(search) ||
-						s.pkkNumber?.toLowerCase().includes(query)
-				);
-			}
+		if (search) {
+			const query = search.toLowerCase();
+			filtered = filtered.filter(
+				(s) =>
+					`${s.firstName} ${s.lastName}`.toLowerCase().includes(query) ||
+					s.phone?.includes(search) ||
+					s.pkkNumber?.toLowerCase().includes(query)
+			);
+		}
 
 		filtered.sort((a, b) => {
 			let comparison = 0;
@@ -583,7 +637,7 @@ export default function StudentsPage() {
 							<Card
 								key={student.id}
 								className={`cursor-pointer transition-shadow hover:shadow-md ${
-									!student.active ? 'opacity-60' : ''
+									student.inactive ? 'opacity-60' : ''
 								}`}
 								onClick={() => navigate(`/admin/students/${student.id}`)}>
 								<CardContent className="p-4">
@@ -594,7 +648,7 @@ export default function StudentsPage() {
 													{student.firstName} {student.lastName}
 												</h3>
 												<div className="mt-1 flex flex-wrap items-center gap-1">
-													{!student.active && (
+													{student.inactive && (
 														<Badge variant="secondary" className="text-xs">
 															Nieaktywny
 														</Badge>
@@ -602,7 +656,6 @@ export default function StudentsPage() {
 
 													{/* Desktop only */}
 													<div className="hidden sm:flex sm:flex-wrap sm:gap-2">
-													
 														{student.coursePaid && (
 															<Badge variant="default" className="text-xs">
 																Opłacony

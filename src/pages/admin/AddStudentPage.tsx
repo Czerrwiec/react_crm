@@ -9,14 +9,17 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ArrowLeft } from 'lucide-react';
-import type { User } from '@/types';
+import type { Package, User } from '@/types';
 import InstructorMultiSelect from '@/components/InstructorMultiSelect';
 import { Select } from '@/components/ui/select';
+import { packageService } from '@/services/package.service';
+
 
 export default function AddStudentPage() {
 	const navigate = useNavigate();
 	const [instructors, setInstructors] = useState<User[]>([]);
 	const [loading, setLoading] = useState(false);
+	const [packages, setPackages] = useState<Package[]>([]);
 	const [formData, setFormData] = useState({
 		firstName: '',
 		lastName: '',
@@ -31,17 +34,27 @@ export default function AddStudentPage() {
 		profileUpdated: false, // NOWE
 		internalTheoryPassed: false, // NOWE
 		internalPracticePassed: false, // NOWE
-		stateExamStatus: 'not_allowed' as 'not_allowed' | 'failed' | 'passed', // NOWE
+		stateExamStatus: 'allowed' as 'allowed' | 'failed' | 'passed', // NOWE
 		stateExamAttempts: 0, // NOWE
 		isSupplementaryCourse: false,
 		car: false,
-		active: true,
+		inactive: false,
 		notes: '',
+		packageId: '',
 	});
 
 	useEffect(() => {
 		loadInstructors();
 	}, []);
+
+	useEffect(() => {
+		loadPackages();
+	}, []);
+
+	const loadPackages = async () => {
+		const data = await packageService.getPackages();
+		setPackages(data);
+	};
 
 	const loadInstructors = async () => {
 		try {
@@ -78,7 +91,7 @@ export default function AddStudentPage() {
 				stateExamAttempts: formData.stateExamAttempts, // NOWE
 				isSupplementaryCourse: formData.isSupplementaryCourse,
 				car: formData.car,
-				active: formData.active,
+				inactive: formData.inactive,
 				notes: formData.notes || null,
 				coursePaid: false,
 				totalHoursDriven: 0,
@@ -99,14 +112,13 @@ export default function AddStudentPage() {
 		formData.internalPracticePassed;
 
 	return (
-		<div className="p-8">
-			<Button
-				variant="ghost"
-				onClick={() => navigate('/admin/students')}
-				className="mb-4">
-				<ArrowLeft className="mr-2 h-4 w-4" />
-				Powrót
-			</Button>
+		<div className="p-2 sm:p-4 md:p-8">
+			<div className="flex justify-end mb-4 pt-2">
+				<Button variant="ghost" onClick={() => navigate('/admin/students')}>
+					<ArrowLeft className="mr-2 h-4 w-4" />
+					Powrót
+				</Button>
+			</div>
 
 			<h1 className="mb-6 text-3xl font-bold">Dodaj kursanta</h1>
 
@@ -221,6 +233,29 @@ export default function AddStudentPage() {
 
 							<div className="grid grid-cols-2 gap-4">
 								<div>
+									<Label htmlFor="packageId">Wariant kursu</Label>
+									<Select
+										id="packageId"
+										value={formData.packageId || ''}
+										onChange={(e) => {
+											const pkg = packages.find((p) => p.id === e.target.value);
+											setFormData({
+												...formData,
+												packageId: e.target.value,
+												coursePrice: pkg
+													? pkg.price.toString()
+													: formData.coursePrice,
+											});
+										}}>
+										<option value="">Wybierz pakiet</option>
+										{packages.map((pkg) => (
+											<option key={pkg.id} value={pkg.id}>
+												{pkg.name} ({pkg.price} zł, {pkg.hours}h)
+											</option>
+										))}
+									</Select>
+								</div>
+								<div>
 									<Label htmlFor="coursePrice">Cena kursu (zł) *</Label>
 									<Input
 										id="coursePrice"
@@ -311,12 +346,12 @@ export default function AddStudentPage() {
 								</label>
 								<label className="flex items-center gap-2">
 									<Checkbox
-										checked={formData.active}
+										checked={formData.inactive}
 										onChange={(e) =>
-											setFormData({ ...formData, active: e.target.checked })
+											setFormData({ ...formData, inactive: e.target.checked })
 										}
 									/>
-									<span className="text-sm">Kursant aktywny</span>
+									<span className="text-sm">Kursant nieaktywny</span>
 								</label>
 							</div>
 
@@ -345,7 +380,7 @@ export default function AddStudentPage() {
 												stateExamStatus: e.target.value as any,
 											})
 										}>
-										<option value="not_allowed">Niedopuszczony</option>
+										<option value="allowed">Dopuszczony</option>
 										<option value="failed">Niezdany</option>
 										<option value="passed">Zdany</option>
 									</Select>

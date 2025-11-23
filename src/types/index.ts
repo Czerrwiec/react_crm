@@ -26,14 +26,17 @@ export interface Student {
     profileUpdated: boolean; // NOWE
     internalTheoryPassed: boolean; // NOWE (zastępuje internalExamPassed)
     internalPracticePassed: boolean; // NOWE
-    stateExamStatus: 'not_allowed' | 'failed' | 'passed'; // NOWE
+    stateExamStatus: 'allowed' | 'failed' | 'passed'; // NOWE
+    stateExamDate?: string | null; // NOWE
+    stateExamTime?: string | null; // NOWE
     stateExamAttempts: number; // NOWE
     isSupplementaryCourse: boolean;
     car: boolean;
-    active: boolean;
+    inactive: boolean;
     totalHoursDriven: number;
     courseStartDate: string | null;
     notes: string | null;
+    packageId?: string | null; // NOWE
 }
 
 export interface Lesson {
@@ -134,4 +137,12 @@ export interface InstructorHours {
 
 export interface StudentWithInstructors extends Student {
     instructors: Array<{ id: string; firstName: string; lastName: string }>;
+}
+
+export interface Package {
+    id: string;
+    name: string;
+    price: number;
+    hours: number;
+    description: string | null;
 }

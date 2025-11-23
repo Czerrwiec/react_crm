@@ -188,9 +188,12 @@ export default function StudentDetailPage() {
 			endMinute
 		);
 
+		const startShort = lesson.startTime.slice(0, 5); // "10:00"
+		const endShort = lesson.endTime.slice(0, 5);
+
 		return {
 			id: lesson.id,
-			title: `${lesson.startTime} - ${lesson.endTime}`,
+			title: `${startShort} - ${endShort}`,
 			start,
 			end,
 			resource: lesson,
@@ -274,14 +277,20 @@ export default function StudentDetailPage() {
 						<Button
 							variant="ghost"
 							size="icon"
-							onClick={() => navigate('/admin/students')}>
+							onClick={() =>
+								navigate(
+									role === 'admin' ? '/admin/students' : '/instructor/students'
+								)
+							}>
 							<ArrowLeft className="h-5 w-5" />
 						</Button>
-						<Button
-							size="icon"
-							onClick={() => navigate(`/admin/students/${id}/edit`)}>
-							<Pencil className="h-4 w-4" />
-						</Button>
+						{role === 'admin' && (
+							<Button
+								size="icon"
+								onClick={() => navigate(`/admin/students/${id}/edit`)}>
+								<Pencil className="h-4 w-4" />
+							</Button>
+						)}
 					</div>
 
 					{/* DESKTOP – w linii z imieniem */}
@@ -289,12 +298,18 @@ export default function StudentDetailPage() {
 						<Button
 							variant="ghost"
 							size="icon"
-							onClick={() => navigate('/admin/students')}>
+							onClick={() =>
+								navigate(
+									role === 'admin' ? '/admin/students' : '/instructor/students'
+								)
+							}>
 							<ArrowLeft className="h-5 w-5" />
 						</Button>
-						<Button onClick={() => navigate(`/admin/students/${id}/edit`)}>
-							Edytuj kursanta
-						</Button>
+						{role === 'admin' && (
+							<Button onClick={() => navigate(`/admin/students/${id}/edit`)}>
+								Edytuj kursanta
+							</Button>
+						)}
 					</div>
 				</div>
 
@@ -333,6 +348,16 @@ export default function StudentDetailPage() {
 									</CardTitle>
 								</CardHeader>
 								<CardContent className="space-y-2 text-sm">
+									{student.pkkNumber && (
+										<div>
+											<strong>PKK:</strong> {student.pkkNumber}
+										</div>
+									)}
+									{student.pesel && (
+										<div>
+											<strong>PESEL:</strong> {student.pesel}
+										</div>
+									)}
 									{student.phone && (
 										<div>
 											<strong>Telefon:</strong> {student.phone}
@@ -341,16 +366,6 @@ export default function StudentDetailPage() {
 									{student.email && (
 										<div>
 											<strong>Email:</strong> {student.email}
-										</div>
-									)}
-									{student.pkkNumber && (
-										<div>
-											<strong>PKK:</strong> {student.pkkNumber}
-										</div>
-									)}
-									{student.city && (
-										<div>
-											<strong>Miasto:</strong> {student.city}
 										</div>
 									)}
 								</CardContent>
@@ -388,9 +403,23 @@ export default function StudentDetailPage() {
 									<div>
 										<strong>Egzamin państwowy:</strong>{' '}
 										<span className={getStateExamStatusColor(student)}>
-											{getStateExamDisplayStatus(student)}
+											{student.stateExamStatus === 'allowed' && carReservation
+												? `Dopuszczony - egzamin ${carReservation.startTime.slice(
+														0,
+														5
+												  )}, ${format(
+														new Date(carReservation.date),
+														'dd.MM.yyyy'
+												  )}`
+												: getStateExamDisplayStatus(student)}
 										</span>
 									</div>
+
+									{student.city && (
+										<div>
+											<strong>Miasto zdawania:</strong> {student.city}
+										</div>
+									)}
 
 									{/* ZMIANA: wyświetlaj tylko jeśli true */}
 									{student.isSupplementaryCourse && (
@@ -428,12 +457,6 @@ export default function StudentDetailPage() {
 										<div>
 											<strong>Rozpoczęcie:</strong>{' '}
 											{format(new Date(student.courseStartDate), 'dd.MM.yyyy')}
-										</div>
-									)}
-
-									{student.pesel && (
-										<div>
-											<strong>PESEL:</strong> {student.pesel}
 										</div>
 									)}
 								</CardContent>

@@ -2,14 +2,24 @@ import { Routes, Route, Link, useLocation } from 'react-router-dom';
 import { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
-import { Users, Calendar, LogOut, Menu, X } from 'lucide-react';
+import {
+	Users,
+	Calendar,
+	LogOut,
+	Menu,
+	X,
+	LayoutDashboard,
+} from 'lucide-react';
 import NotificationBell from '@/components/NotificationBell';
 import InstructorStudentsPage from '@/pages/instructor/InstructorStudentsPage';
 import InstructorCalendarPage from '@/pages/instructor/InstructorCalendarPage';
 import StudentDetailPage from '@/pages/admin/StudentDetailPage';
 import NotificationsPage from '@/pages/admin/NotificationsPage';
+import InstructorDashboardPage from '@/pages/instructor/InstructorDashboardPage';
+
 
 const navigation = [
+	{ name: 'Tablica', path: '/instructor/dashboard', icon: LayoutDashboard },
 	{ name: 'Kursanci', path: '/instructor/students', icon: Users },
 	{ name: 'Kalendarz', path: '/instructor/calendar', icon: Calendar },
 ];
@@ -37,7 +47,7 @@ export default function InstructorLayout() {
 					mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
 				)}>
 				<div className="flex h-16 items-center justify-center border-b px-6">
-					<h1 className="text-xl font-bold">CRM Admin</h1>
+					{/* <h1 className="text-xl font-bold">Instruktor</h1> */}
 					<NotificationBell />
 				</div>
 				<nav className="flex-1 space-y-1 p-4">
@@ -84,6 +94,7 @@ export default function InstructorLayout() {
 
 			<main className="flex-1 overflow-auto">
 				<Routes>
+					<Route path="dashboard" element={<InstructorDashboardPage />} />
 					<Route path="students" element={<InstructorStudentsPage />} />
 					<Route path="students/:id" element={<StudentDetailPage />} />
 					<Route path="calendar" element={<InstructorCalendarPage />} />

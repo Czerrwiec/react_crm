@@ -1,6 +1,6 @@
 import { supabase } from '@/lib/supabase'
 import type { Student } from '@/types'
-import { mapStudent, mapStudentWithInstructor } from '@/lib/mappers'
+import { mapStudent } from '@/lib/mappers'
 
 export const studentService = {
   async getStudents() {
@@ -42,7 +42,7 @@ export const studentService = {
     const { data, error } = await supabase
       .from('students')
       .select('*')
-      .eq('active', true)
+      .eq('inactive', false) 
       .order('last_name');
 
     if (error) throw error;
@@ -81,10 +81,13 @@ export const studentService = {
         state_exam_attempts: student.stateExamAttempts, // NOWE
         is_supplementary_course: student.isSupplementaryCourse,
         car: student.car,
-        active: student.active,
+        inactive: student.inactive,
         total_hours_driven: student.totalHoursDriven,
         course_start_date: student.courseStartDate,
         notes: student.notes,
+        state_exam_date: student.stateExamDate,
+        state_exam_time: student.stateExamTime,
+        package_id: student.packageId,
       })
       .select()
       .single();
@@ -113,10 +116,14 @@ export const studentService = {
     if (updates.stateExamAttempts !== undefined) snakeCaseUpdates.state_exam_attempts = updates.stateExamAttempts; // NOWE
     if (updates.isSupplementaryCourse !== undefined) snakeCaseUpdates.is_supplementary_course = updates.isSupplementaryCourse;
     if (updates.car !== undefined) snakeCaseUpdates.car = updates.car;
-    if (updates.active !== undefined) snakeCaseUpdates.active = updates.active;
+    if (updates.inactive !== undefined) snakeCaseUpdates.inactive = updates.inactive;
     if (updates.totalHoursDriven !== undefined) snakeCaseUpdates.total_hours_driven = updates.totalHoursDriven;
     if (updates.courseStartDate !== undefined) snakeCaseUpdates.course_start_date = updates.courseStartDate;
     if (updates.notes !== undefined) snakeCaseUpdates.notes = updates.notes;
+
+    if (updates.stateExamDate !== undefined) snakeCaseUpdates.state_exam_date = updates.stateExamDate;
+    if (updates.stateExamTime !== undefined) snakeCaseUpdates.state_exam_time = updates.stateExamTime;
+    if (updates.packageId !== undefined) snakeCaseUpdates.package_id = updates.packageId;
 
     const { data, error } = await supabase
       .from('students')
