@@ -43,7 +43,7 @@ export default function InstructorDashboardPage() {
 				.reduce((sum, l) => sum + l.duration, 0);
 
 			const myStudents = allStudents.filter(
-				(s) => s.instructorIds.includes(user.id) && s.inactive
+				(s) => s.instructorIds.includes(user.id) && !s.inactive
 			);
 
 			setStats({

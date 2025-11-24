@@ -368,12 +368,12 @@ export default function EditStudentPage() {
 
 								<label className="flex items-center gap-2">
 									<Checkbox
-										checked={!formData.inactive}
+										checked={formData.inactive}
 										onChange={(e) =>
 											setFormData({ ...formData, inactive: e.target.checked })
 										}
 									/>
-									<span className="text-sm">Kursant aktywny</span>
+									<span className="text-sm">Kursant nieaktywny</span>
 								</label>
 							</div>
 
