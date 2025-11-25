@@ -1,11 +1,17 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import {
+	BrowserRouter,
+	Routes,
+	Route,
+	Navigate,
+	useLocation,
+} from 'react-router-dom';
 import { AuthProvider, useAuth } from '@/hooks/useAuth';
 import { NotificationsProvider } from '@/hooks/notificationContext';
 import LoginPage from '@/pages/LoginPage';
 import AdminLayout from '@/components/layout/AdminLayout';
 import InstructorLayout from '@/components/layout/InstructorLayout';
 import ResetPasswordPage from '@/pages/ResetPasswordPage';
-import UpdatePasswordPage from '@/pages/UpdatePasswordPage'
+import UpdatePasswordPage from '@/pages/UpdatePasswordPage';
 
 function ProtectedRoute({
 	children,
@@ -33,6 +39,12 @@ function ProtectedRoute({
 
 function AppRoutes() {
 	const auth = useAuth();
+	const location = useLocation();
+
+	// Sprawdź czy to link resetu hasła
+	const isPasswordReset =
+		location.pathname === '/update-password' ||
+		window.location.hash.includes('type=recovery');
 
 	if (auth.loading) {
 		return (
@@ -42,13 +54,23 @@ function AppRoutes() {
 		);
 	}
 
+	// Pozwól na dostęp do update-password nawet dla zalogowanych
+	if (isPasswordReset) {
+		return (
+			<Routes>
+				<Route path="/update-password" element={<UpdatePasswordPage />} />
+				<Route path="*" element={<Navigate to="/update-password" replace />} />
+			</Routes>
+		);
+	}
+
 	if (!auth.user) {
 		return (
 			<Routes>
 				<Route path="/login" element={<LoginPage />} />
-				<Route path="*" element={<Navigate to="/login" replace />} />
 				<Route path="/reset-password" element={<ResetPasswordPage />} />
 				<Route path="/update-password" element={<UpdatePasswordPage />} />
+				<Route path="*" element={<Navigate to="/login" replace />} />
 			</Routes>
 		);
 	}
@@ -75,10 +97,14 @@ function AppRoutes() {
 					}
 				/>
 			)}
+			<Route path="/update-password" element={<UpdatePasswordPage />} />
 			<Route
 				path="*"
 				element={
-					<Navigate to={auth.role === 'admin' ? '/admin' : '/instructor'} replace />
+					<Navigate
+						to={auth.role === 'admin' ? '/admin' : '/instructor'}
+						replace
+					/>
 				}
 			/>
 		</Routes>

@@ -1,5 +1,5 @@
-// src/pages/UpdatePasswordPage.tsx (NOWY PLIK)
-import { useState, FormEvent } from 'react';
+// src/pages/UpdatePasswordPage.tsx
+import { useState, useEffect, FormEvent } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,7 +11,39 @@ export default function UpdatePasswordPage() {
 	const [confirmPassword, setConfirmPassword] = useState('');
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState('');
+	const [sessionChecked, setSessionChecked] = useState(false);
 	const navigate = useNavigate();
+
+	useEffect(() => {
+		// Sprawdź czy mamy token w hash
+		const hashParams = new URLSearchParams(window.location.hash.substring(1));
+		const accessToken = hashParams.get('access_token');
+		const refreshToken = hashParams.get('refresh_token');
+		const type = hashParams.get('type');
+
+		if (type === 'recovery' && accessToken && refreshToken) {
+			// Ustaw sesję z tokenami
+			supabase.auth
+				.setSession({
+					access_token: accessToken,
+					refresh_token: refreshToken,
+				})
+				.then(({ error }) => {
+					if (error) {
+						setError('Nieprawidłowy lub wygasły link resetowania hasła');
+					}
+					setSessionChecked(true);
+				});
+		} else {
+			// Sprawdź czy mamy aktywną sesję
+			supabase.auth.getSession().then(({ data: { session } }) => {
+				if (!session) {
+					setError('Brak aktywnej sesji. Link mógł wygasnąć.');
+				}
+				setSessionChecked(true);
+			});
+		}
+	}, []);
 
 	const handleSubmit = async (e: FormEvent) => {
 		e.preventDefault();
@@ -37,6 +69,9 @@ export default function UpdatePasswordPage() {
 			if (error) throw error;
 
 			alert('Hasło zostało zmienione!');
+
+			// Wyloguj użytkownika po zmianie hasła
+			await supabase.auth.signOut();
 			navigate('/login');
 		} catch (err: any) {
 			setError(err.message || 'Błąd zmiany hasła');
@@ -44,6 +79,14 @@ export default function UpdatePasswordPage() {
 			setLoading(false);
 		}
 	};
+
+	if (!sessionChecked) {
+		return (
+			<div className="flex h-screen items-center justify-center">
+				<div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+			</div>
+		);
+	}
 
 	return (
 		<div className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
