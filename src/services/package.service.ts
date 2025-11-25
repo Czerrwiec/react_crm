@@ -21,6 +21,7 @@ export const packageService = {
                 price: pkg.price,
                 hours: pkg.hours,
                 description: pkg.description,
+                includes_car: pkg.includesCar,
             })
             .select()
             .single();
@@ -30,9 +31,17 @@ export const packageService = {
     },
 
     async updatePackage(id: string, updates: Partial<Package>) {
+        const snakeCaseUpdates: any = {};
+
+        if (updates.name !== undefined) snakeCaseUpdates.name = updates.name;
+        if (updates.price !== undefined) snakeCaseUpdates.price = updates.price;
+        if (updates.hours !== undefined) snakeCaseUpdates.hours = updates.hours;
+        if (updates.description !== undefined) snakeCaseUpdates.description = updates.description;
+        if (updates.includesCar !== undefined) snakeCaseUpdates.includes_car = updates.includesCar;
+
         const { data, error } = await supabase
             .from('packages')
-            .update(updates)
+            .update(snakeCaseUpdates)
             .eq('id', id)
             .select()
             .single();

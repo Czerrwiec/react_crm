@@ -88,16 +88,6 @@ export default function CarsPage() {
 		}
 	};
 
-	const dayPropGetter = (date: Date) => {
-		const isSelectedDay =
-			format(date, 'yyyy-MM-dd') === format(selectedDay, 'yyyy-MM-dd');
-
-		return {
-			className: isSelectedDay ? 'rbc-selected-day' : '',
-		};
-	};
-
-
 	const loadReservations = async () => {
 		try {
 			const prevMonth = new Date(
@@ -194,6 +184,16 @@ export default function CarsPage() {
 				border: '0px',
 				display: 'block',
 			},
+		};
+	};
+
+
+	const dayPropGetter = (date: Date) => {
+		const isSelectedDay =
+			format(date, 'yyyy-MM-dd') === format(selectedDay, 'yyyy-MM-dd');
+
+		return {
+			className: isSelectedDay ? 'rbc-selected-day' : '',
 		};
 	};
 
@@ -469,6 +469,9 @@ export default function CarsPage() {
 									toolbar={false}
 									eventPropGetter={eventStyleGetter}
 									onSelectEvent={handleEventClick}
+									onSelectSlot={(slotInfo) => setSelectedDay(slotInfo.start)}
+									selectable
+									dayPropGetter={dayPropGetter}
 									formats={{
 										timeGutterFormat: 'HH:mm',
 										eventTimeRangeFormat: (

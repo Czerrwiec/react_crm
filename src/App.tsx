@@ -4,6 +4,8 @@ import { NotificationsProvider } from '@/hooks/notificationContext';
 import LoginPage from '@/pages/LoginPage';
 import AdminLayout from '@/components/layout/AdminLayout';
 import InstructorLayout from '@/components/layout/InstructorLayout';
+import ResetPasswordPage from '@/pages/ResetPasswordPage';
+import UpdatePasswordPage from '@/pages/UpdatePasswordPage'
 
 function ProtectedRoute({
 	children,
@@ -45,6 +47,8 @@ function AppRoutes() {
 			<Routes>
 				<Route path="/login" element={<LoginPage />} />
 				<Route path="*" element={<Navigate to="/login" replace />} />
+				<Route path="/reset-password" element={<ResetPasswordPage />} />
+				<Route path="/update-password" element={<UpdatePasswordPage />} />
 			</Routes>
 		);
 	}

@@ -73,7 +73,7 @@ export default function PackagesPage() {
 					<Card key={pkg.id}>
 						<CardHeader>
 							<div className="flex items-start justify-between">
-								<CardTitle>{pkg.name}</CardTitle>
+								<CardTitle className="text-lg sm:text-xl">{pkg.name}</CardTitle>
 								<div className="flex gap-2">
 									<Button
 										variant="ghost"

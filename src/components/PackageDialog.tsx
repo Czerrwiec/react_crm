@@ -1,4 +1,5 @@
 import { useState, useEffect, FormEvent } from 'react';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
 	Dialog,
 	DialogContent,
@@ -31,6 +32,7 @@ export default function PackageDialog({
 		price: '',
 		hours: '',
 		description: '',
+		includesCar: false,
 	});
 
 	useEffect(() => {
@@ -41,6 +43,7 @@ export default function PackageDialog({
 					price: pkg.price.toString(),
 					hours: pkg.hours.toString(),
 					description: pkg.description || '',
+					includesCar: pkg.includesCar,
 				});
 			} else {
 				setFormData({
@@ -48,6 +51,7 @@ export default function PackageDialog({
 					price: '',
 					hours: '',
 					description: '',
+					includesCar: false,
 				});
 			}
 		}
@@ -63,6 +67,7 @@ export default function PackageDialog({
 				price: parseFloat(formData.price),
 				hours: parseFloat(formData.hours),
 				description: formData.description || null,
+				includesCar: formData.includesCar,
 			};
 
 			if (pkg) {
@@ -130,6 +135,16 @@ export default function PackageDialog({
 							/>
 						</div>
 					</div>
+
+					<label className="flex items-center gap-2">
+						<Checkbox
+							checked={formData.includesCar}
+							onChange={(e) =>
+								setFormData({ ...formData, includesCar: e.target.checked })
+							}
+						/>
+						<span className="text-sm">Auto na egzamin</span>
+					</label>
 
 					<div>
 						<Label htmlFor="description">Opis</Label>

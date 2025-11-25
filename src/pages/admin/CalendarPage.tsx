@@ -740,7 +740,7 @@ export default function CalendarPage() {
 					onOpenChange={setLessonDialogOpen}
 					instructorId={selectedInstructor}
 					lesson={editingLesson}
-					preselectedDate={selectedDay}
+					preselectedDate={view === 'month' ? selectedDay : currentDate}
 					onSuccess={loadLessons}
 				/>
 			)}

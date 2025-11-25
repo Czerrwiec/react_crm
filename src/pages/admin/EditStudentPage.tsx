@@ -241,7 +241,8 @@ export default function EditStudentPage() {
 											setFormData({
 												...formData,
 												packageId: e.target.value,
-												coursePrice: pkg ? pkg.price : formData.coursePrice, // usuń .toString()
+												coursePrice: pkg ? pkg.price : formData.coursePrice,
+												car: pkg ? pkg.includesCar : formData.car,
 											});
 										}}>
 										<option value="">Wybierz pakiet</option>

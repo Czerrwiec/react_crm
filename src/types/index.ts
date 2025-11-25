@@ -145,4 +145,5 @@ export interface Package {
     price: number;
     hours: number;
     description: string | null;
+    includesCar: boolean; 
 }

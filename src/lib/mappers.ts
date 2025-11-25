@@ -152,5 +152,6 @@ export function mapPackage(data: any): Package {
         price: data.price,
         hours: data.hours,
         description: data.description,
+        includesCar: data.includes_car,
     };
 }

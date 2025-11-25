@@ -2,6 +2,7 @@ import { useState, FormEvent } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { useNavigate } from 'react-router-dom';
 
 export default function LoginPage() {
 	const [email, setEmail] = useState('');
@@ -24,9 +25,11 @@ export default function LoginPage() {
 		}
 	};
 
+	const navigate = useNavigate();
+
 	return (
 		<div className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
-			<div className="w-full max-w-md space-y-8 -mt-20">		
+			<div className="w-full max-w-md space-y-8 -mt-20">
 				<form onSubmit={handleSubmit} className="mt-8 space-y-6">
 					{error && (
 						<div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
@@ -56,6 +59,15 @@ export default function LoginPage() {
 					<Button type="submit" className="w-full" disabled={loading}>
 						{loading ? 'Logowanie...' : 'Zaloguj się'}
 					</Button>
+
+					<div className="text-center">
+						<button
+							type="button"
+							onClick={() => navigate('/reset-password')}
+							className="text-sm text-primary hover:underline">
+							Zapomniałeś hasła?
+						</button>
+					</div>
 				</form>
 			</div>
 		</div>

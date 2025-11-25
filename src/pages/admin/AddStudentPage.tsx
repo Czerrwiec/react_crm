@@ -245,6 +245,7 @@ export default function AddStudentPage() {
 												coursePrice: pkg
 													? pkg.price.toString()
 													: formData.coursePrice,
+												car: pkg ? pkg.includesCar : formData.car,
 											});
 										}}>
 										<option value="">Wybierz pakiet</option>
