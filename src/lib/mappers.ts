@@ -115,7 +115,9 @@ export function mapCar(data: any): Car {
         inspectionDate: data.inspection_date,
         insuranceDate: data.insurance_date,
         active: data.active ?? true,
-        color: data.color || '#3b82f6'
+        color: data.color || '#3b82f6',
+        reminderEmails: data.reminder_emails || [],
+        reminderDaysBefore: data.reminder_days_before || [7, 3]
     };
 }
 

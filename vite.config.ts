@@ -6,14 +6,15 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
-      registerType: 'autoUpdate',
+      registerType: 'prompt',
+      injectRegister: 'auto',
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'robots.txt'],
       manifest: {
         name: 'Easy Drive',
         short_name: 'Easy Drive',
         description: '',
-        theme_color: '#0435bcff',
-        background_color: '#0435bcff',
+        theme_color: '#052e9fff',
+        background_color: '#052e9fff',
         display: 'standalone',
         orientation: 'portrait',
         start_url: '/',
@@ -67,11 +68,14 @@ export default defineConfig({
               cacheName: 'supabase-cache',
               expiration: {
                 maxEntries: 50,
-                maxAgeSeconds: 60 * 60 * 24 // 24h
-              }
+                maxAgeSeconds: 60 * 60 * 24
+              },
+              networkTimeoutSeconds: 10
             }
           }
-        ]
+        ],
+        skipWaiting: true,
+        clientsClaim: true
       }
     })
   ],

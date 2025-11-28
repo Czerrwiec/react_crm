@@ -12,6 +12,7 @@ import AdminLayout from '@/components/layout/AdminLayout';
 import InstructorLayout from '@/components/layout/InstructorLayout';
 import ResetPasswordPage from '@/pages/ResetPasswordPage';
 import UpdatePasswordPage from '@/pages/UpdatePasswordPage';
+import { usePWAUpdate } from '@/hooks/usePWAUpdate';
 
 function ProtectedRoute({
 	children,
@@ -112,6 +113,9 @@ function AppRoutes() {
 }
 
 export default function App() {
+
+	usePWAUpdate();
+	
 	return (
 		<BrowserRouter>
 			<AuthProvider>

@@ -96,14 +96,16 @@ export interface NotificationSettings {
 }
 
 export interface Car {
-    id: string
-    name: string
-    year: number
-    registrationNumber: string | null
-    inspectionDate: string | null
-    insuranceDate: string | null
-    active: boolean
-    color: string
+    id: string;
+    name: string;
+    year: number;
+    registrationNumber: string | null;
+    inspectionDate: string | null;
+    insuranceDate: string | null;
+    active: boolean;
+    color: string;
+    reminderEmails: string[]; 
+    reminderDaysBefore: number[];
 }
 
 export interface CarReservation {
