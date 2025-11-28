@@ -116,8 +116,6 @@ export function mapCar(data: any): Car {
         insuranceDate: data.insurance_date,
         active: data.active ?? true,
         color: data.color || '#3b82f6',
-        reminderEmails: data.reminder_emails || [],
-        reminderDaysBefore: data.reminder_days_before || [7, 3]
     };
 }
 
@@ -144,6 +142,7 @@ export function mapSchoolInfo(data: any): SchoolInfo {
         street: data.street,
         postalCode: data.postal_code,
         phone: data.phone,
+        carReminderEmails: data.car_reminder_emails || [],
     }
 }
 

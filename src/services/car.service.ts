@@ -46,8 +46,6 @@ export const carService = {
                 insurance_date: car.insuranceDate,
                 active: car.active,
                 color: car.color,
-                reminder_emails: car.reminderEmails, 
-                reminder_days_before: car.reminderDaysBefore 
             })
             .select()
             .single();
@@ -66,10 +64,6 @@ export const carService = {
         if (updates.insuranceDate !== undefined) snakeCaseUpdates.insurance_date = updates.insuranceDate;
         if (updates.active !== undefined) snakeCaseUpdates.active = updates.active;
         if (updates.color !== undefined) snakeCaseUpdates.color = updates.color;
-        if (updates.reminderEmails !== undefined)
-            snakeCaseUpdates.reminder_emails = updates.reminderEmails;
-        if (updates.reminderDaysBefore !== undefined)
-            snakeCaseUpdates.reminder_days_before = updates.reminderDaysBefore;
 
         const { data, error } = await supabase
             .from('cars')

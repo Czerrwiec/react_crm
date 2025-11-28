@@ -32,6 +32,7 @@ export const schoolService = {
         if (updates.street !== undefined) snakeCaseUpdates.street = updates.street
         if (updates.postalCode !== undefined) snakeCaseUpdates.postal_code = updates.postalCode
         if (updates.phone !== undefined) snakeCaseUpdates.phone = updates.phone
+        if (updates.carReminderEmails !== undefined) snakeCaseUpdates.car_reminder_emails = updates.carReminderEmails; 
 
         snakeCaseUpdates.updated_at = new Date().toISOString()
 

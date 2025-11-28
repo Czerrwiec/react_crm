@@ -104,8 +104,6 @@ export interface Car {
     insuranceDate: string | null;
     active: boolean;
     color: string;
-    reminderEmails: string[]; 
-    reminderDaysBefore: number[];
 }
 
 export interface CarReservation {
@@ -128,6 +126,7 @@ export interface SchoolInfo {
     street: string | null
     postalCode: string | null
     phone: string | null
+    carReminderEmails: string[];
 }
 
 export interface InstructorHours {

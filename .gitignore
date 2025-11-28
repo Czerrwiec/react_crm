@@ -25,7 +25,9 @@ dist-ssr
 
 # Environment variables
 .env
+.env test
 .env.local
 .env.production
+.env.prod
 vite.config.js BACKUP
 tsconfig.tsbuildinfo

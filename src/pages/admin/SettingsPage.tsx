@@ -9,6 +9,7 @@ import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/hooks/useAuth';
 import { schoolService } from '@/services/school.service';
 import type { SchoolInfo } from '@/types';
+import { X } from 'lucide-react';
 
 interface NotificationSettings {
 	enabled: boolean;
@@ -40,6 +41,7 @@ export default function SettingsPage() {
 	const [loading, setLoading] = useState(true);
 	const [saving, setSaving] = useState(false);
 	const [savingSchool, setSavingSchool] = useState(false);
+	const [newCarEmail, setNewCarEmail] = useState('');
 
 	useEffect(() => {
 		if (user) {
@@ -159,6 +161,32 @@ export default function SettingsPage() {
 			}
 			document.body.removeChild(textarea);
 		}
+	};
+
+	const handleAddCarEmail = () => {
+		if (!schoolInfo) return;
+
+		const email = newCarEmail.trim();
+		if (email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+			setSchoolInfo({
+				...schoolInfo,
+				carReminderEmails: [...(schoolInfo.carReminderEmails || []), email],
+			});
+			setNewCarEmail('');
+		} else {
+			alert('Podaj prawidłowy adres email');
+		}
+	};
+
+	const handleRemoveCarEmail = (index: number) => {
+		if (!schoolInfo) return;
+
+		setSchoolInfo({
+			...schoolInfo,
+			carReminderEmails: schoolInfo.carReminderEmails.filter(
+				(_, i) => i !== index
+			),
+		});
 	};
 
 	if (loading) {
@@ -441,6 +469,82 @@ export default function SettingsPage() {
 											)}
 										</div>
 									</>
+								)}
+							</CardContent>
+						</Card>
+
+						{/* Przypomnienia o samochodach */}
+						<Card>
+							<CardHeader>
+								<CardTitle className="text-base sm:text-xl">
+									Przypomnienia o terminach samochodów
+								</CardTitle>
+							</CardHeader>
+							<CardContent className="space-y-3">
+								<p className="text-xs sm:text-sm text-gray-600">
+									Email(e) na które będą wysyłane przypomnienia o zbliżających
+									się terminach przeglądów i ubezpieczeń (7, 3 i 1 dzień przed)
+								</p>
+
+								{!editingSchool && schoolInfo && (
+									<div className="space-y-2">
+										{schoolInfo.carReminderEmails &&
+										schoolInfo.carReminderEmails.length > 0 ? (
+											schoolInfo.carReminderEmails.map((email, idx) => (
+												<div
+													key={idx}
+													className="bg-gray-50 p-2 rounded text-sm">
+													{email}
+												</div>
+											))
+										) : (
+											<div className="text-sm text-gray-500 italic">
+												Brak skonfigurowanych adresów email
+											</div>
+										)}
+									</div>
+								)}
+
+								{editingSchool && schoolInfo && (
+									<div className="space-y-2">
+										<div className="flex gap-2">
+											<Input
+												placeholder="email@example.com"
+												type="email"
+												value={newCarEmail}
+												onChange={(e) => setNewCarEmail(e.target.value)}
+												onKeyPress={(e) => {
+													if (e.key === 'Enter') {
+														e.preventDefault();
+														handleAddCarEmail();
+													}
+												}}
+											/>
+											<Button type="button" onClick={handleAddCarEmail}>
+												Dodaj
+											</Button>
+										</div>
+
+										{schoolInfo.carReminderEmails &&
+											schoolInfo.carReminderEmails.length > 0 && (
+												<div className="space-y-1">
+													{schoolInfo.carReminderEmails.map((email, idx) => (
+														<div
+															key={idx}
+															className="flex items-center justify-between bg-gray-50 p-2 rounded">
+															<span className="text-sm">{email}</span>
+															<Button
+																type="button"
+																variant="ghost"
+																size="icon"
+																onClick={() => handleRemoveCarEmail(idx)}>
+																<X className="h-4 w-4" />
+															</Button>
+														</div>
+													))}
+												</div>
+											)}
+									</div>
 								)}
 							</CardContent>
 						</Card>
