@@ -134,7 +134,6 @@ export default function StudentsPage() {
 		try {
 			// Sprawdź czy geolokalizacja jest dostępna
 			if (!navigator.geolocation) {
-				setWeather({ city: 'Wągrowiec', temp: 23 });
 				return;
 			}
 
@@ -174,7 +173,7 @@ export default function StudentsPage() {
 			});
 		} catch (error) {
 			console.error('Error loading weather:', error);
-			setWeather({ city: 'Wągrowiec', temp: -13 });
+			setWeather(null);
 		}
 	};
 
@@ -291,9 +290,12 @@ export default function StudentsPage() {
 					{/* Data i pogoda */}
 					<div className="mb-4 flex items-center justify-between text-sm">
 						<span className="capitalize text-gray-600">{dateStr}</span>
-						<span className="text-gray-400">
-							{weather ? `${weather.city} ${weather.temp}℃` : 'Ładowanie...'}
-						</span>
+
+						{weather && (
+							<span className="text-gray-400">
+								{weather.city} {weather.temp}℃
+							</span>
+						)}
 					</div>
 
 					{/* Desktop Header */}

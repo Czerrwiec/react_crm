@@ -82,9 +82,10 @@ export default function NotificationsPage() {
 	};
 
 	const getNotificationIcon = (type: string) => {
-		if (type.includes('lesson')) return '📅';
+		if (type.includes('lesson')) return '🗓️';
 		if (type.includes('payment')) return '💰';
 		if (type.includes('student')) return '👤';
+		if (type.includes('car')) return '🚙';
 		return '🔔';
 	};
 
