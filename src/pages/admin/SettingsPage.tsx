@@ -1,3 +1,4 @@
+import AppVersion from '@/components/AppVersion';
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -716,6 +717,12 @@ export default function SettingsPage() {
 								</div>
 							</CardContent>
 						</Card>
+
+						{/* Wersja */}
+						<div>
+							<AppVersion />
+						</div>
+						
 					</div>
 				</div>
 			</div>

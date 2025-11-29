@@ -27,19 +27,34 @@ export const instructorService = {
     },
 
     async getInstructorWithStudentCount() {
-        const { data, error } = await supabase
-            .from('users')
-            .select(`*,students:students!students_instructor_id_fkey(count)`)
-            .eq('role', 'instructor')
-            .order('last_name')
+    // Pobierz instruktorów
+    const { data: instructors, error: instructorsError } = await supabase
+        .from('users')
+        .select('*')
+        .eq('role', 'instructor')
+        .order('last_name');
 
-        if (error) throw error
+    if (instructorsError) throw instructorsError;
 
-        return data.map((instructor) => ({
+    // Pobierz wszystkich studentów
+    const { data: students, error: studentsError } = await supabase
+        .from('students')
+        .select('id, instructor_ids');
+
+    if (studentsError) throw studentsError;
+
+    // Policz studentów dla każdego instruktora
+    return instructors.map((instructor) => {
+        const studentCount = students.filter(
+            (student) => student.instructor_ids && student.instructor_ids.includes(instructor.id)
+        ).length;
+
+        return {
             ...mapUser(instructor),
-            studentCount: instructor.students?.[0]?.count || 0,
-        }))
-    },
+            studentCount,
+        };
+    });
+},
 
     async getInstructor(id: string) {
         const { data, error } = await supabase
@@ -59,26 +74,21 @@ export const instructorService = {
         lastName: string
         phone?: string
     }) {
-        // Uwaga: To wymaga Edge Function lub Admin API
-        // Na razie placeholder - zaimplementuj według Twojego backendu
-        const { data, error } = await supabase.auth.signUp({
-            email: instructor.email,
-            password: instructor.password,
+        // Wywołaj Edge Function
+        const { data, error } = await supabase.functions.invoke('create-instructor-user', {
+            body: {
+                email: instructor.email,
+                password: instructor.password,
+                firstName: instructor.firstName,
+                lastName: instructor.lastName,
+                phone: instructor.phone,
+            }
         })
 
         if (error) throw error
-        if (!data.user) throw new Error('Failed to create user')
+        if (!data?.success) throw new Error(data?.error || 'Failed to create instructor')
 
-        // Dodaj do tabeli users
-        await supabase.rpc('create_instructor', {
-            p_user_id: data.user.id,
-            p_email: instructor.email,
-            p_first_name: instructor.firstName,
-            p_last_name: instructor.lastName,
-            p_phone: instructor.phone || null,
-        })
-
-        return data.user.id
+        return data.userId
     },
 
     async updateInstructor(id: string, updates: Partial<User>) {

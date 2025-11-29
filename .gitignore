@@ -28,6 +28,6 @@ dist-ssr
 .env test
 .env.local
 .env.production
-.env.prod
+.env prod
 vite.config.js BACKUP
 tsconfig.tsbuildinfo

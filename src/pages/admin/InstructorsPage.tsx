@@ -3,9 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { instructorService } from '@/services/instructor.service';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-// import { Button } from '@/components/ui/button';
+import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Search, Phone, Mail, Users } from 'lucide-react';
+import { Search, Phone, Mail, Users, Plus } from 'lucide-react';
 import type { User } from '@/types';
 
 type InstructorWithCount = User & { studentCount: number };
@@ -66,19 +66,19 @@ export default function InstructorsPage() {
 				<div className="p-4 sm:p-6">
 					{/* Mobile Header */}
 					<div className="mb-4 flex items-center justify-end md:hidden pt-10">
-						{/* <Button
+						<Button
 							size="icon"
 							onClick={() => navigate('/admin/instructors/add')}>
 							<Plus className="h-5 w-5" />
-						</Button> */}
+						</Button>
 					</div>
 
 					{/* Desktop Header */}
 					<div className="mb-4 hidden items-center justify-end md:flex">
-						{/* <Button onClick={() => navigate('/admin/instructors/add')}>
+						<Button onClick={() => navigate('/admin/instructors/add')}>
 							<Plus className="mr-2 h-4 w-4" />
 							Dodaj instruktora
-						</Button> */}
+						</Button>
 					</div>
 
 					{/* Search */}
