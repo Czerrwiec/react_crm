@@ -34,21 +34,25 @@ export default function AddInstructorPage() {
 	};
 
 	return (
-		<div className="p-8">
-			<Button
-				variant="ghost"
-				onClick={() => navigate('/admin/instructors')}
-				className="mb-4">
-				<ArrowLeft className="mr-2 h-4 w-4" />
-				Powrót
-			</Button>
+		<div className="p-2 sm:p-4 md:p-8">
+			<div className="mb-4 flex items-center justify-end sm:justify-between pt-2">
+				<Button
+					variant="ghost"
+					onClick={() => navigate('/admin/instructors')}
+					className="sm:mb-0">
+					<ArrowLeft className="mr-2 h-4 w-4" />
+					Powrót
+				</Button>
+			</div>
 
-			<h1 className="mb-6 text-3xl font-bold">Dodaj instruktora</h1>
+			<h1 className="mb-6 text-2xl sm:text-3xl font-bold">Dodaj instruktora</h1>
 
 			<form onSubmit={handleSubmit}>
 				<Card className="max-w-2xl">
 					<CardHeader>
-						<CardTitle>Dane instruktora</CardTitle>
+						<CardTitle className="text-lg sm:text-xl">
+							Dane instruktora
+						</CardTitle>
 					</CardHeader>
 					<CardContent className="space-y-4">
 						<div className="grid grid-cols-2 gap-4">
@@ -121,14 +125,15 @@ export default function AddInstructorPage() {
 					</CardContent>
 				</Card>
 
-				<div className="mt-6 flex justify-end gap-4">
+				<div className="mt-6 flex flex-col gap-2 sm:flex-row sm:justify-end sm:gap-4">
 					<Button
 						type="button"
 						variant="outline"
-						onClick={() => navigate('/admin/instructors')}>
+						onClick={() => navigate('/admin/instructors')}
+						className="w-full sm:w-auto">
 						Anuluj
 					</Button>
-					<Button type="submit" disabled={loading}>
+					<Button type="submit" disabled={loading} className="w-full sm:w-auto">
 						{loading ? 'Dodawanie...' : 'Dodaj instruktora'}
 					</Button>
 				</div>

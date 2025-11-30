@@ -74,10 +74,23 @@ export default function UpdatePasswordPage() {
 			await supabase.auth.signOut();
 			navigate('/login');
 		} catch (err: any) {
-			setError(err.message || 'Błąd zmiany hasła');
+			setError(translateAuthError(err.message || 'Błąd zmiany hasła'));
 		} finally {
 			setLoading(false);
 		}
+	};
+
+	const translateAuthError = (error: string): string => {
+		const translations: Record<string, string> = {
+			'Password should be at least 6 characters':
+				'Hasło musi mieć minimum 6 znaków',
+			'New password should be different from the old password':
+				'Nowe hasło musi różnić się od starego',
+			'Invalid session': 'Sesja wygasła',
+			'Network request failed': 'Błąd połączenia z serwerem',
+		};
+
+		return translations[error] || error;
 	};
 
 	if (!sessionChecked) {

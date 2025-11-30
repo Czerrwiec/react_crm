@@ -138,6 +138,14 @@
 	.rbc-time-content .rbc-event-content {
 		display: none;
 	}
+	.rbc-month-view .rbc-event {
+		max-height: 18px !important;
+		overflow: hidden !important;
+	}
+	.rbc-month-view .rbc-event-content {
+		font-size: 12px;
+		white-space: normal !important;
+	}
 }
 
 .rbc-day-slot .rbc-event-content {
@@ -154,11 +162,6 @@
 	overflow: hidden;
 	text-overflow: ellipsis;
 	white-space: nowrap;
-}
-
-/* Widok miesięczny - normalny tekst */
-.rbc-month-view .rbc-event-content {
-	font-size: 12px;
 }
 
 /* Krótszy tekst "show more" */

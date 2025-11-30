@@ -102,7 +102,7 @@ export default function CalendarPage() {
 
 	useEffect(() => {
 		loadLessons(); // Wywołuj zawsze, nie tylko gdy instructors.length > 0
-	}, [selectedInstructor, currentDate, instructorsMap.size]); 
+	}, [selectedInstructor, currentDate, instructorsMap.size]);
 
 	// Check for lessonId from navigation state
 	useEffect(() => {
@@ -194,7 +194,6 @@ export default function CalendarPage() {
 	);
 
 	const generateEvents = (forView: View) => {
-		
 		if (instructorsMap.size === 0 || lessons.length === 0) return [];
 
 		return lessons.map((lesson) => {
@@ -325,6 +324,7 @@ export default function CalendarPage() {
 	};
 
 	const handleEditLesson = (lesson: Lesson) => {
+		setSelectedInstructor(lesson.instructorId);
 		setEditingLesson(lesson);
 		setLessonDialogOpen(true);
 	};
@@ -734,7 +734,7 @@ export default function CalendarPage() {
 			</div>
 
 			{/* Dialogs */}
-			{canAddLesson && (
+			{selectedInstructor && selectedInstructor !== 'all' && (
 				<LessonDialog
 					open={lessonDialogOpen}
 					onOpenChange={setLessonDialogOpen}

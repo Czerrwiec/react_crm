@@ -19,13 +19,31 @@ export default function LoginPage() {
 		try {
 			await signIn(email, password);
 		} catch (err: any) {
-			setError(err.message || 'Błąd logowania');
+			const errorMessage = err.message || 'Błąd logowania';
+			setError(translateAuthError(errorMessage));
 		} finally {
 			setLoading(false);
 		}
 	};
 
 	const navigate = useNavigate();
+
+	const translateAuthError = (error: string): string => {
+		const translations: Record<string, string> = {
+			'Invalid login credentials': 'Nieprawidłowy email lub hasło',
+			'Email not confirmed': 'Email nie został potwierdzony',
+			'User not found': 'Użytkownik nie istnieje',
+			'Invalid email': 'Nieprawidłowy adres email',
+			'Password should be at least 6 characters':
+				'Hasło musi mieć minimum 6 znaków',
+			'Email already registered': 'Email jest już zarejestrowany',
+			'User already registered': 'Użytkownik już istnieje',
+			'Invalid password': 'Nieprawidłowe hasło',
+			'Network request failed': 'Błąd połączenia z serwerem',
+		};
+
+		return translations[error] || error;
+	};
 
 	return (
 		<div className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
