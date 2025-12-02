@@ -7,6 +7,7 @@ import {
 } from 'react';
 import { authService } from '@/services/auth.service';
 import type { UserRole } from '@/types';
+import { supabase } from '@/lib/supabase';
 
 interface AuthContextType {
 	user: any | null;
@@ -26,28 +27,57 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 	useEffect(() => {
 		let mounted = true;
 
-		// Check initial session
-		authService.getCurrentUser().then(({ data: { user } }) => {
+		authService.getCurrentUser().then(async ({ data: { user } }) => {
 			if (!mounted) return;
 			setUser(user);
+
 			if (user) {
-				authService.getUserRole().then((role) => {
-					if (mounted) setRole(role);
-				});
+				const { data: userRecord } = await supabase
+					.from('users')
+					.select('role, active') // DODAJ active
+					.eq('id', user.id)
+					.single();
+
+				if (userRecord) {
+					// Sprawdź czy aktywny
+					if (!userRecord.active) {
+						await authService.signOut();
+						setUser(null);
+						setRole(null);
+						alert(
+							'Twoje konto zostało dezaktywowane. Skontaktuj się z administratorem.'
+						);
+						return;
+					}
+					setRole(userRecord.role as UserRole);
+				}
 			}
 			setLoading(false);
 		});
 
-		// Listen for auth changes
 		const {
 			data: { subscription },
-		} = authService.onAuthStateChange((user) => {
+		} = authService.onAuthStateChange(async (user) => {
 			if (!mounted) return;
 			setUser(user);
+
 			if (user) {
-				authService.getUserRole().then((role) => {
-					if (mounted) setRole(role);
-				});
+				const { data: userRecord } = await supabase
+					.from('users')
+					.select('role, active')
+					.eq('id', user.id)
+					.single();
+
+				if (userRecord) {
+					if (!userRecord.active) {
+						await authService.signOut();
+						setUser(null);
+						setRole(null);
+						alert('Twoje konto zostało dezaktywowane.');
+						return;
+					}
+					setRole(userRecord.role as UserRole);
+				}
 			} else {
 				setRole(null);
 			}
@@ -76,6 +106,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 	);
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useAuth() {
 	const context = useContext(AuthContext);
 	if (context === undefined) {

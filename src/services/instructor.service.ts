@@ -27,11 +27,11 @@ export const instructorService = {
     },
 
     async getInstructorWithStudentCount() {
-    // Pobierz instruktorów
     const { data: instructors, error: instructorsError } = await supabase
         .from('users')
         .select('*')
         .eq('role', 'instructor')
+        .eq('active', true)
         .order('last_name');
 
     if (instructorsError) throw instructorsError;
@@ -61,6 +61,7 @@ export const instructorService = {
             .from('users')
             .select('*')
             .eq('id', id)
+            .eq('active', true)
             .single()
 
         if (error) throw error

@@ -39,6 +39,8 @@ export default function LoginPage() {
 			'Email already registered': 'Email jest już zarejestrowany',
 			'User already registered': 'Użytkownik już istnieje',
 			'Invalid password': 'Nieprawidłowe hasło',
+			'Row level security':
+				'Konto zostało dezaktywowane. Skontaktuj się z administratorem.',
 			'Network request failed': 'Błąd połączenia z serwerem',
 		};
 

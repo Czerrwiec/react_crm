@@ -104,7 +104,6 @@ export default function EditStudentPage() {
 	return (
 		<div className="p-2 sm:p-4 md:p-8">
 			<div className="mb-4 flex items-center justify-between pt-2">
-				
 				<Button
 					variant="ghost"
 					className="ml-12"
@@ -222,7 +221,7 @@ export default function EditStudentPage() {
 						<CardContent className="space-y-4">
 							<div>
 								<InstructorMultiSelect
-									instructors={instructors}
+									instructors={instructors.filter((i) => i.active === true)}
 									selectedIds={formData.instructorIds}
 									onChange={(ids) =>
 										setFormData({ ...formData, instructorIds: ids })

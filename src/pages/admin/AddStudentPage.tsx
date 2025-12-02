@@ -223,7 +223,7 @@ export default function AddStudentPage() {
 						<CardContent className="space-y-4">
 							<div>
 								<InstructorMultiSelect
-									instructors={instructors}
+									instructors={instructors.filter((i) => i.active === true)}
 									selectedIds={formData.instructorIds}
 									onChange={(ids) =>
 										setFormData({ ...formData, instructorIds: ids })

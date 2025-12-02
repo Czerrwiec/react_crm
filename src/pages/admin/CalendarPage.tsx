@@ -73,7 +73,6 @@ interface CalendarEvent {
 }
 
 export default function CalendarPage() {
-	// const { user } = useAuth();
 	const location = useLocation();
 	const [lessons, setLessons] = useState<Lesson[]>([]);
 	const [instructors, setInstructors] = useState<User[]>([]);
@@ -129,7 +128,8 @@ export default function CalendarPage() {
 				instructorService.getInstructors(),
 				studentService.getStudents(),
 			]);
-			setInstructors(instructorsData);
+			const activeInstructors = instructorsData.filter((i) => i.active);
+			setInstructors(activeInstructors);
 			setStudents(studentsData);
 
 			// Stwórz mapę instruktorów

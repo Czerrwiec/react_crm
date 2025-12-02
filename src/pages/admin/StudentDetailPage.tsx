@@ -5,7 +5,6 @@ import { format, parse, startOfWeek, getDay } from 'date-fns';
 import { pl } from 'date-fns/locale';
 import { studentService } from '@/services/student.service';
 import { paymentService } from '@/services/payment.service';
-// import { lessonService } from '@/services/lesson.service';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';

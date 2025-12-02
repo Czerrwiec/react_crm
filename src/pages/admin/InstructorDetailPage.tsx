@@ -6,7 +6,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { lessonService } from '@/services/lesson.service';
 import { ArrowLeft, Pencil, Trash2, Save, X } from 'lucide-react';
@@ -69,20 +68,29 @@ export default function InstructorDetailPage() {
 	const handleDelete = async () => {
 		if (!id || !instructor) return;
 
+		// Sprawdź czy ma aktywnych kursantów
+		const activeCount = students.filter((s) => !s.inactive).length;
+		if (activeCount > 0) {
+			alert(
+				`Nie można dezaktywować instruktora, który ma ${activeCount} aktywnych kursantów.\n\nNajpierw usuń lub przenieś kursantów do innego instruktora.`
+			);
+			return;
+		}
+
 		const confirmed = window.confirm(
-			`Czy na pewno chcesz usunąć instruktora ${instructor.firstName} ${instructor.lastName}?\n\nTa operacja jest nieodwracalna.`
+			`Czy na pewno chcesz dezaktywować instruktora ${instructor.firstName} ${instructor.lastName}?\n\nInstruktor nie będzie mógł się zalogować, ale jego dane zostaną zachowane.`
 		);
 
 		if (!confirmed) return;
 
 		try {
-			await instructorService.deleteInstructor(id);
+			await instructorService.updateInstructor(id, { active: false });
 			navigate('/admin/instructors');
 		} catch (error: any) {
-			alert(error.message || 'Błąd usuwania instruktora');
+			alert(error.message || 'Błąd dezaktywacji instruktora');
 		}
 	};
-
+	
 	const [lessonStats, setLessonStats] = useState<{
 		scheduled: number;
 		completed: number;
@@ -224,16 +232,7 @@ export default function InstructorDetailPage() {
 										}
 									/>
 								</div>
-								<label className="flex items-center gap-2">
-									<Checkbox
-										checked={formData.active}
-										onChange={(e) =>
-											setFormData({ ...formData, active: e.target.checked })
-										}
-									/>
-									<span className="text-sm">Instruktor aktywny</span>
-								</label>
-
+								
 								<div className="flex gap-2">
 									<Button onClick={handleSave} className="flex-1">
 										<Save className="mr-2 h-4 w-4" />
