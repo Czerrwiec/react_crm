@@ -687,7 +687,11 @@ function ReservationsList({
 				<div className="space-y-2 max-h-[calc(100vh-400px)] overflow-y-auto">
 					{reservations.map((reservation) => {
 						const car = cars.find((c) => c.id === reservation.carId);
-						const carLabel = car?.registrationNumber || car?.name || 'Nieznany';
+						const carLabel = car?.name
+							? `${car.name}${
+									car.registrationNumber ? ' - ' + car.registrationNumber : ''
+							  }`
+							: car?.registrationNumber || 'Nieznany';
 						const studentNames = reservation.studentIds
 							.map((id) => studentNamesMap.get(id))
 							.filter(Boolean)

@@ -212,6 +212,21 @@ export const carService = {
 
             if (!admins || admins.length === 0) return
 
+            let actorName = 'Nieznany';
+            let actorRole = '';
+            if (currentUserId) {
+                const { data: actor } = await supabase
+                    .from('users')
+                    .select('first_name, last_name, role')
+                    .eq('id', currentUserId)
+                    .single();
+
+                if (actor) {
+                    actorName = `${actor.first_name} ${actor.last_name}`;
+                    actorRole = actor.role === 'admin' ? 'Admin' : 'Instruktor';
+                }
+            }
+
             // Pobierz nazwę samochodu - reservation ma snake_case pola z DB
             const carId = reservation.car_id || reservation.carId
             const { data: car } = await supabase
@@ -236,17 +251,17 @@ export const carService = {
             switch (action) {
                 case 'created':
                     title = 'Nowa rezerwacja samochodu'
-                    message = `Dodano rezerwację: ${carName} na ${date}, godz. ${startTime}`
+                    message = `${actorName} (${actorRole}) dodał rezerwację: ${carName} na ${date}, godz. ${startTime}`
                     type = 'car_reservation_created'
                     break
                 case 'updated':
                     title = 'Edycja rezerwacji samochodu'
-                    message = `Zaktualizowano rezerwację: ${carName} na ${date}, godz. ${startTime}`
+                    message = `${actorName} (${actorRole}) zaktualizował rezerwację: ${carName} na ${date}, godz. ${startTime}`
                     type = 'car_reservation_updated'
                     break
                 case 'deleted':
                     title = 'Usunięcie rezerwacji samochodu'
-                    message = `Usunięto rezerwację: ${carName} z ${date}, godz. ${startTime}`
+                    message = `${actorName} (${actorRole}) usunął rezerwację: ${carName} z ${date}, godz. ${startTime}`
                     type = 'car_reservation_deleted'
                     break
             }
