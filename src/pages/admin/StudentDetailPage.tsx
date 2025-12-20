@@ -96,12 +96,12 @@ export default function StudentDetailPage() {
 				studentService.getStudent(studentId),
 				paymentService.getPaymentsByStudent(studentId),
 			]);
+
 			setStudent(studentData);
 
 			let hoursToSet = 30; // default
-			if (studentData.customCourseHours) {
-				hoursToSet = studentData.customCourseHours;
-			} else if (studentData.packageId) {
+
+			if (studentData.packageId) {
 				const { data: pkg } = await supabase
 					.from('packages')
 					.select('name, hours')
@@ -109,10 +109,15 @@ export default function StudentDetailPage() {
 					.single();
 
 				if (pkg) {
-					setPackageName(`${pkg.name} ${pkg.hours}h`); // ZAWSZE ustaw nazwę pakietu
-					hoursToSet = pkg.hours;
+					setPackageName(`${pkg.name} ${pkg.hours}h`); 
+					hoursToSet = pkg.hours; 
 				}
 			}
+			// Nadpisz godzinami custom jeśli są ustawione
+			if (studentData.customCourseHours) {
+				hoursToSet = studentData.customCourseHours;
+			}
+
 			setPackageHours(hoursToSet);
 
 			const { data: instructors } = await supabase
@@ -477,19 +482,20 @@ export default function StudentDetailPage() {
 												className="text-sm">
 												{student.inactive ? 'Zakończony' : 'W trakcie'}
 											</Badge>
+
 											{packageName && (
 												<span className="text-sm font-medium text-gray-700">
 													{packageName} • {student.coursePrice.toFixed(0)} zł
 												</span>
 											)}
-											{/* NOWE - Badge dla kursu uzupełniającego */}
+
+											{/* Badge dla kursu uzupełniającego - bez ceny (już jest wyżej) */}
 											{student.isSupplementaryCourse && (
 												<Badge variant="secondary" className="text-sm">
 													Kurs uzupełniający
 												</Badge>
 											)}
 										</div>
-
 										{/* Instruktorzy */}
 										{student.instructorIds &&
 											student.instructorIds.length > 0 && (
