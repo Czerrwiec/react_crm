@@ -255,6 +255,17 @@ export default function StudentsPage() {
 		return m > 0 ? `${h}h ${m}m` : `${h}h`;
 	};
 
+	const formatPhone = (phone: string | null) => {
+		if (!phone) return null;
+		const cleaned = phone.replace(/\D/g, '');
+		if (cleaned.length === 9) {
+			return `${cleaned.slice(0, 3)} ${cleaned.slice(3, 6)} ${cleaned.slice(
+				6
+			)}`;
+		}
+		return phone;
+	};
+
 	const activeFiltersCount =
 		(showInactive ? 1 : 0) +
 		(showOnlyCoursePaid ? 1 : 0) +
@@ -659,8 +670,11 @@ export default function StudentsPage() {
 													{/* Desktop only */}
 													<div className="hidden sm:flex sm:flex-wrap sm:gap-2">
 														{student.coursePaid && (
-															<Badge variant="default" className="text-xs">
-																Opłacony
+															<Badge className="text-xs">Opłacony</Badge>
+														)}
+														{student.isSupplementaryCourse && ( // NOWE - dodaj to
+															<Badge variant="secondary" className="text-xs">
+																Uzupełniający
 															</Badge>
 														)}
 													</div>
@@ -689,7 +703,9 @@ export default function StudentsPage() {
 												{student.phone && (
 													<div className="flex items-center gap-2">
 														<Phone className="h-3 w-3 flex-shrink-0 sm:h-4 sm:w-4" />
-														<span className="truncate">{student.phone}</span>
+														<span className="truncate">
+															{formatPhone(student.phone)}
+														</span>
 													</div>
 												)}
 												{student.email && (

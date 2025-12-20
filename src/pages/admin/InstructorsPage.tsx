@@ -51,6 +51,17 @@ export default function InstructorsPage() {
 		}
 	};
 
+	const formatPhone = (phone: string | null) => {
+		if (!phone) return null;
+		const cleaned = phone.replace(/\D/g, '');
+		if (cleaned.length === 9) {
+			return `${cleaned.slice(0, 3)} ${cleaned.slice(3, 6)} ${cleaned.slice(
+				6
+			)}`;
+		}
+		return phone;
+	};
+
 	if (loading) {
 		return (
 			<div className="flex h-full items-center justify-center">
@@ -127,7 +138,7 @@ export default function InstructorsPage() {
 												{instructor.phone && (
 													<div className="flex items-center gap-2">
 														<Phone className="h-3 w-3 flex-shrink-0 sm:h-4 sm:w-4" />
-														<span className="truncate">{instructor.phone}</span>
+														<span className="truncate">{formatPhone(instructor.phone)}</span>
 													</div>
 												)}
 											</div>

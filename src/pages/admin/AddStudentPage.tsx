@@ -30,6 +30,8 @@ export default function AddStudentPage() {
 		city: '',
 		instructorIds: [] as string[],
 		coursePrice: '3200',
+		customCourseHours: '', 
+		markProgressComplete: false, 
 		courseStartDate: new Date().toISOString().split('T')[0],
 		profileUpdated: false, // NOWE
 		internalTheoryPassed: false, // NOWE
@@ -83,6 +85,10 @@ export default function AddStudentPage() {
 				city: formData.city || null,
 				instructorIds: formData.instructorIds,
 				coursePrice: parseFloat(formData.coursePrice),
+				customCourseHours: formData.customCourseHours
+					? parseFloat(formData.customCourseHours)
+					: null, // NOWE
+				markProgressComplete: formData.markProgressComplete, // NOWE
 				courseStartDate: formData.courseStartDate,
 				profileUpdated: formData.profileUpdated, // NOWE
 				internalTheoryPassed: formData.internalTheoryPassed, // NOWE
@@ -245,6 +251,7 @@ export default function AddStudentPage() {
 												coursePrice: pkg
 													? pkg.price.toString()
 													: formData.coursePrice,
+												customCourseHours: pkg ? pkg.hours.toString() : '', // NOWE - autofill
 												car: pkg ? pkg.includesCar : formData.car,
 											});
 										}}>
@@ -269,6 +276,7 @@ export default function AddStudentPage() {
 										}
 									/>
 								</div>
+
 								<div>
 									<Label htmlFor="courseStartDate">Data rozpoczęcia</Label>
 									<Input
@@ -282,6 +290,30 @@ export default function AddStudentPage() {
 											})
 										}
 									/>
+								</div>
+
+								<div>
+									<Label htmlFor="customCourseHours">
+										Liczba godzin kursu *
+									</Label>
+									<Input
+										id="customCourseHours"
+										type="number"
+										step="0.5"
+										min="0"
+										required
+										value={formData.customCourseHours}
+										onChange={(e) =>
+											setFormData({
+												...formData,
+												customCourseHours: e.target.value,
+											})
+										}
+										placeholder="np. 30"
+									/>
+									<p className="mt-1 text-xs text-gray-500">
+										Wypełnia się automatycznie z pakietu, można nadpisać
+									</p>
 								</div>
 							</div>
 
@@ -345,6 +377,20 @@ export default function AddStudentPage() {
 									/>
 									<span className="text-sm">Auto na egzamin</span>
 								</label>
+
+								<label className="flex items-center gap-2">
+									<Checkbox
+										checked={formData.markProgressComplete}
+										onChange={(e) =>
+											setFormData({
+												...formData,
+												markProgressComplete: e.target.checked,
+											})
+										}
+									/>
+									<span className="text-sm">Oznacz progress jako 100%</span>
+								</label>
+
 								<label className="flex items-center gap-2">
 									<Checkbox
 										checked={formData.inactive}
@@ -373,14 +419,21 @@ export default function AddStudentPage() {
 									</Label>
 									<Select
 										id="stateExamStatus"
-										value={formData.stateExamStatus}
-										disabled={!canEditStateExam} // DODAJ
+										value={
+											canEditStateExam
+												? formData.stateExamStatus
+												: 'not_allowed'
+										}
+										disabled={!canEditStateExam}
 										onChange={(e) =>
 											setFormData({
 												...formData,
 												stateExamStatus: e.target.value as any,
 											})
 										}>
+										{!canEditStateExam && (
+											<option value="not_allowed">Niedopuszczony</option>
+										)}
 										<option value="allowed">Dopuszczony</option>
 										<option value="failed">Niezdany</option>
 										<option value="passed">Zdany</option>

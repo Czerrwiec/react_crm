@@ -37,6 +37,8 @@ export interface Student {
     courseStartDate: string | null;
     notes: string | null;
     packageId?: string | null; // NOWE
+    customCourseHours?: number | null; // NOWE
+    markProgressComplete?: boolean; // NOWE
 }
 
 export interface Lesson {
@@ -146,5 +148,5 @@ export interface Package {
     price: number;
     hours: number;
     description: string | null;
-    includesCar: boolean; 
+    includesCar: boolean;
 }

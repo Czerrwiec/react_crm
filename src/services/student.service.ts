@@ -88,6 +88,8 @@ export const studentService = {
         state_exam_date: student.stateExamDate,
         state_exam_time: student.stateExamTime,
         package_id: student.packageId,
+        custom_course_hours: student.customCourseHours, 
+        mark_progress_complete: student.markProgressComplete, 
       })
       .select()
       .single();
@@ -124,6 +126,9 @@ export const studentService = {
     if (updates.stateExamDate !== undefined) snakeCaseUpdates.state_exam_date = updates.stateExamDate;
     if (updates.stateExamTime !== undefined) snakeCaseUpdates.state_exam_time = updates.stateExamTime;
     if (updates.packageId !== undefined) snakeCaseUpdates.package_id = updates.packageId;
+
+    if (updates.customCourseHours !== undefined) snakeCaseUpdates.custom_course_hours = updates.customCourseHours;
+    if (updates.markProgressComplete !== undefined) snakeCaseUpdates.mark_progress_complete = updates.markProgressComplete;
 
     const { data, error } = await supabase
       .from('students')

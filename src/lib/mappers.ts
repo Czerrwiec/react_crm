@@ -29,6 +29,8 @@ export function mapStudent(data: any): Student {
         stateExamDate: data.state_exam_date,
         stateExamTime: data.state_exam_time,
         packageId: data.package_id,
+        customCourseHours: data.custom_course_hours, 
+        markProgressComplete: data.mark_progress_complete, 
     };
 }
 

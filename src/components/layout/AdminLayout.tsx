@@ -30,7 +30,7 @@ import { Package } from 'lucide-react';
 import PackagesPage from '@/pages/admin/PackagesPage';
 
 const navigation = [
-	{ name: 'Dashboard', path: '/admin', icon: LayoutDashboard },
+	{ name: 'Tablica', path: '/admin', icon: LayoutDashboard },
 	{ name: 'Kursanci', path: '/admin/students', icon: Users },
 	{ name: 'Kalendarz', path: '/admin/calendar', icon: Calendar },
 	{ name: 'Samochody', path: '/admin/cars', icon: Car },

@@ -236,13 +236,26 @@ export default function EditStudentPage() {
 										id="packageId"
 										value={formData.packageId || ''}
 										onChange={(e) => {
-											const pkg = packages.find((p) => p.id === e.target.value);
-											setFormData({
-												...formData,
-												packageId: e.target.value,
-												coursePrice: pkg ? pkg.price : formData.coursePrice,
-												car: pkg ? pkg.includesCar : formData.car,
-											});
+											const selectedValue = e.target.value;
+											if (!selectedValue) {
+												setFormData({
+													...formData,
+													packageId: null,
+												});
+											} else {
+												const pkg = packages.find(
+													(p) => p.id === selectedValue
+												);
+												setFormData({
+													...formData,
+													packageId: selectedValue,
+													coursePrice: pkg ? pkg.price : formData.coursePrice,
+													customCourseHours: pkg
+														? pkg.hours
+														: formData.customCourseHours, // NOWE
+													car: pkg ? pkg.includesCar : formData.car,
+												});
+											}
 										}}>
 										<option value="">Wybierz pakiet</option>
 										{packages.map((pkg) => (
@@ -279,6 +292,28 @@ export default function EditStudentPage() {
 											setFormData({
 												...formData,
 												courseStartDate: e.target.value,
+											})
+										}
+									/>
+								</div>
+
+								<div>
+									<Label htmlFor="customCourseHours">
+										Liczba godzin kursu *
+									</Label>
+									<Input
+										id="customCourseHours"
+										type="number"
+										step="0.5"
+										min="0"
+										required
+										value={formData.customCourseHours || ''}
+										onChange={(e) =>
+											setFormData({
+												...formData,
+												customCourseHours: e.target.value
+													? parseFloat(e.target.value)
+													: null,
 											})
 										}
 									/>
@@ -375,6 +410,19 @@ export default function EditStudentPage() {
 									/>
 									<span className="text-sm">Kursant nieaktywny</span>
 								</label>
+
+								<label className="flex items-center gap-2">
+									<Checkbox
+										checked={formData.markProgressComplete || false}
+										onChange={(e) =>
+											setFormData({
+												...formData,
+												markProgressComplete: e.target.checked,
+											})
+										}
+									/>
+									<span className="text-sm">Oznacz progress jako 100%</span>
+								</label>
 							</div>
 
 							<div className="space-y-2 pt-4 border-t">
@@ -394,14 +442,21 @@ export default function EditStudentPage() {
 									</Label>
 									<Select
 										id="stateExamStatus"
-										value={formData.stateExamStatus}
-										disabled={!canEditStateExam} // DODAJ
+										value={
+											canEditStateExam
+												? formData.stateExamStatus
+												: 'not_allowed'
+										}
+										disabled={!canEditStateExam}
 										onChange={(e) =>
 											setFormData({
 												...formData,
 												stateExamStatus: e.target.value as any,
 											})
 										}>
+										{!canEditStateExam && (
+											<option value="not_allowed">Niedopuszczony</option>
+										)}
 										<option value="allowed">Dopuszczony</option>
 										<option value="failed">Niezdany</option>
 										<option value="passed">Zdany</option>

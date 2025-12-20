@@ -18,16 +18,30 @@ import {
 	DialogTitle,
 	DialogTrigger,
 } from '@/components/ui/dialog';
-import { ArrowLeft, Plus, Trash2, Pencil } from 'lucide-react';
+import {
+	ArrowLeft,
+	Plus,
+	Trash2,
+	Pencil,
+	CheckCircle2,
+	Clock,
+	XCircle,
+	User,
+	Calendar as CalendarIcon,
+	Car as CarIcon,
+	Save,
+	X,
+	MapPin
+} from 'lucide-react';
 import { carService } from '@/services/car.service';
 import type { Student, Payment, Lesson, CarReservation, Car } from '@/types';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/hooks/useAuth';
 import {
-	getStateExamDisplayStatus,
 	getStateExamStatusColor,
 } from '@/lib/student-utilis';
+import { Textarea } from '@/components/ui/textarea';
 
 const locales = { pl };
 const localizer = dateFnsLocalizer({
@@ -60,10 +74,21 @@ export default function StudentDetailPage() {
 	const [instructorsMap, setInstructorsMap] = useState<Map<string, string>>(
 		new Map()
 	);
+	const [packageName, setPackageName] = useState<string | null>(null);
+	const [packageHours, setPackageHours] = useState<number>(30);
+	const [editingNotes, setEditingNotes] = useState(false);
+	const [notesValue, setNotesValue] = useState('');
+	const [savingNotes, setSavingNotes] = useState(false);
 
 	useEffect(() => {
 		if (id) loadData(id);
 	}, [id]);
+
+	useEffect(() => {
+		if (student) {
+			setNotesValue(student.notes || '');
+		}
+	}, [student]);
 
 	const loadData = async (studentId: string) => {
 		try {
@@ -72,6 +97,23 @@ export default function StudentDetailPage() {
 				paymentService.getPaymentsByStudent(studentId),
 			]);
 			setStudent(studentData);
+
+			let hoursToSet = 30; // default
+			if (studentData.customCourseHours) {
+				hoursToSet = studentData.customCourseHours;
+			} else if (studentData.packageId) {
+				const { data: pkg } = await supabase
+					.from('packages')
+					.select('name, hours')
+					.eq('id', studentData.packageId)
+					.single();
+
+				if (pkg) {
+					setPackageName(`${pkg.name} ${pkg.hours}h`); // ZAWSZE ustaw nazwę pakietu
+					hoursToSet = pkg.hours;
+				}
+			}
+			setPackageHours(hoursToSet);
 
 			const { data: instructors } = await supabase
 				.from('users')
@@ -223,6 +265,39 @@ export default function StudentDetailPage() {
 		};
 	};
 
+	// Helper do formatowania telefonu
+	const formatPhone = (phone: string | null) => {
+		if (!phone) return null;
+		const cleaned = phone.replace(/\D/g, '');
+		if (cleaned.length === 9) {
+			return `${cleaned.slice(0, 3)} ${cleaned.slice(3, 6)} ${cleaned.slice(
+				6
+			)}`;
+		}
+		return phone;
+	};
+
+	const handleSaveNotes = async () => {
+		if (!id) return;
+
+		setSavingNotes(true);
+		try {
+			await studentService.updateStudent(id, { notes: notesValue });
+			setStudent((prev) => (prev ? { ...prev, notes: notesValue } : null));
+			setEditingNotes(false);
+		} catch (error) {
+			console.error('Error saving notes:', error);
+			alert('Błąd zapisywania notatek');
+		} finally {
+			setSavingNotes(false);
+		}
+	};
+
+	const handleCancelNotes = () => {
+		setNotesValue(student?.notes || '');
+		setEditingNotes(false);
+	};
+
 	const totalPaid = payments
 		.filter((p) => p.type === 'course')
 		.reduce((sum, p) => sum + p.amount, 0);
@@ -236,6 +311,23 @@ export default function StudentDetailPage() {
 		const m = Math.round((hours - h) * 60);
 		return m > 0 ? `${h}h ${m}m` : `${h}h`;
 	};
+
+	const calculateProgress = (current: number, total: number) => {
+		const percentage = total > 0 ? (current / total) * 100 : 0;
+		return Math.min(percentage, 100);
+	};
+
+	const getProgressColor = (percentage: number) => {
+		if (percentage >= 80) return 'bg-green-500';
+		if (percentage >= 50) return 'bg-amber-500';
+		return 'bg-blue-500';
+	};
+
+	const canEditStateExam = student
+		? student.profileUpdated &&
+		  student.internalTheoryPassed &&
+		  student.internalPracticePassed
+		: false;
 
 	if (loading || !student) {
 		return (
@@ -359,7 +451,7 @@ export default function StudentDetailPage() {
 									)}
 									{student.phone && (
 										<div>
-											<strong>Telefon:</strong> {student.phone}
+											<strong>Telefon:</strong> {formatPhone(student.phone)}
 										</div>
 									)}
 									{student.email && (
@@ -376,102 +468,335 @@ export default function StudentDetailPage() {
 										Postęp kursu
 									</CardTitle>
 								</CardHeader>
-								<CardContent className="space-y-2 text-sm">
-									<div>
-										<strong>Wyjezdzone:</strong>{' '}
-										{formatHours(student.totalHoursDriven)}
-									</div>
-
-									<div>
-										<strong>Profil:</strong>{' '}
-										{student.profileUpdated
-											? '✓ Zaktualizowany'
-											: '✗ Niezaktualizowany'}
-									</div>
-
-									<div>
-										<strong>Egzamin wewnętrzny teoria:</strong>{' '}
-										{student.internalTheoryPassed ? '✓ Zdany' : '✗ Nie zdany'}
-									</div>
-
-									<div>
-										<strong>Egzamin wewnętrzny praktyka:</strong>{' '}
-										{student.internalPracticePassed ? '✓ Zdany' : '✗ Nie zdany'}
-									</div>
-
-									<div>
-										<strong>Egzamin państwowy:</strong>{' '}
-										<span className={getStateExamStatusColor(student)}>
-											{student.stateExamStatus === 'allowed' && carReservation
-												? `Dopuszczony - egzamin ${carReservation.startTime.slice(
-														0,
-														5
-												  )}, ${format(
-														new Date(carReservation.date),
-														'dd.MM.yyyy'
-												  )}`
-												: getStateExamDisplayStatus(student)}
-										</span>
-									</div>
-
-									{student.city && (
-										<div>
-											<strong>Miasto zdawania:</strong> {student.city}
+								<CardContent className="space-y-6">
+									{/* A. STATUS KURSU - Summary */}
+									<div className="rounded-lg bg-blue-50 p-4 border border-blue-100">
+										<div className="flex flex-wrap items-center gap-2 mb-3">
+											<Badge
+												variant={student.inactive ? 'secondary' : 'default'}
+												className="text-sm">
+												{student.inactive ? 'Zakończony' : 'W trakcie'}
+											</Badge>
+											{packageName && (
+												<span className="text-sm font-medium text-gray-700">
+													{packageName} • {student.coursePrice.toFixed(0)} zł
+												</span>
+											)}
+											{/* NOWE - Badge dla kursu uzupełniającego */}
+											{student.isSupplementaryCourse && (
+												<Badge variant="secondary" className="text-sm">
+													Kurs uzupełniający
+												</Badge>
+											)}
 										</div>
-									)}
 
-									{/* ZMIANA: wyświetlaj tylko jeśli true */}
-									{student.isSupplementaryCourse && (
-										<div>
-											<strong>Kurs uzupełniający</strong>
-										</div>
-									)}
+										{/* Instruktorzy */}
+										{student.instructorIds &&
+											student.instructorIds.length > 0 && (
+												<div className="flex items-start gap-2 text-sm text-gray-700">
+													<User className="h-4 w-4 mt-0.5 flex-shrink-0" />
+													<div>
+														<span className="font-medium">
+															Instruktor
+															{student.instructorIds.length > 1 ? 'zy' : ''}:
+														</span>{' '}
+														{student.instructorIds
+															.map((id) => instructorsMap.get(id))
+															.filter(Boolean)
+															.join(', ')}
+													</div>
+												</div>
+											)}
+									</div>
 
+									{/* B. JAZDY - Progress bar */}
 									<div>
-										<strong>Auto na egzamin:</strong>{' '}
-										{student.car ? (
-											<>
-												Tak
+										<div className="flex items-center justify-between mb-2">
+											<h4 className="font-semibold text-gray-900">Jazdy</h4>
+											<span className="text-sm font-medium text-gray-600">
+												{student.markProgressComplete
+													? `${formatHours(packageHours)} / ${packageHours}h`
+													: `${formatHours(
+															student.totalHoursDriven
+													  )} / ${packageHours}h`}
+											</span>
+										</div>
+
+										{/* Progress bar */}
+										<div className="relative h-3 bg-gray-200 rounded-full overflow-hidden">
+											<div
+												className={`h-full transition-all duration-300 ${
+													student.markProgressComplete
+														? 'bg-green-500'
+														: getProgressColor(
+																calculateProgress(
+																	student.totalHoursDriven,
+																	packageHours
+																)
+														  )
+												}`}
+												style={{
+													width: student.markProgressComplete
+														? '100%'
+														: `${calculateProgress(
+																student.totalHoursDriven,
+																packageHours
+														  )}%`,
+												}}
+											/>
+										</div>
+
+										<div className="mt-1 text-xs text-gray-500 text-right">
+											{student.markProgressComplete ? (
+												<span className="text-green-600 font-medium">
+													✓ 100% ukończone
+												</span>
+											) : (
+												<>
+													{calculateProgress(
+														student.totalHoursDriven,
+														packageHours
+													).toFixed(0)}
+													% ukończone
+													{student.totalHoursDriven >= packageHours ? (
+														<span className="ml-2 text-green-600 font-medium">
+															✓ Ukończone
+														</span>
+													) : (
+														<span className="ml-2">
+															(brakuje{' '}
+															{formatHours(
+																packageHours - student.totalHoursDriven
+															)}
+															)
+														</span>
+													)}
+												</>
+											)}
+										</div>
+									</div>
+
+									{/* C. EGZAMINY - Checklista */}
+									<div>
+										<h4 className="font-semibold text-gray-900 mb-3">
+											Egzaminy
+										</h4>
+										<div className="space-y-2">
+											{/* Profil */}
+											<div className="flex items-center gap-3">
+												{student.profileUpdated ? (
+													<CheckCircle2 className="h-5 w-5 text-green-600 flex-shrink-0" />
+												) : (
+													<XCircle className="h-5 w-5 text-gray-400 flex-shrink-0" />
+												)}
+												<span
+													className={
+														student.profileUpdated
+															? 'text-gray-900'
+															: 'text-gray-500'
+													}>
+													Profil zaktualizowany
+												</span>
+											</div>
+
+											{/* Teoria wewnętrzna */}
+											<div className="flex items-center gap-3">
+												{student.internalTheoryPassed ? (
+													<CheckCircle2 className="h-5 w-5 text-green-600 flex-shrink-0" />
+												) : (
+													<XCircle className="h-5 w-5 text-gray-400 flex-shrink-0" />
+												)}
+												<span
+													className={
+														student.internalTheoryPassed
+															? 'text-gray-900'
+															: 'text-gray-500'
+													}>
+													Teoria wewnętrzna
+												</span>
+											</div>
+
+											{/* Praktyka wewnętrzna */}
+											<div className="flex items-center gap-3">
+												{student.internalPracticePassed ? (
+													<CheckCircle2 className="h-5 w-5 text-green-600 flex-shrink-0" />
+												) : (
+													<XCircle className="h-5 w-5 text-gray-400 flex-shrink-0" />
+												)}
+												<span
+													className={
+														student.internalPracticePassed
+															? 'text-gray-900'
+															: 'text-gray-500'
+													}>
+													Praktyka wewnętrzna
+												</span>
+											</div>
+
+											{/* Państwowy */}
+											<div className="flex items-center gap-3">
+												{student.stateExamStatus === 'passed' ? (
+													<CheckCircle2 className="h-5 w-5 text-green-600 flex-shrink-0" />
+												) : student.stateExamStatus === 'failed' ? (
+													<XCircle className="h-5 w-5 text-red-600 flex-shrink-0" />
+												) : canEditStateExam ? (
+													<Clock className="h-5 w-5 text-blue-600 flex-shrink-0" />
+												) : (
+													<Clock className="h-5 w-5 text-gray-400 flex-shrink-0" />
+												)}
+												<div className="flex-1">
+													<span
+														className={
+															student.stateExamStatus === 'passed'
+																? 'text-gray-900'
+																: student.stateExamStatus === 'failed'
+																? 'text-gray-900'
+																: canEditStateExam
+																? 'text-gray-900'
+																: 'text-gray-500'
+														}>
+														Państwowy -
+													</span>
+													<span className={getStateExamStatusColor(student)}>
+														{' '}
+														{student.stateExamStatus === 'passed'
+															? `Zdany (${student.stateExamAttempts}. próba)`
+															: student.stateExamStatus === 'failed'
+															? `Niezdany (${student.stateExamAttempts} ${
+																	student.stateExamAttempts === 1
+																		? 'próba'
+																		: 'próby/prób'
+															  })`
+															: canEditStateExam
+															? 'Dopuszczony'
+															: 'Niedopuszczony'}
+													</span>
+													{/* Info o terminie egzaminu */}
+													{student.stateExamStatus === 'allowed' &&
+														carReservation && (
+															<div className="text-xs text-blue-600 mt-1">
+																Termin:{' '}
+																{format(
+																	new Date(carReservation.date),
+																	'dd.MM.yyyy'
+																)}{' '}
+																o {carReservation.startTime.slice(0, 5)}
+															</div>
+														)}
+												</div>
+											</div>
+										</div>
+									</div>
+
+									{/* D. INFORMACJE DODATKOWE */}
+									<div className="pt-4 border-t space-y-2 text-sm text-gray-600">
+										{student.city && (
+											<div className="flex items-center gap-2">
+												<MapPin className="h-4 w-4" />
+												<span className="font-medium">Miasto egzaminu:</span>
+												<span>{student.city}</span>
+											</div>
+										)}
+
+										{student.car && (
+											<div className="flex items-center gap-2">
+												<CarIcon className="h-4 w-4" />
+												<span className="font-medium">Auto na egzamin:</span>
+												<span>Tak</span>
 												{carReservation && reservedCar && (
 													<span className="text-primary">
-														{' - '}
-														{reservedCar.name}
-														{', '}
+														{' '}
+														({reservedCar.name},{' '}
 														{format(
 															new Date(carReservation.date),
-															'dd.MM.yyyy',
-															{ locale: pl }
+															'dd.MM.yyyy'
 														)}
-														{', '}
-														{carReservation.startTime.slice(0, 5)}
+														)
 													</span>
 												)}
-											</>
-										) : (
-											'Nie'
+											</div>
+										)}
+
+										{student.courseStartDate && (
+											<div className="flex items-center gap-2">
+												<CalendarIcon className="h-4 w-4" />
+												<span className="font-medium">Rozpoczęcie:</span>
+												<span>
+													{format(
+														new Date(student.courseStartDate),
+														'dd.MM.yyyy'
+													)}
+												</span>
+											</div>
 										)}
 									</div>
-
-									{student.courseStartDate && (
-										<div>
-											<strong>Rozpoczęcie:</strong>{' '}
-											{format(new Date(student.courseStartDate), 'dd.MM.yyyy')}
-										</div>
-									)}
 								</CardContent>
 							</Card>
 
 							<Card>
 								<CardHeader className="pb-3 sm:pb-6">
-									<CardTitle className="text-base sm:text-2xl">
-										Notatki
-									</CardTitle>
+									<div className="flex items-center justify-between">
+										<CardTitle className="text-base sm:text-2xl">
+											Notatki
+										</CardTitle>
+										{!editingNotes && role === 'admin' && (
+											<Button
+												variant="ghost"
+												size="icon"
+												onClick={() => setEditingNotes(true)}
+												className="h-8 w-8">
+												<Pencil className="h-4 w-4" />
+											</Button>
+										)}
+									</div>
 								</CardHeader>
 								<CardContent className="text-sm">
-									{student.notes ? (
-										<p className="whitespace-pre-wrap">{student.notes}</p>
+									{editingNotes ? (
+										<div className="space-y-3">
+											<Textarea
+												value={notesValue}
+												onChange={(e) => setNotesValue(e.target.value)}
+												rows={6}
+												placeholder="Dodaj notatki o kursancie..."
+												className="resize-none"
+												autoFocus
+											/>
+											<div className="flex gap-2 justify-end">
+												<Button
+													variant="outline"
+													size="sm"
+													onClick={handleCancelNotes}
+													disabled={savingNotes}>
+													<X className="mr-2 h-4 w-4" />
+													Anuluj
+												</Button>
+												<Button
+													size="sm"
+													onClick={handleSaveNotes}
+													disabled={savingNotes}>
+													<Save className="mr-2 h-4 w-4" />
+													{savingNotes ? 'Zapisywanie...' : 'Zapisz'}
+												</Button>
+											</div>
+										</div>
 									) : (
-										<p className="italic text-gray-500">Brak notatek</p>
+										<div
+											className={`min-h-[60px] ${
+												role === 'admin'
+													? 'cursor-pointer hover:bg-gray-50 rounded p-2 -m-2'
+													: ''
+											}`}
+											onClick={() => role === 'admin' && setEditingNotes(true)}>
+											{student.notes ? (
+												<p className="whitespace-pre-wrap">{student.notes}</p>
+											) : (
+												<p className="italic text-gray-400">
+													{role === 'admin'
+														? 'Kliknij aby dodać notatki...'
+														: 'Brak notatek'}
+												</p>
+											)}
+										</div>
 									)}
 								</CardContent>
 							</Card>
