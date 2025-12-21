@@ -10,17 +10,35 @@ import { Download } from 'lucide-react';
 
 export default function UpdatePrompt() {
 	const [showPrompt, setShowPrompt] = useState(false);
+	const [updateAvailable, setUpdateAvailable] = useState(false);
 
 	useEffect(() => {
 		if ('serviceWorker' in navigator) {
 			navigator.serviceWorker.addEventListener('controllerchange', () => {
+				setUpdateAvailable(true);
 				setShowPrompt(true);
 			});
 		}
 	}, []);
 
+	// Pytaj co 30 min jeśli user odmówił
+	useEffect(() => {
+		if (!updateAvailable) return;
+
+		const interval = setInterval(() => {
+			setShowPrompt(true);
+		}, 3 * 60 * 1000); // 3 minuty
+
+		return () => clearInterval(interval);
+	}, [updateAvailable]);
+
 	const handleUpdate = () => {
 		window.location.reload();
+	};
+
+	const handleLater = () => {
+		setShowPrompt(false);
+		// Zapyta ponownie za 30 min
 	};
 
 	return (
@@ -41,11 +59,11 @@ export default function UpdatePrompt() {
 
 				<div className="space-y-4">
 					<p className="text-sm text-gray-600">
-						Dostępna jest nowa wersja aplikacji z poprawkami i nowymi funkcjami.
+						Dostępna jest nowa wersja aplikacji z poprawkami.
 					</p>
 
 					<div className="flex gap-2 justify-end pt-2">
-						<Button variant="outline" onClick={() => setShowPrompt(false)}>
+						<Button variant="outline" onClick={handleLater}>
 							Później
 						</Button>
 						<Button onClick={handleUpdate}>Zaktualizuj teraz</Button>
