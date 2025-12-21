@@ -781,7 +781,7 @@ export default function StudentDetailPage() {
 										<CardTitle className="text-base sm:text-2xl">
 											Notatki
 										</CardTitle>
-										{!editingNotes && role === 'admin' && (
+										{!editingNotes && (
 											<Button
 												variant="ghost"
 												size="icon"
@@ -828,14 +828,12 @@ export default function StudentDetailPage() {
 													? 'cursor-pointer hover:bg-gray-50 rounded p-2 -m-2'
 													: ''
 											}`}
-											onClick={() => role === 'admin' && setEditingNotes(true)}>
+											onClick={() => setEditingNotes(true)}>
 											{student.notes ? (
 												<p className="whitespace-pre-wrap">{student.notes}</p>
 											) : (
 												<p className="italic text-gray-400">
-													{role === 'admin'
-														? 'Kliknij aby dodać notatki...'
-														: 'Brak notatek'}
+													Kliknij aby dodać notatki...
 												</p>
 											)}
 										</div>
