@@ -550,35 +550,37 @@ export default function InstructorStudentsPage() {
 									<div className="flex items-start justify-between gap-3">
 										<div className="flex-1 min-w-0">
 											<div className="mb-2">
-												<h3 className="text-base font-semibold sm:text-lg">
-													{student.firstName} {student.lastName}
-												</h3>
-												<div className="mt-1 flex flex-wrap items-center gap-1">
-													{student.inactive && (
-														<Badge variant="secondary" className="text-xs">
-															Nieaktywny
-														</Badge>
-													)}
-													<div className="hidden sm:flex sm:flex-wrap sm:gap-2">
+												<div className="flex items-start justify-between gap-2">
+													{/* Nazwisko + badge'y inline */}
+													<div className="flex flex-wrap items-center gap-1.5 min-w-0">
+														<h3 className="text-base font-semibold sm:text-lg truncate">
+															{student.firstName} {student.lastName}
+														</h3>
+
 														{student.coursePaid && (
-															<Badge variant="default" className="text-xs">
+															<Badge
+																variant="default"
+																className="px-1.5 py-0 text-[10px] sm:px-2 sm:py-0.5 sm:text-xs">
 																Opłacony
 															</Badge>
 														)}
-													</div>
-													<div className="flex flex-wrap gap-1 sm:hidden">
+
 														{student.isSupplementaryCourse && (
 															<Badge
 																variant="secondary"
-																className="text-[10px] px-1.5 py-0">
+																className="px-1.5 py-0 text-[10px] sm:px-2 sm:py-0.5 sm:text-xs">
 																Uzupełniający
 															</Badge>
 														)}
-														{student.car && (
+													</div>
+
+													{/* Status po prawej */}
+													<div className="flex flex-wrap gap-1 justify-end">
+														{student.inactive && (
 															<Badge
 																variant="secondary"
-																className="text-[10px] px-1.5 py-0">
-																Auto
+																className="px-1.5 py-0 text-[10px] sm:px-2 sm:py-0.5 sm:text-xs">
+																Nieaktywny
 															</Badge>
 														)}
 													</div>
@@ -586,14 +588,33 @@ export default function InstructorStudentsPage() {
 											</div>
 
 											<div className="space-y-1 text-sm text-gray-600">
+												{/* {student.phone && (
+													<a
+														href={`tel:${student.phone}`}
+														className="flex items-center gap-2 hover:text-primary transition-colors"
+														onClick={(e) => e.stopPropagation()}>
+														<Phone className="h-3 w-3 flex-shrink-0 sm:h-4 sm:w-4" />
+														<span className="truncate">
+															{formatPhone(student.phone)}
+														</span>
+													</a>
+												)} */}
+
 												{student.phone && (
 													<div className="flex items-center gap-2">
-														<Phone className="h-3 w-3 flex-shrink-0 sm:h-4 sm:w-4" />
+														<a
+															href={`tel:${student.phone}`}
+															onClick={(e) => e.stopPropagation()}
+															className="hover:text-primary transition-colors">
+															<Phone className="h-3 w-3 flex-shrink-0 sm:h-4 sm:w-4" />
+														</a>
+
 														<span className="truncate">
 															{formatPhone(student.phone)}
 														</span>
 													</div>
 												)}
+
 												{student.email && (
 													<div className="hidden items-center gap-2 sm:flex">
 														<Mail className="h-4 w-4 flex-shrink-0" />
@@ -603,12 +624,13 @@ export default function InstructorStudentsPage() {
 											</div>
 										</div>
 
+										{/* Godziny */}
 										<div className="flex-shrink-0 text-right">
 											<div className="text-base font-semibold text-primary sm:text-lg">
 												{formatHours(student.totalHoursDriven)}
 											</div>
 											<div className="text-xs text-gray-500 sm:text-sm">
-												wyjezdzone
+												wyjeżdżone
 											</div>
 										</div>
 									</div>

@@ -31,16 +31,18 @@ import {
 	Car as CarIcon,
 	Save,
 	X,
-	MapPin
+	MapPin,
+	Phone,
+	Mail,
+	CreditCard,
+	Hash,
 } from 'lucide-react';
 import { carService } from '@/services/car.service';
 import type { Student, Payment, Lesson, CarReservation, Car } from '@/types';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/hooks/useAuth';
-import {
-	getStateExamStatusColor,
-} from '@/lib/student-utilis';
+import { getStateExamStatusColor } from '@/lib/student-utilis';
 import { Textarea } from '@/components/ui/textarea';
 
 const locales = { pl };
@@ -109,8 +111,8 @@ export default function StudentDetailPage() {
 					.single();
 
 				if (pkg) {
-					setPackageName(`${pkg.name} ${pkg.hours}h`); 
-					hoursToSet = pkg.hours; 
+					setPackageName(`${pkg.name} ${pkg.hours}h`);
+					hoursToSet = pkg.hours;
 				}
 			}
 			// Nadpisz godzinami custom jeśli są ustawione
@@ -443,25 +445,59 @@ export default function StudentDetailPage() {
 										Dane personalne
 									</CardTitle>
 								</CardHeader>
-								<CardContent className="space-y-2 text-sm">
+								<CardContent className="space-y-2">
 									{student.pkkNumber && (
-										<div>
-											<strong>PKK:</strong> {student.pkkNumber}
+										<div className="flex items-center gap-2">
+											<CreditCard className="h-4 w-4 text-blue-600 flex-shrink-0" />
+											<div>
+												<strong>PKK:</strong> {student.pkkNumber}
+											</div>
 										</div>
 									)}
 									{student.pesel && (
-										<div>
-											<strong>PESEL:</strong> {student.pesel}
+										<div className="flex items-center gap-2">
+											<Hash className="h-4 w-4 text-purple-600 flex-shrink-0" />
+											<div>
+												<strong>PESEL:</strong> {student.pesel}
+											</div>
 										</div>
 									)}
+									{/* {student.phone && (
+										<div className="flex items-center gap-2">
+											<Phone className="h-4 w-4 text-green-600 flex-shrink-0" />
+											<div>
+												<strong>Telefon:</strong>{' '}
+												<a
+													href={`tel:${student.phone}`}
+													className="text-primary hover:underline">
+													{formatPhone(student.phone)}
+												</a>
+											</div>
+										</div>
+									)} */}
+
 									{student.phone && (
-										<div>
-											<strong>Telefon:</strong> {formatPhone(student.phone)}
+										<div className="flex items-center gap-2">
+											<a
+												href={`tel:${student.phone}`}
+												onClick={(e) => e.stopPropagation()}
+												className="text-green-600">
+												<Phone className="h-4 w-4 flex-shrink-0" />
+											</a>
+
+											<div>
+												<strong>Telefon:</strong>{' '}
+												<span>{formatPhone(student.phone)}</span>
+											</div>
 										</div>
 									)}
+
 									{student.email && (
-										<div>
-											<strong>Email:</strong> {student.email}
+										<div className="flex items-center gap-2">
+											<Mail className="h-4 w-4 text-orange-600 flex-shrink-0" />
+											<div>
+												<strong>Email:</strong> {student.email}
+											</div>
 										</div>
 									)}
 								</CardContent>

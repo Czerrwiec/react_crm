@@ -158,13 +158,18 @@ export default function CarsPage() {
 
 		const car = cars.find((c) => c.id === reservation.carId);
 		const carLabel = car?.registrationNumber || car?.name || 'Nieznany';
+		const carName = car?.name || ''; // NOWE
+
 		const studentNames = reservation.studentIds
 			.map((id) => studentNamesMap.get(id) || 'Nieznany')
 			.join(', ');
 
+		// ZMIANA: Jeśli brak kursantów, pokaż nazwę auta
+		const displayLabel = studentNames || carName || 'Bez danych';
+
 		return {
 			id: reservation.id,
-			title: `${carLabel} - ${studentNames || 'Bez kursanta'}`,
+			title: `${carLabel} - ${displayLabel}`, // ZMIANA
 			start,
 			end,
 			resource: reservation,

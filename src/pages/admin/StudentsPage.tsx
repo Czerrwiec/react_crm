@@ -700,9 +700,27 @@ export default function StudentsPage() {
 											</div>
 
 											<div className="space-y-1 text-sm text-gray-600">
+												{/* {student.phone && (
+													<a
+														href={`tel:${student.phone}`}
+														className="flex items-center gap-2 hover:text-primary transition-colors"
+														onClick={(e) => e.stopPropagation()}>
+														<Phone className="h-3 w-3 flex-shrink-0 sm:h-4 sm:w-4" />
+														<span className="truncate">
+															{formatPhone(student.phone)}
+														</span>
+													</a>
+												)} */}
+
 												{student.phone && (
 													<div className="flex items-center gap-2">
-														<Phone className="h-3 w-3 flex-shrink-0 sm:h-4 sm:w-4" />
+														<a
+															href={`tel:${student.phone}`}
+															onClick={(e) => e.stopPropagation()}
+															className="hover:text-primary transition-colors">
+															<Phone className="h-3 w-3 flex-shrink-0 sm:h-4 sm:w-4" />
+														</a>
+
 														<span className="truncate">
 															{formatPhone(student.phone)}
 														</span>
