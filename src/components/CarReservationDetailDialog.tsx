@@ -11,6 +11,7 @@ import { carService } from '@/services/car.service';
 import type { CarReservation } from '@/types';
 import { format } from 'date-fns';
 import { pl } from 'date-fns/locale';
+import ConfirmDialog from '@/components/ConfirmDialog';
 
 interface CarReservationDetailDialogProps {
 	open: boolean;
@@ -32,6 +33,7 @@ export default function CarReservationDetailDialog({
 	onSuccess,
 }: CarReservationDetailDialogProps) {
 	const [deleting, setDeleting] = useState(false);
+	const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
 	if (!reservation) return null;
 
@@ -46,17 +48,7 @@ export default function CarReservationDetailDialog({
 		return minutes > 0 ? `${hours}h ${minutes}m` : `${hours}h`;
 	};
 
-	const handleDelete = async () => {
-		const confirmed = window.confirm(
-			`Czy na pewno chcesz usunąć tę rezerwację?\n\nData: ${format(
-				new Date(reservation.date),
-				'd MMMM yyyy',
-				{ locale: pl }
-			)}\nGodzina: ${reservation.startTime} - ${reservation.endTime}`
-		);
-
-		if (!confirmed) return;
-
+	const handleDeleteConfirm = async () => {
 		setDeleting(true);
 		try {
 			await carService.deleteReservation(reservation.id);
@@ -137,14 +129,34 @@ export default function CarReservationDetailDialog({
 						<Button
 							variant="destructive"
 							className="flex-1"
-							onClick={handleDelete}
+							onClick={() => setDeleteDialogOpen(true)}
 							disabled={deleting}>
 							<Trash2 className="mr-2 h-4 w-4" />
-							{deleting ? 'Usuwanie...' : 'Usuń'}
+							Usuń
 						</Button>
 					</div>
 				</div>
 			</DialogContent>
+			<ConfirmDialog
+				open={deleteDialogOpen}
+				onOpenChange={setDeleteDialogOpen}
+				title="Usunąć rezerwację?"
+				description={
+					<>
+						<strong>Data:</strong>{' '}
+						{format(new Date(reservation.date), 'd MMMM yyyy', { locale: pl })}
+						<br />
+						<strong>Godzina:</strong> {reservation.startTime} -{' '}
+						{reservation.endTime}
+						<br />
+						<strong>Samochód:</strong>{' '}
+						{carNames.get(reservation.carId) || 'Nieznany'}
+					</>
+				}
+				confirmText="Usuń rezerwację"
+				onConfirm={handleDeleteConfirm}
+				loading={deleting}
+			/>
 		</Dialog>
 	);
 }

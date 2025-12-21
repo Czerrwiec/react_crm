@@ -21,7 +21,7 @@ import CarReservationDetailDialog from '@/components/CarReservationDetailDialog'
 import type { Car, CarReservation, Student } from '@/types';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import '../admin/calendar.css';
-
+import ConfirmDialog from '@/components/ConfirmDialog';
 
 const locales = { pl };
 const localizer = dateFnsLocalizer({
@@ -62,6 +62,8 @@ export default function CarsPage() {
 	const [detailDialogOpen, setDetailDialogOpen] = useState(false);
 	const [selectedReservation, setSelectedReservation] =
 		useState<CarReservation | null>(null);
+	const [deleteCarDialogOpen, setDeleteCarDialogOpen] = useState(false);
+	const [carToDelete, setCarToDelete] = useState<Car | null>(null);
 
 	useEffect(() => {
 		loadInitialData();
@@ -192,7 +194,6 @@ export default function CarsPage() {
 		};
 	};
 
-
 	const dayPropGetter = (date: Date) => {
 		const isSelectedDay =
 			format(date, 'yyyy-MM-dd') === format(selectedDay, 'yyyy-MM-dd');
@@ -259,11 +260,10 @@ export default function CarsPage() {
 		setCarDialogOpen(true);
 	};
 
-	const handleDeleteCar = async (id: string) => {
-		if (!confirm('Czy na pewno chcesz usunąć ten samochód?')) return;
-
+	const handleDeleteConfirm = async () => {
+		if (!carToDelete) return;
 		try {
-			await carService.deleteCar(id);
+			await carService.deleteCar(carToDelete.id);
 			loadInitialData();
 		} catch (error) {
 			console.error('Error deleting car:', error);
@@ -619,7 +619,8 @@ export default function CarsPage() {
 										size="sm"
 										onClick={(e) => {
 											e.stopPropagation();
-											handleDeleteCar(car.id);
+											setCarToDelete(car);
+											setDeleteCarDialogOpen(true);
 										}}>
 										Usuń
 									</Button>
@@ -662,6 +663,33 @@ export default function CarsPage() {
 				studentNames={studentNamesMap}
 				onEdit={handleEditReservation}
 				onSuccess={loadReservations}
+			/>
+
+			<ConfirmDialog
+				open={deleteCarDialogOpen}
+				onOpenChange={setDeleteCarDialogOpen}
+				title="Usunąć samochód?"
+				description={
+					carToDelete ? (
+						<>
+							Czy na pewno chcesz usunąć samochód{' '}
+							<strong>
+								{carToDelete.name} ({carToDelete.year})
+							</strong>
+							?
+							{carToDelete.registrationNumber && (
+								<>
+									<br />
+									Rejestracja: <strong>{carToDelete.registrationNumber}</strong>
+								</>
+							)}
+						</>
+					) : (
+						''
+					)
+				}
+				confirmText="Usuń samochód"
+				onConfirm={handleDeleteConfirm}
 			/>
 		</div>
 	);

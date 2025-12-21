@@ -8,10 +8,17 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { lessonService } from '@/services/lesson.service';
-import { ArrowLeft, Pencil, Trash2, Save, X } from 'lucide-react';
+import { ArrowLeft, Pencil, Trash2, Save, X, AlertTriangle } from 'lucide-react';
 import type { User, Student } from '@/types';
 import { format } from 'date-fns';
 import { pl } from 'date-fns/locale';
+import ConfirmDialog from '@/components/ConfirmDialog';
+import {
+	Dialog,
+	DialogContent,
+	DialogHeader,
+	DialogTitle,
+} from '@/components/ui/dialog';
 
 export default function InstructorDetailPage() {
 	const { id } = useParams<{ id: string }>();
@@ -22,6 +29,9 @@ export default function InstructorDetailPage() {
 	const [loading, setLoading] = useState(true);
 	const [editing, setEditing] = useState(false);
 	const [formData, setFormData] = useState<User | null>(null);
+	const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+	const [showErrorDialog, setShowErrorDialog] = useState(false);
+	const [errorMessage, setErrorMessage] = useState('');
 
 	useEffect(() => {
 		if (id) {
@@ -65,29 +75,26 @@ export default function InstructorDetailPage() {
 		}
 	};
 
-	const handleDelete = async () => {
-		if (!id || !instructor) return;
-
-		// Sprawdź czy ma aktywnych kursantów
+	const handleCheckAndDelete = () => {
 		const activeCount = students.filter((s) => !s.inactive).length;
 		if (activeCount > 0) {
-			alert(
-				`Nie można dezaktywować instruktora, który ma ${activeCount} aktywnych kursantów.\n\nNajpierw usuń lub przenieś kursantów do innego instruktora.`
+			setErrorMessage(
+				`Nie można dezaktywować instruktora, który ma ${activeCount} aktywnych kursantów. Najpierw usuń lub przenieś kursantów do innego instruktora.`
 			);
+			setShowErrorDialog(true);
 			return;
 		}
+		setDeleteDialogOpen(true);
+	};
 
-		const confirmed = window.confirm(
-			`Czy na pewno chcesz dezaktywować instruktora ${instructor.firstName} ${instructor.lastName}?\n\nInstruktor nie będzie mógł się zalogować, ale jego dane zostaną zachowane.`
-		);
-
-		if (!confirmed) return;
-
+	const handleDeleteConfirm = async () => {
+		if (!id) return;
 		try {
 			await instructorService.updateInstructor(id, { active: false });
 			navigate('/admin/instructors');
 		} catch (error: any) {
-			alert(error.message || 'Błąd dezaktywacji instruktora');
+			setErrorMessage(error.message || 'Błąd dezaktywacji instruktora');
+			setShowErrorDialog(true);
 		}
 	};
 	
@@ -166,7 +173,7 @@ export default function InstructorDetailPage() {
 					variant="destructive"
 					size="icon"
 					className="sm:w-auto sm:px-4"
-					onClick={handleDelete}>
+					onClick={handleCheckAndDelete}>
 					<Trash2 className="h-4 w-4 sm:mr-2" />
 					<span className="hidden sm:inline">Usuń instruktora</span>
 				</Button>
@@ -232,7 +239,7 @@ export default function InstructorDetailPage() {
 										}
 									/>
 								</div>
-								
+
 								<div className="flex gap-2">
 									<Button onClick={handleSave} className="flex-1">
 										<Save className="mr-2 h-4 w-4" />
@@ -368,6 +375,52 @@ export default function InstructorDetailPage() {
 					</CardContent>
 				</Card>
 			</div>
+
+			{/* Dialog błędu */}
+			<Dialog open={showErrorDialog} onOpenChange={setShowErrorDialog}>
+				<DialogContent className="max-w-md">
+					<DialogHeader>
+						<div className="flex items-start gap-3">
+							<div className="rounded-full bg-amber-100 p-2">
+								<AlertTriangle className="h-5 w-5 text-amber-600" />
+							</div>
+							<div className="flex-1">
+								<DialogTitle className="text-lg">Nie można usunąć</DialogTitle>
+							</div>
+						</div>
+					</DialogHeader>
+					<div className="space-y-4">
+						<p className="text-sm text-gray-600">{errorMessage}</p>
+						<div className="flex justify-end">
+							<Button onClick={() => setShowErrorDialog(false)}>
+								Rozumiem
+							</Button>
+						</div>
+					</div>
+				</DialogContent>
+			</Dialog>
+
+			{/* Dialog potwierdzenia */}
+			<ConfirmDialog
+				open={deleteDialogOpen}
+				onOpenChange={setDeleteDialogOpen}
+				title="Dezaktywować instruktora?"
+				description={
+					<>
+						Czy na pewno chcesz dezaktywować instruktora{' '}
+						<strong>
+							{instructor.firstName} {instructor.lastName}
+						</strong>
+						?
+						<br />
+						<br />
+						Instruktor nie będzie mógł się zalogować, ale jego dane zostaną
+						zachowane.
+					</>
+				}
+				confirmText="Dezaktywuj"
+				onConfirm={handleDeleteConfirm}
+			/>
 		</div>
 	);
 }

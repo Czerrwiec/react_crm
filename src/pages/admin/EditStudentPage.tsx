@@ -13,6 +13,7 @@ import { ArrowLeft, Trash2 } from 'lucide-react';
 import type { User, Student, Package } from '@/types';
 import { Select } from '@/components/ui/select';
 import { packageService } from '@/services/package.service';
+import ConfirmDialog from '@/components/ConfirmDialog';
 
 export default function EditStudentPage() {
 	const { id } = useParams<{ id: string }>();
@@ -22,6 +23,7 @@ export default function EditStudentPage() {
 	const [saving, setSaving] = useState(false);
 	const [formData, setFormData] = useState<Student | null>(null);
 	const [packages, setPackages] = useState<Package[]>([]);
+	const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
 	useEffect(() => {
 		if (id) loadData(id);
@@ -69,15 +71,8 @@ export default function EditStudentPage() {
 		}
 	};
 
-	const handleDelete = async () => {
-		if (!id || !formData) return;
-
-		const confirmed = window.confirm(
-			`Czy na pewno chcesz usunąć kursanta ${formData.firstName} ${formData.lastName}?\n\nTa operacja jest nieodwracalna.`
-		);
-
-		if (!confirmed) return;
-
+	const handleDeleteConfirm = async () => {
+		if (!id) return;
 		try {
 			await studentService.deleteStudent(id);
 			navigate('/admin/students');
@@ -111,7 +106,7 @@ export default function EditStudentPage() {
 					<ArrowLeft className="mr-2 h-4 w-4" />
 					Powrót
 				</Button>
-				<Button variant="destructive" onClick={handleDelete}>
+				<Button variant="destructive" onClick={() => setDeleteDialogOpen(true)}>
 					<Trash2 className="mr-2 h-4 w-4" />
 					Usuń kursanta
 				</Button>
@@ -518,6 +513,25 @@ export default function EditStudentPage() {
 					</Button>
 				</div>
 			</form>
+			<ConfirmDialog
+				open={deleteDialogOpen}
+				onOpenChange={setDeleteDialogOpen}
+				title="Usunąć kursanta?"
+				description={
+					<>
+						Czy na pewno chcesz usunąć kursanta{' '}
+						<strong>
+							{formData.firstName} {formData.lastName}
+						</strong>
+						?
+						<br />
+						<br />
+						Ta operacja jest nieodwracalna i usunie wszystkie powiązane dane.
+					</>
+				}
+				confirmText="Usuń kursanta"
+				onConfirm={handleDeleteConfirm}
+			/>
 		</div>
 	);
 }

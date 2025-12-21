@@ -12,6 +12,7 @@ import { lessonService } from '@/services/lesson.service';
 import type { Lesson } from '@/types';
 import { format } from 'date-fns';
 import { pl } from 'date-fns/locale';
+import ConfirmDialog from '@/components/ConfirmDialog';
 
 interface LessonDetailDialogProps {
 	open: boolean;
@@ -31,6 +32,7 @@ export default function LessonDetailDialog({
 	onSuccess,
 }: LessonDetailDialogProps) {
 	const [deleting, setDeleting] = useState(false);
+	const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
 	if (!lesson) return null;
 
@@ -66,17 +68,7 @@ export default function LessonDetailDialog({
 		return m > 0 ? `${h}h ${m}m` : `${h}h`;
 	};
 
-	const handleDelete = async () => {
-		const confirmed = window.confirm(
-			`Czy na pewno chcesz usunąć tę lekcję?\n\nData: ${format(
-				new Date(lesson.date),
-				'd MMMM yyyy',
-				{ locale: pl }
-			)}\nGodzina: ${lesson.startTime} - ${lesson.endTime}`
-		);
-
-		if (!confirmed) return;
-
+	const handleDeleteConfirm = async () => {
 		setDeleting(true);
 		try {
 			await lessonService.deleteLesson(lesson.id);
@@ -154,15 +146,31 @@ export default function LessonDetailDialog({
 							<Button
 								variant="destructive"
 								className="flex-1"
-								onClick={handleDelete}
+								onClick={() => setDeleteDialogOpen(true)}
 								disabled={deleting}>
 								<Trash2 className="mr-2 h-4 w-4" />
-								{deleting ? 'Usuwanie...' : 'Usuń'}
+								Usuń
 							</Button>
 						)}
 					</div>
 				</div>
 			</DialogContent>
+			<ConfirmDialog
+				open={deleteDialogOpen}
+				onOpenChange={setDeleteDialogOpen}
+				title="Usunąć lekcję?"
+				description={
+					<>
+						<strong>Data:</strong>{' '}
+						{format(new Date(lesson.date), 'd MMMM yyyy', { locale: pl })}
+						<br />
+						<strong>Godzina:</strong> {lesson.startTime} - {lesson.endTime}
+					</>
+				}
+				confirmText="Usuń lekcję"
+				onConfirm={handleDeleteConfirm}
+				loading={deleting}
+			/>
 		</Dialog>
 	);
 }
