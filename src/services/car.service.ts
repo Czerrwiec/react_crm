@@ -41,7 +41,7 @@ export const carService = {
             .insert({
                 name: car.name,
                 year: car.year,
-                registration_number: car.registrationNumber, 
+                registration_number: car.registrationNumber,
                 inspection_date: car.inspectionDate,
                 insurance_date: car.insuranceDate,
                 active: car.active,
@@ -203,14 +203,14 @@ export const carService = {
 
     async sendReservationNotification(action: 'created' | 'updated' | 'deleted', reservation: any, currentUserId?: string) {
         try {
-            // Pobierz wszystkich adminów oprócz tego który wykonał akcję
-            const { data: admins } = await supabase
+            // Pobierz wszystkich adminów i instruktorów
+            const { data: users } = await supabase
                 .from('users')
-                .select('id')
-                .eq('role', 'admin')
-                .neq('id', currentUserId || 'none') // Zmień na 'none' jeśli brak ID
+                .select('id, role')
+                .in('role', ['admin', 'instructor'])
+                .neq('id', currentUserId || 'none');
 
-            if (!admins || admins.length === 0) return
+            if (!users || users.length === 0) return;
 
             let actorName = 'Nieznany';
             let actorRole = '';
@@ -227,65 +227,87 @@ export const carService = {
                 }
             }
 
-            // Pobierz nazwę samochodu - reservation ma snake_case pola z DB
-            const carId = reservation.car_id || reservation.carId
+            // Pobierz nazwę samochodu
+            const carId = reservation.car_id || reservation.carId;
             const { data: car } = await supabase
                 .from('cars')
-                .select('name')
+                .select('name, registration_number')
                 .eq('id', carId)
-                .single()
+                .single();
 
-            const carName = car?.name || 'Nieznany samochód'
-            const reservationDate = reservation.date
+            const carName = car?.registration_number
+                ? `${car.name} (${car.registration_number})`
+                : car?.name || 'Nieznany samochód';
+
+            const reservationDate = reservation.date;
             const date = new Date(reservationDate).toLocaleDateString('pl-PL', {
                 day: '2-digit',
                 month: '2-digit',
                 year: 'numeric',
-            })
-            const startTime = reservation.start_time || reservation.startTime
+            });
+            const startTime = reservation.start_time || reservation.startTime;
 
-            let title = ''
-            let message = ''
-            let type = ''
+            // Pobierz nazwiska kursantów jeśli są
+            const studentIds = reservation.student_ids || reservation.studentIds || [];
+            let studentNames = '';
+            if (studentIds.length > 0) {
+                const { data: students } = await supabase
+                    .from('students')
+                    .select('first_name, last_name')
+                    .in('id', studentIds);
+
+                if (students && students.length > 0) {
+                    studentNames = students
+                        .map(s => `${s.first_name} ${s.last_name}`)
+                        .join(', ');
+                }
+            }
+
+            let title = '';
+            let message = '';
+            let type = '';
 
             switch (action) {
                 case 'created':
-                    title = 'Nowa rezerwacja samochodu'
-                    message = `${actorName} (${actorRole}) dodał rezerwację: ${carName} na ${date}, godz. ${startTime}`
-                    type = 'car_reservation_created'
-                    break
+                    title = 'Nowa rezerwacja samochodu';
+                    message = `${actorName} (${actorRole}) dodał rezerwację: ${carName} na ${date}, godz. ${startTime}`;
+                    if (studentNames) message += ` • Kursanci: ${studentNames}`;
+                    type = 'car_reservation_created';
+                    break;
                 case 'updated':
-                    title = 'Edycja rezerwacji samochodu'
-                    message = `${actorName} (${actorRole}) zaktualizował rezerwację: ${carName} na ${date}, godz. ${startTime}`
-                    type = 'car_reservation_updated'
-                    break
+                    title = 'Edycja rezerwacji samochodu';
+                    message = `${actorName} (${actorRole}) zaktualizował rezerwację: ${carName} na ${date}, godz. ${startTime}`;
+                    if (studentNames) message += ` • Kursanci: ${studentNames}`;
+                    type = 'car_reservation_updated';
+                    break;
                 case 'deleted':
-                    title = 'Usunięcie rezerwacji samochodu'
-                    message = `${actorName} (${actorRole}) usunął rezerwację: ${carName} z ${date}, godz. ${startTime}`
-                    type = 'car_reservation_deleted'
-                    break
+                    title = 'Usunięcie rezerwacji samochodu';
+                    message = `${actorName} (${actorRole}) usunął rezerwację: ${carName} z ${date}, godz. ${startTime}`;
+                    if (studentNames) message += ` • Kursanci: ${studentNames}`;
+                    type = 'car_reservation_deleted';
+                    break;
             }
 
-            // Wyślij notyfikacje do wszystkich adminów
-            const notifications = admins.map((admin) => ({
-                user_id: admin.id,
+            // Wyślij notyfikacje do wszystkich (admini + instruktorzy)
+            const notifications = users.map((u) => ({
+                user_id: u.id,
                 type,
                 title,
                 message,
                 related_id: reservation.id,
                 created_by: currentUserId,
                 read: false,
-            }))
+            }));
 
             const { error: notifError } = await supabase
                 .from('notifications')
-                .insert(notifications)
+                .insert(notifications);
 
             if (notifError) {
-                console.error('Error inserting notifications:', notifError)
+                console.error('Error inserting notifications:', notifError);
             }
         } catch (error) {
-            console.error('Error sending reservation notification:', error)
+            console.error('Error sending reservation notification:', error);
         }
     },
 }

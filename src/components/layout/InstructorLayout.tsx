@@ -9,6 +9,7 @@ import {
 	Menu,
 	X,
 	LayoutDashboard,
+	Car,
 } from 'lucide-react';
 import NotificationBell from '@/components/NotificationBell';
 import InstructorStudentsPage from '@/pages/instructor/InstructorStudentsPage';
@@ -16,12 +17,13 @@ import InstructorCalendarPage from '@/pages/instructor/InstructorCalendarPage';
 import StudentDetailPage from '@/pages/admin/StudentDetailPage';
 import NotificationsPage from '@/pages/admin/NotificationsPage';
 import InstructorDashboardPage from '@/pages/instructor/InstructorDashboardPage';
-
+import CarsPage from '@/pages/admin/CarsPage';
 
 const navigation = [
 	{ name: 'Tablica', path: '/instructor/dashboard', icon: LayoutDashboard },
 	{ name: 'Kursanci', path: '/instructor/students', icon: Users },
 	{ name: 'Kalendarz', path: '/instructor/calendar', icon: Calendar },
+	{ name: 'Samochody', path: '/instructor/cars', icon: Car },
 ];
 
 export default function InstructorLayout() {
@@ -47,7 +49,7 @@ export default function InstructorLayout() {
 					mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
 				)}>
 				<div className="flex h-16 items-center justify-center border-b px-6">
-					{/* <h1 className="text-xl font-bold">Instruktor</h1> */}
+					<h1 className="text-xl font-bold">Easy Drive</h1>
 					<NotificationBell />
 				</div>
 				<nav className="flex-1 space-y-1 p-4">
@@ -98,6 +100,7 @@ export default function InstructorLayout() {
 					<Route path="students" element={<InstructorStudentsPage />} />
 					<Route path="students/:id" element={<StudentDetailPage />} />
 					<Route path="calendar" element={<InstructorCalendarPage />} />
+					<Route path="cars" element={<CarsPage />} />
 					<Route path="notifications" element={<NotificationsPage />} />
 					<Route path="*" element={<InstructorStudentsPage />} />
 				</Routes>

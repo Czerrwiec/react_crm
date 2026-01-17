@@ -27,7 +27,7 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
 	const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
 	const loadUnreadCount = async () => {
-		if (!user || role !== 'admin') return;
+		if (!user || (role !== 'admin' && role !== 'instructor')) return;
 
 		try {
 			const count = await notificationService.getUnreadCount();
@@ -38,7 +38,7 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
 	};
 
 	useEffect(() => {
-		if (!user || role !== 'admin') {
+		if (!user || (role !== 'admin' && role !== 'instructor')) {
 			setUnreadCount(0);
 			if (channelRef.current) {
 				supabase.removeChannel(channelRef.current);

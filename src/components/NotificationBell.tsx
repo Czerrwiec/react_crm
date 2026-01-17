@@ -15,10 +15,12 @@ export default function NotificationBell({
 	const { role } = useAuth();
 	const navigate = useNavigate();
 
-	if (role !== 'admin') return null;
+	if (role !== 'admin' && role !== 'instructor') return null;
 
 	const handleClick = () => {
-		navigate('/admin/notifications');
+		navigate(
+			role === 'admin' ? '/admin/notifications' : '/instructor/notifications'
+		);
 		if (onNavigate) onNavigate();
 	};
 

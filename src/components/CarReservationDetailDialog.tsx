@@ -12,6 +12,7 @@ import type { CarReservation } from '@/types';
 import { format } from 'date-fns';
 import { pl } from 'date-fns/locale';
 import ConfirmDialog from '@/components/ConfirmDialog';
+import { useAuth } from '@/hooks/useAuth';
 
 interface CarReservationDetailDialogProps {
 	open: boolean;
@@ -32,6 +33,7 @@ export default function CarReservationDetailDialog({
 	onEdit,
 	onSuccess,
 }: CarReservationDetailDialogProps) {
+	const { role } = useAuth();
 	const [deleting, setDeleting] = useState(false);
 	const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
@@ -115,26 +117,28 @@ export default function CarReservationDetailDialog({
 						</div>
 					)}
 
-					<div className="flex gap-2 pt-4">
-						<Button
-							variant="outline"
-							className="flex-1"
-							onClick={() => {
-								onEdit(reservation);
-								onOpenChange(false);
-							}}>
-							<Pencil className="mr-2 h-4 w-4" />
-							Edytuj
-						</Button>
-						<Button
-							variant="destructive"
-							className="flex-1"
-							onClick={() => setDeleteDialogOpen(true)}
-							disabled={deleting}>
-							<Trash2 className="mr-2 h-4 w-4" />
-							Usuń
-						</Button>
-					</div>
+					{role === 'admin' && (
+						<div className="flex gap-2 pt-4">
+							<Button
+								variant="outline"
+								className="flex-1"
+								onClick={() => {
+									onEdit(reservation);
+									onOpenChange(false);
+								}}>
+								<Pencil className="mr-2 h-4 w-4" />
+								Edytuj
+							</Button>
+							<Button
+								variant="destructive"
+								className="flex-1"
+								onClick={() => setDeleteDialogOpen(true)}
+								disabled={deleting}>
+								<Trash2 className="mr-2 h-4 w-4" />
+								Usuń
+							</Button>
+						</div>
+					)}
 				</div>
 			</DialogContent>
 			<ConfirmDialog

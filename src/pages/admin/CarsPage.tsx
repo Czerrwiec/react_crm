@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useAuth } from '@/hooks/useAuth'; // DODAJ ten import
 import { Calendar, dateFnsLocalizer, View } from 'react-big-calendar';
 import {
 	format,
@@ -41,6 +42,7 @@ interface CalendarEvent {
 }
 
 export default function CarsPage() {
+	const { role } = useAuth();
 	const [cars, setCars] = useState<Car[]>([]);
 	const [students, setStudents] = useState<Student[]>([]);
 	const [reservations, setReservations] = useState<CarReservation[]>([]);
@@ -327,35 +329,99 @@ export default function CarsPage() {
 
 	return (
 		<div className="p-4 sm:p-8 pt-14">
-			{/* Tabs */}
-			<div className="mb-6 flex gap-2 border-b">
-				<button
-					className={`px-4 py-2 text-sm font-medium transition-colors ${
-						activeTab === 'calendar'
-							? 'border-b-2 border-primary text-primary'
-							: 'text-gray-600 hover:text-gray-900'
-					}`}
-					onClick={() => setActiveTab('calendar')}>
-					Kalendarz rezerwacji
-				</button>
-				<button
-					className={`px-4 py-2 text-sm font-medium transition-colors ${
-						activeTab === 'fleet'
-							? 'border-b-2 border-primary text-primary'
-							: 'text-gray-600 hover:text-gray-900'
-					}`}
-					onClick={() => setActiveTab('fleet')}>
-					Flota
-				</button>
-			</div>
+			{role === 'admin' && (
+				<div className="mb-6 flex gap-2 border-b">
+					<button
+						className={`px-4 py-2 text-sm font-medium transition-colors ${
+							activeTab === 'calendar'
+								? 'border-b-2 border-primary text-primary'
+								: 'text-gray-600 hover:text-gray-900'
+						}`}
+						onClick={() => setActiveTab('calendar')}>
+						Kalendarz rezerwacji
+					</button>
+					<button
+						className={`px-4 py-2 text-sm font-medium transition-colors ${
+							activeTab === 'fleet'
+								? 'border-b-2 border-primary text-primary'
+								: 'text-gray-600 hover:text-gray-900'
+						}`}
+						onClick={() => setActiveTab('fleet')}>
+						Flota
+					</button>
+				</div>
+			)}
 
-			{activeTab === 'calendar' ? (
+			{role === 'admin' && activeTab === 'fleet' ? (
+				<div>
+					<div className="mb-4 flex justify-end">
+						<Button onClick={handleAddCar}>
+							<Plus className="mr-2 h-4 w-4" />
+							Dodaj samochód
+						</Button>
+					</div>
+
+					<div className="grid gap-4">
+						{cars.map((car) => (
+							<div
+								key={car.id}
+								className={`rounded-lg border bg-white p-4 ${
+									!car.active ? 'opacity-60' : ''
+								}`}>
+								<div className="flex items-start justify-between">
+									<div
+										className="flex-1 cursor-pointer"
+										onClick={() => handleEditCar(car)}>
+										<h3 className="text-lg font-semibold">
+											{car.name} ({car.year})
+										</h3>
+										{car.registrationNumber && (
+											<div className="text-sm text-gray-600 mt-1">
+												<strong>Rejestracja:</strong> {car.registrationNumber}
+											</div>
+										)}
+										<div className="mt-2 space-y-1 text-sm text-gray-600">
+											{car.inspectionDate && (
+												<div>
+													<strong>Przegląd:</strong>{' '}
+													{format(new Date(car.inspectionDate), 'dd.MM.yyyy')}
+												</div>
+											)}
+											{car.insuranceDate && (
+												<div>
+													<strong>Ubezpieczenie:</strong>{' '}
+													{format(new Date(car.insuranceDate), 'dd.MM.yyyy')}
+												</div>
+											)}
+										</div>
+									</div>
+									<Button
+										variant="destructive"
+										size="sm"
+										onClick={(e) => {
+											e.stopPropagation();
+											setCarToDelete(car);
+											setDeleteCarDialogOpen(true);
+										}}>
+										Usuń
+									</Button>
+								</div>
+							</div>
+						))}
+
+						{cars.length === 0 && (
+							<div className="py-12 text-center text-gray-500">
+								Brak samochodów w bazie
+							</div>
+						)}
+					</div>
+				</div>
+			) : (
 				<div className="flex h-full flex-col">
 					{/* Custom toolbar */}
 					<div className="mb-4 rounded-lg border bg-white p-3 sm:p-4">
 						{/* Mobile */}
 						<div className="flex flex-col gap-3 md:hidden">
-							{/* Row 1: Navigation + Data + Button */}
 							<div className="flex items-center justify-between gap-2">
 								<div className="flex items-center gap-1">
 									<Button
@@ -382,12 +448,13 @@ export default function CarsPage() {
 									{format(currentDate, 'MMM yyyy', { locale: pl })}
 								</span>
 
-								<Button onClick={handleAddReservation} size="sm">
-									<Plus className="h-4 w-4" />
-								</Button>
+								{role === 'admin' && (
+									<Button onClick={handleAddReservation} size="sm">
+										<Plus className="h-4 w-4" />
+									</Button>
+								)}
 							</div>
 
-							{/* Mobile - przełącznik kalendarz/lista */}
 							<div className="flex gap-2">
 								<Button
 									variant={mobileView === 'calendar' ? 'default' : 'outline'}
@@ -409,10 +476,12 @@ export default function CarsPage() {
 						{/* Desktop */}
 						<div className="hidden md:flex md:items-center md:justify-between">
 							<div className="flex items-center gap-2">
-								<Button onClick={handleAddReservation} size="sm">
-									<Plus className="mr-2 h-4 w-4" />
-									Dodaj rezerwację
-								</Button>
+								{role === 'admin' && (
+									<Button onClick={handleAddReservation} size="sm">
+										<Plus className="mr-2 h-4 w-4" />
+										Dodaj rezerwację
+									</Button>
+								)}
 
 								<div className="ml-4 mr-2 h-8 w-px bg-gray-300" />
 
@@ -516,19 +585,19 @@ export default function CarsPage() {
 								endAccessor="end"
 								style={{ height: 'calc(100vh - 450px)', minHeight: '500px' }}
 								date={currentDate}
-								view={view} // ZMIANA: było view="month", teraz view={view}
+								view={view}
 								onNavigate={(newDate) => setCurrentDate(newDate)}
 								onSelectSlot={(slotInfo) => handleDayClick(slotInfo.start)}
 								selectable
 								toolbar={false}
-								step={30} // potrzebne dla week view
-								timeslots={2} // potrzebne dla week view
-								min={new Date(2024, 0, 1, 6, 0)} // start o 6:00
-								max={new Date(2024, 0, 1, 18, 0)} // ZMIANA: koniec o 18:00 (było 22:00)
+								step={30}
+								timeslots={2}
+								min={new Date(2024, 0, 1, 6, 0)}
+								max={new Date(2024, 0, 1, 18, 0)}
 								dayLayoutAlgorithm="no-overlap"
 								eventPropGetter={eventStyleGetter}
 								onSelectEvent={handleEventClick}
-								dayPropGetter={view === 'month' ? dayPropGetter : undefined} // tylko dla month
+								dayPropGetter={view === 'month' ? dayPropGetter : undefined}
 								messages={messages}
 								culture="pl"
 								formats={{
@@ -539,16 +608,9 @@ export default function CarsPage() {
 											'HH:mm',
 											culture
 										)} - ${localizer?.format(end, 'HH:mm', culture)}`,
-									weekdayFormat: (
-										date,
-										culture,
-										localizer // dla week view
-									) => localizer?.format(date, 'EEE', culture) || '',
-									dayHeaderFormat: (
-										date,
-										culture,
-										localizer // dla week view
-									) =>
+									weekdayFormat: (date, culture, localizer) =>
+										localizer?.format(date, 'EEE', culture) || '',
+									dayHeaderFormat: (date, culture, localizer) =>
 										`${localizer?.format(
 											date,
 											'EEE',
@@ -568,71 +630,6 @@ export default function CarsPage() {
 								setDetailDialogOpen(true);
 							}}
 						/>
-					</div>
-				</div>
-			) : (
-				/* Fleet tab */
-				<div>
-					<div className="mb-4 flex justify-end">
-						<Button onClick={handleAddCar}>
-							<Plus className="mr-2 h-4 w-4" />
-							Dodaj samochód
-						</Button>
-					</div>
-
-					<div className="grid gap-4">
-						{cars.map((car) => (
-							<div
-								key={car.id}
-								className={`rounded-lg border bg-white p-4 ${
-									!car.active ? 'opacity-60' : ''
-								}`}>
-								<div className="flex items-start justify-between">
-									<div
-										className="flex-1 cursor-pointer"
-										onClick={() => handleEditCar(car)}>
-										<h3 className="text-lg font-semibold">
-											{car.name} ({car.year})
-										</h3>
-										{car.registrationNumber && (
-											<div className="text-sm text-gray-600 mt-1">
-												<strong>Rejestracja:</strong> {car.registrationNumber}
-											</div>
-										)}
-										<div className="mt-2 space-y-1 text-sm text-gray-600">
-											{car.inspectionDate && (
-												<div>
-													<strong>Przegląd:</strong>{' '}
-													{format(new Date(car.inspectionDate), 'dd.MM.yyyy')}
-												</div>
-											)}
-											{car.insuranceDate && (
-												<div>
-													<strong>Ubezpieczenie:</strong>{' '}
-													{format(new Date(car.insuranceDate), 'dd.MM.yyyy')}
-												</div>
-											)}
-										</div>
-									</div>
-									<Button
-										variant="destructive"
-										size="sm"
-										onClick={(e) => {
-											e.stopPropagation();
-											setCarToDelete(car);
-											setDeleteCarDialogOpen(true);
-										}}>
-										Usuń
-									</Button>
-								</div>
-							</div>
-						))}
-
-						{cars.length === 0 && (
-							<div className="py-12 text-center text-gray-500">
-								Brak samochodów w bazie
-							</div>
-						)}
 					</div>
 				</div>
 			)}
