@@ -267,7 +267,10 @@ export default function CarReservationDialog({
 							<option value="">Wybierz samochód</option>
 							{cars.map((car) => (
 								<option key={car.id} value={car.id}>
-									{car.registrationNumber || car.name} ({car.year})
+									{car.name}{' '}
+									{car.registrationNumber
+										? `(${car.registrationNumber})`
+										: `(${car.year})`}
 								</option>
 							))}
 						</Select>
@@ -384,8 +387,8 @@ export default function CarReservationDialog({
 							{loading
 								? 'Zapisywanie...'
 								: reservation
-								? 'Zapisz zmiany'
-								: 'Dodaj rezerwację'}
+									? 'Zapisz zmiany'
+									: 'Dodaj rezerwację'}
 						</Button>
 					</div>
 				</form>

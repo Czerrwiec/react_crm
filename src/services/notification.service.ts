@@ -230,12 +230,25 @@ export const notificationService = {
 
     async notifyAdminsAboutInstructorNote(studentId: string, studentName: string, notePreview: string, instructorId: string) {
         const adminIds = await this.getAllAdminIds();
+
+        console.log('DEBUG notifyAdminsAboutInstructorNote:', {
+            adminIds,
+            studentId,
+            instructorId,
+            notePreview: notePreview.substring(0, 50)
+        });
+
+        if (adminIds.length === 0) {
+            console.warn('No admins found to notify!');
+            return;
+        }
+
         const instructorName = await this.getActorName(instructorId);
         const preview = notePreview.length > 50
             ? notePreview.substring(0, 50) + '...'
             : notePreview;
 
-        await this.sendNotification({
+        const result = await this.sendNotification({
             userIds: adminIds,
             type: 'note_added_by_instructor',
             title: 'Notatka od instruktora',
@@ -243,5 +256,7 @@ export const notificationService = {
             relatedId: studentId,
             excludeUserId: instructorId,
         });
-    },
+
+        console.log('Notification sent result:', result);
+    }
 }
