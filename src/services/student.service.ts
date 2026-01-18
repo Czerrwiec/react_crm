@@ -135,56 +135,49 @@ export const studentService = {
       updates.notes !== undefined;
 
     if (isOnlyNotes) {
-      const { data, error } = await supabase.rpc(
-        'update_student_notes',
-        {
-          student_id: id,
-          new_notes: updates.notes
-        }
-      );
+      // Zwykły UPDATE zamiast RPC
+      const { data, error } = await supabase
+        .from('students')
+        .update({ notes: updates.notes })
+        .eq('id', id)
+        .select()
+        .single();
 
       if (error) throw error;
 
-      // --- użytkownik i rola ---
+      const student = mapStudent(data);
       const { data: { user } } = await supabase.auth.getUser();
+
+      if (!user) return student;
 
       const { data: userRole } = await supabase
         .from('users')
         .select('role')
-        .eq('id', user?.id || '')
+        .eq('id', user.id)
         .single();
 
-      if (user && updates.notes) {
-        const student = await this.getStudent(id);
-
-        // Instruktor → admini
-        if (userRole?.role === 'instructor') {
-          await notificationService.notifyAdminsAboutInstructorNote(
-            id,
-            `${student.firstName} ${student.lastName}`,
-            updates.notes,
-            user.id
-          );
-        }
-
-        // Admin → instruktorzy
-        if (
-          userRole?.role === 'admin' &&
-          student.instructorIds &&
-          student.instructorIds.length > 0
-        ) {
-          await notificationService.notifyInstructorsAboutNote(
-            student.instructorIds,
-            id,
-            `${student.firstName} ${student.lastName}`,
-            updates.notes,
-            user.id
-          );
-        }
+      if (userRole?.role === 'instructor' && updates.notes) {
+        await notificationService.notifyAdminsAboutInstructorNote(
+          id,
+          `${student.firstName} ${student.lastName}`,
+          updates.notes,
+          user.id
+        );
       }
 
-      return mapStudent(data);
+      if (userRole?.role === 'admin' && updates.notes && student.instructorIds?.length) {
+        await notificationService.notifyInstructorsAboutNote(
+          student.instructorIds,
+          id,
+          `${student.firstName} ${student.lastName}`,
+          updates.notes,
+          user.id
+        );
+      }
+
+      return student;
     }
+    
 
     /**
      * =====================================
