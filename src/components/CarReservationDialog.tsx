@@ -47,6 +47,7 @@ export default function CarReservationDialog({
 	const [cars, setCars] = useState<Car[]>([]);
 	const [formData, setFormData] = useState(initialFormData);
 	const [conflictWarning, setConflictWarning] = useState(false);
+	const [studentSearch, setStudentSearch] = useState('');
 
 	useEffect(() => {
 		if (open) {
@@ -106,6 +107,15 @@ export default function CarReservationDialog({
 			console.error('Error loading data:', error);
 		}
 	};
+
+	const filteredStudents = students.filter((student) => {
+		if (!studentSearch) return true;
+		const searchLower = studentSearch.toLowerCase();
+		const fullName = `${student.firstName} ${student.lastName}`.toLowerCase();
+		return (
+			fullName.includes(searchLower) || student.phone?.includes(studentSearch)
+		);
+	});
 
 	const calculateEndTime = () => {
 		const [h, m] = formData.startTime.split(':').map(Number);
@@ -336,13 +346,19 @@ export default function CarReservationDialog({
 
 					<div>
 						<Label>Kursanci ({formData.studentIds.length})</Label>
+						<Input
+							placeholder="Szukaj po imieniu, nazwisku lub telefonie..."
+							value={studentSearch}
+							onChange={(e) => setStudentSearch(e.target.value)}
+							className="mb-2"
+						/>
 						<div className="mt-2 max-h-48 space-y-2 overflow-y-auto rounded-md border p-3">
 							{students.length === 0 ? (
 								<div className="text-center text-sm text-gray-500">
 									Brak aktywnych kursantów
 								</div>
 							) : (
-								students.map((student) => (
+								filteredStudents.map((student) => (
 									<label
 										key={student.id}
 										className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-2 rounded">

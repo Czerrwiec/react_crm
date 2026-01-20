@@ -21,6 +21,10 @@ interface NotificationSettings {
 	carReservationCreated: boolean;
 	carReservationUpdated: boolean;
 	carReservationDeleted: boolean;
+	studentCreated: boolean;
+	studentAssigned: boolean;
+	studentUpdated: boolean;
+	noteAdded: boolean
 }
 
 export default function SettingsPage() {
@@ -35,6 +39,10 @@ export default function SettingsPage() {
 			carReservationCreated: true,
 			carReservationUpdated: true,
 			carReservationDeleted: true,
+			studentCreated: true, 
+			studentAssigned: true, 
+			studentUpdated: true, 
+			noteAdded: true, // NOWE - grupujemy obie (od admina i instruktora)
 		});
 	const [schoolInfo, setSchoolInfo] = useState<SchoolInfo | null>(null);
 	const [editingSchool, setEditingSchool] = useState(false);
@@ -75,6 +83,10 @@ export default function SettingsPage() {
 					carReservationCreated: data.car_reservation_created ?? true,
 					carReservationUpdated: data.car_reservation_updated ?? true,
 					carReservationDeleted: data.car_reservation_deleted ?? true,
+					studentCreated: data.student_created ?? true, // NOWE
+					studentAssigned: data.student_assigned ?? true, // NOWE
+					studentUpdated: data.student_updated ?? true, // NOWE
+					noteAdded: data.note_added ?? true, // NOWE
 				});
 			}
 		} catch (error) {
@@ -108,6 +120,10 @@ export default function SettingsPage() {
 				car_reservation_created: notificationSettings.carReservationCreated,
 				car_reservation_updated: notificationSettings.carReservationUpdated,
 				car_reservation_deleted: notificationSettings.carReservationDeleted,
+				student_created: notificationSettings.studentCreated, // NOWE
+				student_assigned: notificationSettings.studentAssigned, // NOWE
+				student_updated: notificationSettings.studentUpdated, // NOWE
+				note_added: notificationSettings.noteAdded, // NOWE
 			});
 
 			if (error) throw error;
@@ -420,7 +436,7 @@ export default function SettingsPage() {
 														onClick={() =>
 															copyToClipboard(
 																schoolInfo.postalCode,
-																'postalCode'
+																'postalCode',
 															)
 														}>
 														{copiedField === 'postalCode' ? (
@@ -700,6 +716,70 @@ export default function SettingsPage() {
 											Usunięcie rezerwacji samochodu
 										</Label>
 									</label>
+
+									<label className="flex items-center gap-2 cursor-pointer">
+										<Checkbox
+											checked={notificationSettings.studentCreated}
+											onChange={(e) =>
+												setNotificationSettings({
+													...notificationSettings,
+													studentCreated: e.target.checked,
+												})
+											}
+											disabled={!notificationSettings.enabled}
+										/>
+										<Label className="cursor-pointer text-xs sm:text-sm">
+											Dodanie nowego kursanta
+										</Label>
+									</label>
+
+									<label className="flex items-center gap-2 cursor-pointer">
+										<Checkbox
+											checked={notificationSettings.studentAssigned}
+											onChange={(e) =>
+												setNotificationSettings({
+													...notificationSettings,
+													studentAssigned: e.target.checked,
+												})
+											}
+											disabled={!notificationSettings.enabled}
+										/>
+										<Label className="cursor-pointer text-xs sm:text-sm">
+											Przypisanie kursanta do instruktora
+										</Label>
+									</label>
+
+									<label className="flex items-center gap-2 cursor-pointer">
+										<Checkbox
+											checked={notificationSettings.studentUpdated}
+											onChange={(e) =>
+												setNotificationSettings({
+													...notificationSettings,
+													studentUpdated: e.target.checked,
+												})
+											}
+											disabled={!notificationSettings.enabled}
+										/>
+										<Label className="cursor-pointer text-xs sm:text-sm">
+											Edycja danych kursanta
+										</Label>
+									</label>
+
+									<label className="flex items-center gap-2 cursor-pointer">
+										<Checkbox
+											checked={notificationSettings.noteAdded}
+											onChange={(e) =>
+												setNotificationSettings({
+													...notificationSettings,
+													noteAdded: e.target.checked,
+												})
+											}
+											disabled={!notificationSettings.enabled}
+										/>
+										<Label className="cursor-pointer text-xs sm:text-sm">
+											Dodanie notatki do kursanta
+										</Label>
+									</label>
 								</div>
 
 								<div className="pt-4 border-t">
@@ -722,7 +802,6 @@ export default function SettingsPage() {
 						<div>
 							<AppVersion />
 						</div>
-						
 					</div>
 				</div>
 			</div>

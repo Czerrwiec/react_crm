@@ -165,7 +165,7 @@ export default function CarsPage() {
 		const carName = car?.name || ''; // NOWE
 
 		const studentNames = reservation.studentIds
-			.map((id) => studentNamesMap.get(id) || 'Nieznany')
+			.map((id) => studentNamesMap.get(id))
 			.join(', ');
 
 		// ZMIANA: Jeśli brak kursantów, pokaż nazwę auta
@@ -551,12 +551,12 @@ export default function CarsPage() {
 										eventTimeRangeFormat: (
 											{ start, end },
 											culture,
-											localizer
+											localizer,
 										) =>
 											`${localizer?.format(
 												start,
 												'HH:mm',
-												culture
+												culture,
 											)} - ${localizer?.format(end, 'HH:mm', culture)}`,
 									}}
 								/>
@@ -606,7 +606,7 @@ export default function CarsPage() {
 										`${localizer?.format(
 											start,
 											'HH:mm',
-											culture
+											culture,
 										)} - ${localizer?.format(end, 'HH:mm', culture)}`,
 									weekdayFormat: (date, culture, localizer) =>
 										localizer?.format(date, 'EEE', culture) || '',
@@ -614,7 +614,7 @@ export default function CarsPage() {
 										`${localizer?.format(
 											date,
 											'EEE',
-											culture
+											culture,
 										)} ${localizer?.format(date, 'd', culture)}`,
 								}}
 							/>
@@ -657,6 +657,7 @@ export default function CarsPage() {
 				onOpenChange={setDetailDialogOpen}
 				reservation={selectedReservation}
 				carNames={carNamesMap}
+				cars={cars}
 				studentNames={studentNamesMap}
 				onEdit={handleEditReservation}
 				onSuccess={loadReservations}

@@ -8,7 +8,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Pencil, Trash2 } from 'lucide-react';
 import { carService } from '@/services/car.service';
-import type { CarReservation } from '@/types';
+import type { CarReservation, Car } from '@/types';
 import { format } from 'date-fns';
 import { pl } from 'date-fns/locale';
 import ConfirmDialog from '@/components/ConfirmDialog';
@@ -19,6 +19,7 @@ interface CarReservationDetailDialogProps {
 	onOpenChange: (open: boolean) => void;
 	reservation: CarReservation | null;
 	carNames: Map<string, string>;
+	cars: Car[]; 
 	studentNames: Map<string, string>;
 	onEdit: (reservation: CarReservation) => void;
 	onSuccess: () => void;
@@ -29,6 +30,7 @@ export default function CarReservationDetailDialog({
 	onOpenChange,
 	reservation,
 	carNames,
+	cars,
 	studentNames,
 	onEdit,
 	onSuccess,
@@ -39,16 +41,16 @@ export default function CarReservationDetailDialog({
 
 	if (!reservation) return null;
 
-	const formatDuration = (startTime: string, endTime: string) => {
-		const [startH, startM] = startTime.split(':').map(Number);
-		const [endH, endM] = endTime.split(':').map(Number);
-		const startMinutes = startH * 60 + startM;
-		const endMinutes = endH * 60 + endM;
-		const durationMinutes = endMinutes - startMinutes;
-		const hours = Math.floor(durationMinutes / 60);
-		const minutes = durationMinutes % 60;
-		return minutes > 0 ? `${hours}h ${minutes}m` : `${hours}h`;
-	};
+	// const formatDuration = (startTime: string, endTime: string) => {
+	// 	const [startH, startM] = startTime.split(':').map(Number);
+	// 	const [endH, endM] = endTime.split(':').map(Number);
+	// 	const startMinutes = startH * 60 + startM;
+	// 	const endMinutes = endH * 60 + endM;
+	// 	const durationMinutes = endMinutes - startMinutes;
+	// 	const hours = Math.floor(durationMinutes / 60);
+	// 	const minutes = durationMinutes % 60;
+	// 	return minutes > 0 ? `${hours}h ${minutes}m` : `${hours}h`;
+	// };
 
 	const handleDeleteConfirm = async () => {
 		setDeleting(true);
@@ -86,14 +88,16 @@ export default function CarReservationDetailDialog({
 					<div>
 						<div className="text-sm text-gray-500">Samochód</div>
 						<div className="font-medium">
-							{carNames.get(reservation.carId) || 'Nieznany'}
-						</div>
-					</div>
+							{(() => {
+								const car = cars.find((c) => c.id === reservation.carId);
+								if (!car) return 'Nieznany';
 
-					<div>
-						<div className="text-sm text-gray-500">Czas trwania</div>
-						<div className="font-medium">
-							{formatDuration(reservation.startTime, reservation.endTime)}
+								const reg = car.registrationNumber || '';
+								const name = car.name || '';
+
+								if (reg && name) return `${reg} - ${name}`;
+								return reg || name || 'Nieznany';
+							})()}
 						</div>
 					</div>
 
