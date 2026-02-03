@@ -544,6 +544,7 @@ export default function CalendarPage() {
 						<Calendar
 							localizer={localizer}
 							events={generateEvents('month')}
+							culture="pl"
 							messages={messages}
 							startAccessor="start"
 							endAccessor="end"
@@ -563,13 +564,13 @@ export default function CalendarPage() {
 									`${localizer?.format(
 										start,
 										'HH:mm',
-										culture
+										culture,
 									)} - ${localizer?.format(end, 'HH:mm', culture)}`,
 								agendaTimeRangeFormat: ({ start, end }, culture, localizer) =>
 									`${localizer?.format(
 										start,
 										'HH:mm',
-										culture
+										culture,
 									)} - ${localizer?.format(end, 'HH:mm', culture)}`,
 							}}
 						/>
@@ -587,8 +588,9 @@ export default function CalendarPage() {
 								// ZMIANA
 								(e) =>
 									format(e.start, 'yyyy-MM-dd') ===
-									format(selectedDay, 'yyyy-MM-dd')
+									format(selectedDay, 'yyyy-MM-dd'),
 							)}
+							culture="pl"
 							startAccessor="start"
 							endAccessor="end"
 							style={{ height: 'calc(100vh - 350px)', minHeight: '500px' }}
@@ -609,13 +611,13 @@ export default function CalendarPage() {
 									`${localizer?.format(
 										start,
 										'HH:mm',
-										culture
+										culture,
 									)} - ${localizer?.format(end, 'HH:mm', culture)}`,
 								agendaTimeRangeFormat: ({ start, end }, culture, localizer) =>
 									`${localizer?.format(
 										start,
 										'HH:mm',
-										culture
+										culture,
 									)} - ${localizer?.format(end, 'HH:mm', culture)}`,
 							}}
 						/>
@@ -629,6 +631,7 @@ export default function CalendarPage() {
 						}}
 						localizer={localizer}
 						events={generateEvents('week')}
+						culture="pl"
 						startAccessor="start"
 						endAccessor="end"
 						style={{ height: 'calc(100vh - 350px)', minHeight: '500px' }}
@@ -649,13 +652,13 @@ export default function CalendarPage() {
 								`${localizer?.format(
 									start,
 									'HH:mm',
-									culture
+									culture,
 								)} - ${localizer?.format(end, 'HH:mm', culture)}`,
 							agendaTimeRangeFormat: ({ start, end }, culture, localizer) =>
 								`${localizer?.format(
 									start,
 									'HH:mm',
-									culture
+									culture,
 								)} - ${localizer?.format(end, 'HH:mm', culture)}`,
 						}}
 					/>
@@ -673,8 +676,9 @@ export default function CalendarPage() {
 							// ZMIANA
 							(e) =>
 								format(e.start, 'yyyy-MM-dd') ===
-								format(currentDate, 'yyyy-MM-dd')
+								format(currentDate, 'yyyy-MM-dd'),
 						)}
+						culture="pl"
 						startAccessor="start"
 						endAccessor="end"
 						style={{ height: 'calc(100vh - 350px)', minHeight: '500px' }}
@@ -695,13 +699,13 @@ export default function CalendarPage() {
 								`${localizer?.format(
 									start,
 									'HH:mm',
-									culture
+									culture,
 								)} - ${localizer?.format(end, 'HH:mm', culture)}`,
 							agendaTimeRangeFormat: ({ start, end }, culture, localizer) =>
 								`${localizer?.format(
 									start,
 									'HH:mm',
-									culture
+									culture,
 								)} - ${localizer?.format(end, 'HH:mm', culture)}`,
 						}}
 					/>

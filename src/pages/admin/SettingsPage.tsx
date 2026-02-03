@@ -11,6 +11,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { schoolService } from '@/services/school.service';
 import type { SchoolInfo } from '@/types';
 import { X } from 'lucide-react';
+import SuccessDialog from '@/components/SuccessDialog';
 
 interface NotificationSettings {
 	enabled: boolean;
@@ -24,7 +25,7 @@ interface NotificationSettings {
 	studentCreated: boolean;
 	studentAssigned: boolean;
 	studentUpdated: boolean;
-	noteAdded: boolean
+	noteAdded: boolean;
 }
 
 export default function SettingsPage() {
@@ -39,9 +40,9 @@ export default function SettingsPage() {
 			carReservationCreated: true,
 			carReservationUpdated: true,
 			carReservationDeleted: true,
-			studentCreated: true, 
-			studentAssigned: true, 
-			studentUpdated: true, 
+			studentCreated: true,
+			studentAssigned: true,
+			studentUpdated: true,
 			noteAdded: true, // NOWE - grupujemy obie (od admina i instruktora)
 		});
 	const [schoolInfo, setSchoolInfo] = useState<SchoolInfo | null>(null);
@@ -51,6 +52,8 @@ export default function SettingsPage() {
 	const [saving, setSaving] = useState(false);
 	const [savingSchool, setSavingSchool] = useState(false);
 	const [newCarEmail, setNewCarEmail] = useState('');
+	const [successDialogOpen, setSuccessDialogOpen] = useState(false);
+	const [successMessage, setSuccessMessage] = useState('');
 
 	useEffect(() => {
 		if (user) {
@@ -127,8 +130,9 @@ export default function SettingsPage() {
 			});
 
 			if (error) throw error;
+			setSuccessMessage('Ustawienia zostały zapisane pomyślnie');
+			setSuccessDialogOpen(true);
 
-			alert('Ustawienia zapisane pomyślnie');
 		} catch (error) {
 			console.error('Error saving settings:', error);
 			alert('Błąd zapisywania ustawień');
@@ -144,7 +148,8 @@ export default function SettingsPage() {
 		try {
 			await schoolService.updateSchoolInfo(schoolInfo);
 			setEditingSchool(false);
-			alert('Dane szkoły zapisane pomyślnie');
+			setSuccessMessage('Dane szkoły zostały zapisane pomyślnie');
+			setSuccessDialogOpen(true);
 		} catch (error) {
 			console.error('Error saving school info:', error);
 			alert('Błąd zapisywania danych szkoły');
@@ -201,7 +206,7 @@ export default function SettingsPage() {
 		setSchoolInfo({
 			...schoolInfo,
 			carReminderEmails: schoolInfo.carReminderEmails.filter(
-				(_, i) => i !== index
+				(_, i) => i !== index,
 			),
 		});
 	};
@@ -805,6 +810,12 @@ export default function SettingsPage() {
 					</div>
 				</div>
 			</div>
+			<SuccessDialog
+				open={successDialogOpen}
+				onOpenChange={setSuccessDialogOpen}
+				title="Sukces"
+				message={successMessage}
+			/>
 		</div>
 	);
 }

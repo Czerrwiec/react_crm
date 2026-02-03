@@ -122,8 +122,7 @@
 
 	.rbc-month-view,
 	.rbc-time-view {
-		max-width: 100%;
-		overflow-x: auto;
+		overflow-x: hidden;
 	}
 
 	.rbc-event {
@@ -186,3 +185,20 @@
 		display: block !important; /* pokaż godzinę */
 	}
 }
+
+/* ============================= */
+/* FIX: poziomy scroll w month */
+/* ============================= */
+
+.rbc-month-view {
+  table-layout: fixed;
+}
+
+.rbc-month-view .rbc-event,
+.rbc-month-view .rbc-event-content {
+  max-width: 100%;
+  overflow: hidden;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
