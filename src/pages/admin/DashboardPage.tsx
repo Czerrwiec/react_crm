@@ -63,11 +63,11 @@ export default function DashboardPage() {
 				})
 				.filter((s) => s.debt > 0) // Tylko z zadłużeniem
 				.sort((a, b) => {
-					// Sortuj: najpierw najwięcej dni, potem największe zadłużenie
-					if (b.daysOnCourse !== a.daysOnCourse) {
-						return b.daysOnCourse - a.daysOnCourse;
+					// Sortuj: najpierw największe zadłużenie, potem najwięcej dni
+					if (b.debt !== a.debt) {
+						return b.debt - a.debt;
 					}
-					return b.debt - a.debt;
+					return b.daysOnCourse - a.daysOnCourse;
 				})
 				.slice(0, 5); // Top 5
 
@@ -127,11 +127,11 @@ export default function DashboardPage() {
 												Na kursie: {debtor.daysOnCourse} dni
 											</div>
 										</div>
-										<div className="text-right">
+										{/* <div className="text-right">
 											<div className="font-semibold text-600">
 												{debtor.debt.toFixed(0)} zł
 											</div>
-										</div>
+										</div> */}
 									</div>
 								))}
 							</div>
