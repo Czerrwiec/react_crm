@@ -1,3 +1,5 @@
+import 'react-big-calendar/lib/css/react-big-calendar.css';// nie pomogło
+import '../admin/calendar.css';// nie pomogło 
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Calendar, dateFnsLocalizer } from 'react-big-calendar';
@@ -36,6 +38,8 @@ import {
 	Mail,
 	CreditCard,
 	Hash,
+	ChevronLeft,
+	ChevronRight,
 } from 'lucide-react';
 import { carService } from '@/services/car.service';
 import type { Student, Payment, Lesson, CarReservation, Car } from '@/types';
@@ -66,15 +70,16 @@ export default function StudentDetailPage() {
 	const [student, setStudent] = useState<Student | null>(null);
 	const [payments, setPayments] = useState<PaymentWithCreator[]>([]);
 	const [lessons, setLessons] = useState<Lesson[]>([]);
+	const [calendarMonth, setCalendarMonth] = useState(new Date());
 	const [loading, setLoading] = useState(true);
 	const [dialogOpen, setDialogOpen] = useState(false);
 	const [activeTab, setActiveTab] = useState<'info' | 'calendar'>('info');
 	const [carReservation, setCarReservation] = useState<CarReservation | null>(
-		null
+		null,
 	);
 	const [reservedCar, setReservedCar] = useState<Car | null>(null);
 	const [instructorsMap, setInstructorsMap] = useState<Map<string, string>>(
-		new Map()
+		new Map(),
 	);
 	const [packageName, setPackageName] = useState<string | null>(null);
 	const [packageHours, setPackageHours] = useState<number>(30);
@@ -91,6 +96,59 @@ export default function StudentDetailPage() {
 			setNotesValue(student.notes || '');
 		}
 	}, [student]);
+
+	useEffect(() => {
+		if (id && student) {
+			loadLessonsForMonth(id, calendarMonth);
+		}
+	}, [calendarMonth, id, student]);
+
+	const loadLessonsForMonth = async (studentId: string, month: Date) => {
+		const prevMonth = new Date(month.getFullYear(), month.getMonth() - 1, 1);
+		const nextMonth = new Date(month.getFullYear(), month.getMonth() + 1, 1);
+
+		const startDate = new Date(prevMonth.getFullYear(), prevMonth.getMonth(), 1)
+			.toISOString()
+			.split('T')[0];
+
+		const endDate = new Date(
+			nextMonth.getFullYear(),
+			nextMonth.getMonth() + 1,
+			0,
+		)
+			.toISOString()
+			.split('T')[0];
+
+		const { data: lessonsData, error } = await supabase
+			.from('lessons')
+			.select('*')
+			.contains('student_ids', [studentId])
+			.gte('date', startDate)
+			.lte('date', endDate)
+			.order('date')
+			.order('start_time');
+
+		if (error) {
+			console.error('Error loading lessons:', error);
+			return;
+		}
+
+		const mappedLessons = lessonsData.map((lesson: any) => ({
+			id: lesson.id,
+			studentIds: lesson.student_ids || [],
+			instructorId: lesson.instructor_id,
+			date: lesson.date,
+			startTime: lesson.start_time,
+			endTime: lesson.end_time,
+			duration: lesson.duration,
+			status: lesson.status,
+			notes: lesson.notes,
+			createdAt: lesson.created_at,
+			updatedAt: lesson.updated_at,
+		}));
+
+		setLessons(mappedLessons);
+	};
 
 	const loadData = async (studentId: string) => {
 		try {
@@ -128,7 +186,7 @@ export default function StudentDetailPage() {
 				.eq('role', 'instructor');
 
 			const map = new Map(
-				instructors?.map((i) => [i.id, `${i.first_name} ${i.last_name}`]) || []
+				instructors?.map((i) => [i.id, `${i.first_name} ${i.last_name}`]) || [],
 			);
 			setInstructorsMap(map);
 
@@ -145,60 +203,13 @@ export default function StudentDetailPage() {
 						createdByName,
 						updatedByName,
 					};
-				})
+				}),
 			);
 
 			setPayments(paymentsWithCreators);
 
 			if (studentData.instructorIds.length > 0) {
-				const prevMonth = new Date();
-				prevMonth.setMonth(prevMonth.getMonth() - 1);
-				const nextMonth = new Date();
-				nextMonth.setMonth(nextMonth.getMonth() + 1);
-
-				const startDate = new Date(
-					prevMonth.getFullYear(),
-					prevMonth.getMonth(),
-					1
-				)
-					.toISOString()
-					.split('T')[0];
-
-				const endDate = new Date(
-					nextMonth.getFullYear(),
-					nextMonth.getMonth() + 1,
-					0
-				)
-					.toISOString()
-					.split('T')[0];
-
-				// Pobierz WSZYSTKIE lekcje dla tego studenta (omijając RLS filtr po instructorze)
-				const { data: lessonsData, error } = await supabase
-					.from('lessons')
-					.select('*')
-					.contains('student_ids', [studentId])
-					.gte('date', startDate)
-					.lte('date', endDate)
-					.order('date')
-					.order('start_time');
-
-				if (error) throw error;
-
-				const mappedLessons = lessonsData.map((lesson: any) => ({
-					id: lesson.id,
-					studentIds: lesson.student_ids || [],
-					instructorId: lesson.instructor_id,
-					date: lesson.date,
-					startTime: lesson.start_time,
-					endTime: lesson.end_time,
-					duration: lesson.duration,
-					status: lesson.status,
-					notes: lesson.notes,
-					createdAt: lesson.created_at,
-					updatedAt: lesson.updated_at,
-				}));
-
-				setLessons(mappedLessons);
+				loadLessonsForMonth(studentId, calendarMonth);
 			}
 
 			if (studentData.car) {
@@ -226,14 +237,14 @@ export default function StudentDetailPage() {
 			date.getMonth(),
 			date.getDate(),
 			startHour,
-			startMinute
+			startMinute,
 		);
 		const end = new Date(
 			date.getFullYear(),
 			date.getMonth(),
 			date.getDate(),
 			endHour,
-			endMinute
+			endMinute,
 		);
 
 		const startShort = lesson.startTime.slice(0, 5); // "10:00"
@@ -278,7 +289,7 @@ export default function StudentDetailPage() {
 		const cleaned = phone.replace(/\D/g, '');
 		if (cleaned.length === 9) {
 			return `${cleaned.slice(0, 3)} ${cleaned.slice(3, 6)} ${cleaned.slice(
-				6
+				6,
 			)}`;
 		}
 		return phone;
@@ -332,8 +343,8 @@ export default function StudentDetailPage() {
 
 	const canEditStateExam = student
 		? student.profileUpdated &&
-		  student.internalTheoryPassed &&
-		  student.internalPracticePassed
+			student.internalTheoryPassed &&
+			student.internalPracticePassed
 		: false;
 
 	if (loading || !student) {
@@ -377,7 +388,7 @@ export default function StudentDetailPage() {
 							size="icon"
 							onClick={() =>
 								navigate(
-									role === 'admin' ? '/admin/students' : '/instructor/students'
+									role === 'admin' ? '/admin/students' : '/instructor/students',
 								)
 							}>
 							<ArrowLeft className="h-5 w-5" />
@@ -398,7 +409,7 @@ export default function StudentDetailPage() {
 							size="icon"
 							onClick={() =>
 								navigate(
-									role === 'admin' ? '/admin/students' : '/instructor/students'
+									role === 'admin' ? '/admin/students' : '/instructor/students',
 								)
 							}>
 							<ArrowLeft className="h-5 w-5" />
@@ -559,8 +570,8 @@ export default function StudentDetailPage() {
 												{student.markProgressComplete
 													? `${formatHours(packageHours)} / ${packageHours}h`
 													: `${formatHours(
-															student.totalHoursDriven
-													  )} / ${packageHours}h`}
+															student.totalHoursDriven,
+														)} / ${packageHours}h`}
 											</span>
 										</div>
 
@@ -573,17 +584,17 @@ export default function StudentDetailPage() {
 														: getProgressColor(
 																calculateProgress(
 																	student.totalHoursDriven,
-																	packageHours
-																)
-														  )
+																	packageHours,
+																),
+															)
 												}`}
 												style={{
 													width: student.markProgressComplete
 														? '100%'
 														: `${calculateProgress(
 																student.totalHoursDriven,
-																packageHours
-														  )}%`,
+																packageHours,
+															)}%`,
 												}}
 											/>
 										</div>
@@ -597,7 +608,7 @@ export default function StudentDetailPage() {
 												<>
 													{calculateProgress(
 														student.totalHoursDriven,
-														packageHours
+														packageHours,
 													).toFixed(0)}
 													% ukończone
 													{student.totalHoursDriven >= packageHours ? (
@@ -608,7 +619,7 @@ export default function StudentDetailPage() {
 														<span className="ml-2">
 															(brakuje{' '}
 															{formatHours(
-																packageHours - student.totalHoursDriven
+																packageHours - student.totalHoursDriven,
 															)}
 															)
 														</span>
@@ -692,10 +703,10 @@ export default function StudentDetailPage() {
 															student.stateExamStatus === 'passed'
 																? 'text-gray-900'
 																: student.stateExamStatus === 'failed'
-																? 'text-gray-900'
-																: canEditStateExam
-																? 'text-gray-900'
-																: 'text-gray-500'
+																	? 'text-gray-900'
+																	: canEditStateExam
+																		? 'text-gray-900'
+																		: 'text-gray-500'
 														}>
 														Państwowy -
 													</span>
@@ -704,14 +715,14 @@ export default function StudentDetailPage() {
 														{student.stateExamStatus === 'passed'
 															? `Zdany (${student.stateExamAttempts}. próba)`
 															: student.stateExamStatus === 'failed'
-															? `Niezdany (${student.stateExamAttempts} ${
-																	student.stateExamAttempts === 1
-																		? 'próba'
-																		: 'próby/prób'
-															  })`
-															: canEditStateExam
-															? 'Dopuszczony'
-															: 'Niedopuszczony'}
+																? `Niezdany (${student.stateExamAttempts} ${
+																		student.stateExamAttempts === 1
+																			? 'próba'
+																			: 'próby/prób'
+																	})`
+																: canEditStateExam
+																	? 'Dopuszczony'
+																	: 'Niedopuszczony'}
 													</span>
 													{/* Info o terminie egzaminu */}
 													{student.stateExamStatus === 'allowed' &&
@@ -720,7 +731,7 @@ export default function StudentDetailPage() {
 																Termin:{' '}
 																{format(
 																	new Date(carReservation.date),
-																	'dd.MM.yyyy'
+																	'dd.MM.yyyy',
 																)}{' '}
 																o {carReservation.startTime.slice(0, 5)}
 															</div>
@@ -751,7 +762,7 @@ export default function StudentDetailPage() {
 														({reservedCar.name},{' '}
 														{format(
 															new Date(carReservation.date),
-															'dd.MM.yyyy'
+															'dd.MM.yyyy',
 														)}
 														)
 													</span>
@@ -766,7 +777,7 @@ export default function StudentDetailPage() {
 												<span>
 													{format(
 														new Date(student.courseStartDate),
-														'dd.MM.yyyy'
+														'dd.MM.yyyy',
 													)}
 												</span>
 											</div>
@@ -928,11 +939,48 @@ export default function StudentDetailPage() {
 					) : (
 						<div className="grid gap-4 md:grid-cols-[2fr,1fr]">
 							{/* Kalendarz */}
-							<div className="rounded-lg border bg-white p-2 sm:p-4 h-[450px] sm:h-[600px]">
+							<div className="rounded-lg border bg-white p-2 sm:p-4">
+								{/* Toolbar */}
+								<div className="mb-4 flex items-center justify-between border-b pb-3">
+									<div className="flex items-center gap-2">
+										<Button
+											variant="outline"
+											size="sm"
+											onClick={() => setCalendarMonth(new Date())}>
+											Dziś
+										</Button>
+										<Button
+											variant="outline"
+											size="sm"
+											onClick={() => {
+												const prev = new Date(calendarMonth);
+												prev.setMonth(prev.getMonth() - 1);
+												setCalendarMonth(prev);
+											}}>
+											<ChevronLeft className="h-4 w-4" />
+										</Button>
+										<Button
+											variant="outline"
+											size="sm"
+											onClick={() => {
+												const next = new Date(calendarMonth);
+												next.setMonth(next.getMonth() + 1);
+												setCalendarMonth(next);
+											}}>
+											<ChevronRight className="h-4 w-4" />
+										</Button>
+										<span className="ml-2 text-sm font-semibold capitalize">
+											{format(calendarMonth, 'LLLL yyyy', { locale: pl })}
+										</span>
+									</div>
+								</div>
+
 								<div className="h-[450px] sm:h-[600px]">
 									<Calendar
 										localizer={localizer}
 										events={events}
+										date={calendarMonth}
+										onNavigate={(newDate) => setCalendarMonth(newDate)}
 										startAccessor="start"
 										endAccessor="end"
 										style={{ height: '100%' }}
@@ -994,8 +1042,8 @@ export default function StudentDetailPage() {
 														lesson.status === 'completed'
 															? 'bg-green-50 border-green-200'
 															: lesson.status === 'cancelled'
-															? 'bg-gray-50 border-gray-200'
-															: 'bg-amber-50 border-amber-200'
+																? 'bg-gray-50 border-gray-200'
+																: 'bg-amber-50 border-amber-200'
 													}`}>
 													<div className="text-sm font-medium">
 														{format(new Date(lesson.date), 'dd.MM.yyyy', {
@@ -1047,8 +1095,8 @@ export default function StudentDetailPage() {
 														lesson.status === 'completed'
 															? 'bg-green-50 border-green-200'
 															: lesson.status === 'cancelled'
-															? 'bg-gray-50 border-gray-200'
-															: 'bg-amber-50 border-amber-200'
+																? 'bg-gray-50 border-gray-200'
+																: 'bg-amber-50 border-amber-200'
 													}`}>
 													<div className="font-medium">
 														{format(new Date(lesson.date), 'dd.MM.yyyy', {
@@ -1132,8 +1180,8 @@ function PaymentRow({
 					{payment.method === 'cash'
 						? 'Gotówka'
 						: payment.method === 'card'
-						? 'Karta'
-						: 'Przelew'}
+							? 'Karta'
+							: 'Przelew'}
 				</div>
 				{(payment.createdByName || payment.updatedByName) && (
 					<div className="mt-1 text-xs text-gray-500">
@@ -1172,7 +1220,7 @@ function EditPaymentForm({
 	const [amount, setAmount] = useState(payment.amount.toString());
 	const [type, setType] = useState<'course' | 'extra_lessons'>(payment.type);
 	const [method, setMethod] = useState<'cash' | 'card' | 'transfer'>(
-		payment.method
+		payment.method,
 	);
 	const [loading, setLoading] = useState(false);
 

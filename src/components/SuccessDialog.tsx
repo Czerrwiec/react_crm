@@ -25,17 +25,17 @@ export default function SuccessDialog({
 			<DialogContent className="max-w-md">
 				<DialogHeader>
 					<div className="flex items-start gap-3">
-						<div className="rounded-full bg-green-100 p-2">
+						<div className="rounded-full bg-green-100 p-2 flex-shrink-0">
 							<CheckCircle className="h-5 w-5 text-green-600" />
 						</div>
-						<div className="flex-1">
-							<DialogTitle className="text-lg">{title}</DialogTitle>
+						<div className="flex-1 min-w-0">
+							<DialogTitle className="text-lg text-left">{title}</DialogTitle>
 						</div>
 					</div>
 				</DialogHeader>
 
 				<div className="space-y-4">
-					<p className="text-sm text-gray-600">{message}</p>
+					<p className="text-sm text-gray-600 sm:pl-0">{message}</p>
 
 					<div className="flex justify-end">
 						<Button onClick={() => onOpenChange(false)}>OK</Button>

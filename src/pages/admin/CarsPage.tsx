@@ -742,7 +742,7 @@ function ReservationsList({
 								style={{ borderLeftColor: car?.color, borderLeftWidth: '4px' }}
 								onClick={() => onReservationClick(reservation)}>
 								<div className="text-sm font-medium">
-									{format(new Date(reservation.date), 'dd.MM.yyyy', {
+									{format(new Date(reservation.date), 'dd.MM.yyyy EEEE,', {
 										locale: pl,
 									})}{' '}
 									• {reservation.startTime.slice(0, 5)} -{' '}
