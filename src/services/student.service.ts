@@ -105,7 +105,8 @@ export const studentService = {
       await notificationService.notifyAdminsAboutNewStudent(
         data.id,
         `${student.firstName} ${student.lastName}`,
-        user.id
+        user.id,
+        student.instructorIds
       );
 
       // Powiadom instruktorów o przypisaniu
@@ -177,7 +178,7 @@ export const studentService = {
 
       return student;
     }
-    
+
 
     /**
      * =====================================
@@ -257,11 +258,22 @@ export const studentService = {
           newId => !oldInstructorIds.includes(newId)
         );
 
+        // Powiadom instruktorów
         for (const instructorId of newInstructorIds) {
           await notificationService.notifyInstructorAboutAssignment(
             instructorId,
             id,
             `${beforeUpdate.first_name} ${beforeUpdate.last_name}`,
+            user.id
+          );
+        }
+
+        // Powiadom innych adminów o przypisaniu
+        if (newInstructorIds.length > 0) {
+          await notificationService.notifyAdminsAboutInstructorAssignment(
+            id,
+            `${beforeUpdate.first_name} ${beforeUpdate.last_name}`,
+            newInstructorIds,
             user.id
           );
         }

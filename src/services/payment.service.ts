@@ -10,6 +10,8 @@ export const paymentService = {
             .eq('student_id', studentId)
             .order('created_at', { ascending: false })
 
+        // console.log('Payments result:', { data, error });  
+
         if (error) throw error
         return data.map(mapPayment)
     },

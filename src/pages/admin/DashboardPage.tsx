@@ -19,33 +19,33 @@ export default function DashboardPage() {
 	const [activeStudentsCount, setActiveStudentsCount] = useState(0);
 	const [loading, setLoading] = useState(true);
 	const [topDebtors, setTopDebtors] = useState<DebtorStudent[]>([]);
-	
+
 	useEffect(() => {
 		loadData();
 	}, []);
 
 	const loadData = async () => {
 		try {
-			const students = await studentService.getStudents();
-			const activeCount = students.filter((s) => !s.inactive).length;
+			const allStudents = await studentService.getStudents();
+			const activeCount = allStudents.filter((s) => !s.inactive).length;
 			setActiveStudentsCount(activeCount);
 
-			// Pobierz wszystkie płatności
-			const allPayments = await Promise.all(
-				students.map((s) => paymentService.getPaymentsByStudent(s.id)),
+			const eligibleStudents = allStudents.filter(
+				(s) => !s.inactive && s.courseStartDate,
 			);
 
-			// Oblicz zadłużenia
-			const debtors: DebtorStudent[] = students
-				.filter((s) => !s.inactive && s.courseStartDate) // Tylko aktywni z datą startu
+			const allPayments = await Promise.all(
+				eligibleStudents.map((s) => paymentService.getPaymentsByStudent(s.id)),
+			);
+
+			const debtors: DebtorStudent[] = eligibleStudents
 				.map((s, idx) => {
-					const payments = allPayments[idx];
+					const payments = allPayments[idx]; 
 					const totalPaid = payments
 						.filter((p) => p.type === 'course')
 						.reduce((sum, p) => sum + p.amount, 0);
 					const debt = s.coursePrice - totalPaid;
 
-					// Oblicz dni na kursie
 					const startDate = new Date(s.courseStartDate!);
 					const today = new Date();
 					const daysOnCourse = Math.floor(
@@ -61,15 +61,9 @@ export default function DashboardPage() {
 						daysOnCourse,
 					};
 				})
-				.filter((s) => s.debt > 0) // Tylko z zadłużeniem
-				.sort((a, b) => {
-					// Sortuj: najpierw największe zadłużenie, potem najwięcej dni
-					if (b.debt !== a.debt) {
-						return b.debt - a.debt;
-					}
-					return b.daysOnCourse - a.daysOnCourse;
-				})
-				.slice(0, 5); // Top 5
+				.filter((s) => s.debt > 0)
+				.sort((a, b) => b.daysOnCourse - a.daysOnCourse)
+				.slice(0, 5);
 
 			setTopDebtors(debtors);
 		} catch (error) {
@@ -127,11 +121,11 @@ export default function DashboardPage() {
 												Na kursie: {debtor.daysOnCourse} dni
 											</div>
 										</div>
-										{/* <div className="text-right">
+										<div className="text-right">
 											<div className="font-semibold text-600">
 												{debtor.debt.toFixed(0)} zł
 											</div>
-										</div> */}
+										</div>
 									</div>
 								))}
 							</div>

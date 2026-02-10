@@ -150,17 +150,68 @@ export const notificationService = {
     // NOTYFIKACJE DLA KURSANTÓW
     // ============================================
 
-    async notifyAdminsAboutNewStudent(studentId: string, studentName: string, createdByUserId: string) {
+    async notifyAdminsAboutNewStudent(
+        studentId: string,
+        studentName: string,
+        createdByUserId: string,
+        instructorIds?: string[]
+    ) {
         const adminIds = await this.getAllAdminIds(createdByUserId);
         const actorName = await this.getActorName(createdByUserId);
+
+        let message = `${actorName} dodał kursanta: ${studentName}`;
+
+        // Jeśli są przypisani instruktorzy, dodaj informację
+        if (instructorIds && instructorIds.length > 0) {
+            const instructorNames = await Promise.all(
+                instructorIds.map(id => this.getInstructorName(id))
+            );
+
+            if (instructorNames.length === 1) {
+                message += ` i przypisał do instruktora ${instructorNames[0]}`;
+            } else {
+                message += ` i przypisał do instruktorów: ${instructorNames.join(', ')}`;
+            }
+        }
 
         await this.sendNotification({
             userIds: adminIds,
             type: 'student_created',
             title: 'Nowy kursant',
-            message: `${actorName} dodał kursanta: ${studentName}`,
+            message,
             relatedId: studentId,
             excludeUserId: createdByUserId,
+        });
+    },
+
+    async notifyAdminsAboutInstructorAssignment(
+        studentId: string,
+        studentName: string,
+        instructorIds: string[],
+        assignedByUserId: string
+    ) {
+        const adminIds = await this.getAllAdminIds(assignedByUserId);
+        const actorName = await this.getActorName(assignedByUserId);
+
+        const instructorNames = await Promise.all(
+            instructorIds.map(id => this.getInstructorName(id))
+        );
+
+        let message = `${actorName} przypisał kursanta ${studentName} do `;
+
+        if (instructorNames.length === 1) {
+            message += `instruktora ${instructorNames[0]}`;
+        } else {
+            message += `instruktorów: ${instructorNames.join(', ')}`;
+        }
+
+        await this.sendNotification({
+            userIds: adminIds,
+            type: 'student_assigned',
+            title: 'Przypisano kursanta',
+            message,
+            relatedId: studentId,
+            excludeUserId: assignedByUserId,
         });
     },
 
@@ -258,5 +309,20 @@ export const notificationService = {
         });
 
         console.log('Notification sent result:', result);
-    }
+    },
+
+    async getInstructorName(instructorId: string) {
+        try {
+            const { data, error } = await supabase
+                .from('users')
+                .select('first_name, last_name')
+                .eq('id', instructorId)
+                .single();
+
+            if (error || !data) return 'Nieznany instruktor';
+            return `${data.first_name} ${data.last_name}`;
+        } catch {
+            return 'Nieznany instruktor';
+        }
+    },
 }
