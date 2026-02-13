@@ -71,7 +71,19 @@ export default function LessonDetailDialog({
 	const handleDeleteConfirm = async () => {
 		setDeleting(true);
 		try {
+			// Jeśli lekcja była completed, zapisz studentIds przed usunięciem
+			const needsRecalculation = lesson.status === 'completed';
+			const studentIds = needsRecalculation ? [...lesson.studentIds] : [];
+			
 			await lessonService.deleteLesson(lesson.id);
+			
+			// Recalculate hours dla każdego studenta
+			if (needsRecalculation) {
+				await Promise.all(
+					studentIds.map(id => lessonService.recalculateStudentHours(id))
+				);
+			}
+			
 			onSuccess();
 			onOpenChange(false);
 		} catch (error) {
@@ -142,16 +154,14 @@ export default function LessonDetailDialog({
 							<Pencil className="mr-2 h-4 w-4" />
 							Edytuj
 						</Button>
-						{lesson.status !== 'completed' && (
-							<Button
-								variant="destructive"
-								className="flex-1"
-								onClick={() => setDeleteDialogOpen(true)}
-								disabled={deleting}>
-								<Trash2 className="mr-2 h-4 w-4" />
-								Usuń
-							</Button>
-						)}
+						<Button
+							variant="destructive"
+							className="flex-1"
+							onClick={() => setDeleteDialogOpen(true)}
+							disabled={deleting}>
+							<Trash2 className="mr-2 h-4 w-4" />
+							Usuń
+						</Button>
 					</div>
 				</div>
 			</DialogContent>

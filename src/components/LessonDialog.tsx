@@ -11,6 +11,9 @@ import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
+import { useIsMobile } from '@/hooks/useIsMobile';
+import BottomSheet from '@/components/mobile/BottomSheet';
+import { TimePicker, DurationPicker } from '@/components/mobile/MobileTimePicker';
 import { lessonService } from '@/services/lesson.service';
 import { studentService } from '@/services/student.service';
 import type { Lesson, Student } from '@/types';
@@ -22,6 +25,7 @@ interface LessonDialogProps {
 	instructorId: string;
 	lesson?: Lesson | null;
 	preselectedDate?: Date;
+	preselectedTime?: string;
 	onSuccess: () => void;
 }
 
@@ -29,7 +33,7 @@ const initialFormData = {
 	date: format(new Date(), 'yyyy-MM-dd'),
 	startTime: '10:00',
 	endTime: '12:00',
-	status: 'scheduled' as 'scheduled' | 'completed' | 'cancelled',
+	status: 'completed' as 'scheduled' | 'completed' | 'cancelled',
 	studentIds: [] as string[],
 	notes: '',
 };
@@ -40,21 +44,25 @@ export default function LessonDialog({
 	instructorId,
 	lesson,
 	preselectedDate,
+	preselectedTime,
 	onSuccess,
 }: LessonDialogProps) {
+	const isMobile = useIsMobile();
 	const [loading, setLoading] = useState(false);
 	const [students, setStudents] = useState<Student[]>([]);
 	const [formData, setFormData] = useState(initialFormData);
+	const [duration, setDuration] = useState(2); // Default 2h
 	const [conflictWarning, setConflictWarning] = useState(false);
 	const [studentSearch, setStudentSearch] = useState('');
+	const [validationError, setValidationError] = useState<string | null>(null);
 
-	// Reset formularza przy otwarciu/zamknięciu lub zmianie instruktora
+	// Reset formularza przy otwarciu/zamkniÄ™ciu lub zmianie instruktora
 	useEffect(() => {
 		if (open) {
 			loadStudents();
 
 			if (lesson) {
-				// Edycja - załaduj dane lekcji
+				// Edycja - zaÅ‚aduj dane lekcji
 				setFormData({
 					date: lesson.date,
 					startTime: lesson.startTime,
@@ -64,22 +72,33 @@ export default function LessonDialog({
 					notes: lesson.notes || '',
 				});
 			} else {
-				// Nowa lekcja - reset + preselect daty
-				setFormData({
+				// Nowa lekcja - reset + preselect daty i czasu
+				const newFormData = {
 					...initialFormData,
 					date: preselectedDate
 						? format(preselectedDate, 'yyyy-MM-dd')
 						: format(new Date(), 'yyyy-MM-dd'),
-				});
+				};
+				
+				// Jeśli mamy preselectedTime, ustaw startTime
+				if (preselectedTime) {
+					newFormData.startTime = preselectedTime;
+					// Automatycznie ustaw endTime na +2h
+					const [h, m] = preselectedTime.split(':').map(Number);
+					const endH = h + 2;
+					newFormData.endTime = `${String(endH).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+				}
+				
+				setFormData(newFormData);
 			}
 		} else {
-			// Zamknięcie - reset formularza
+			// ZamkniÄ™cie - reset formularza
 			setFormData(initialFormData);
 			setConflictWarning(false);
 		}
-	}, [open, lesson, preselectedDate, instructorId]);
+	}, [open, lesson, preselectedDate, preselectedTime, instructorId]);
 
-	// Sprawdź konflikty przy zmianie daty/czasu
+	// SprawdÅº konflikty przy zmianie daty/czasu
 	useEffect(() => {
 		if (open && formData.date && formData.startTime && formData.endTime) {
 			checkConflict();
@@ -101,7 +120,7 @@ export default function LessonDialog({
 
 	const checkConflict = async () => {
 		try {
-			// Pobierz lekcje z poprzedniego, obecnego i następnego miesiąca
+			// Pobierz lekcje z poprzedniego, obecnego i nastÄ™pnego miesiÄ…ca
 			const selectedDate = new Date(formData.date);
 			const prevMonth = new Date(
 				selectedDate.getFullYear(),
@@ -179,7 +198,7 @@ export default function LessonDialog({
 		e.preventDefault();
 
 		if (formData.studentIds.length === 0) {
-			alert('Wybierz co najmniej jednego kursanta');
+			setValidationError('Wybierz przynajmniej jednego kursanta');
 			return;
 		}
 
@@ -212,8 +231,42 @@ export default function LessonDialog({
 
 			if (lesson) {
 				await lessonService.updateLesson(lesson.id, lessonData);
+				
+				// Recalculate hours jeśli zmienił się status lub studentIds
+				const statusChanged = lesson.status !== formData.status;
+				const studentsChanged = JSON.stringify(lesson.studentIds.sort()) !== JSON.stringify(formData.studentIds.sort());
+				
+				if (statusChanged || studentsChanged) {
+					// Recalculate dla starych studentów jeśli status był completed
+					if (lesson.status === 'completed' && studentsChanged) {
+						await Promise.all(
+							lesson.studentIds.map(id => lessonService.recalculateStudentHours(id))
+						);
+					}
+					
+					// Recalculate dla nowych studentów jeśli status jest completed
+					if (formData.status === 'completed') {
+						await Promise.all(
+							formData.studentIds.map(id => lessonService.recalculateStudentHours(id))
+						);
+					}
+					
+					// Jeśli zmienił się status z completed na inny
+					if (lesson.status === 'completed' && formData.status !== 'completed') {
+						await Promise.all(
+							lesson.studentIds.map(id => lessonService.recalculateStudentHours(id))
+						);
+					}
+				}
 			} else {
 				await lessonService.createLesson(lessonData);
+				
+				// Recalculate dla nowych studentów jeśli status jest completed
+				if (formData.status === 'completed') {
+					await Promise.all(
+						formData.studentIds.map(id => lessonService.recalculateStudentHours(id))
+					);
+				}
 			}
 
 			onSuccess();
@@ -233,6 +286,10 @@ export default function LessonDialog({
 				? formData.studentIds.filter((id) => id !== studentId)
 				: [...formData.studentIds, studentId],
 		});
+		// Clear validation error when selecting student
+		if (validationError) {
+			setValidationError(null);
+		}
 	};
 
 	const filteredStudents = students.filter((student) => {
@@ -244,11 +301,177 @@ export default function LessonDialog({
 		);
 	});
 
+	if (isMobile) {
+		return (
+			<BottomSheet
+				open={open}
+				onClose={() => onOpenChange(false)}
+				title={lesson ? 'Edytuj lekcję' : 'Dodaj lekcję'}
+			>
+				<form onSubmit={handleSubmit} className="space-y-6 p-4 pb-20">
+					{/* Date */}
+					<div>
+						<Label htmlFor="date-mobile">Data *</Label>
+						<Input
+							id="date-mobile"
+							type="date"
+							required
+							value={formData.date}
+							onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+							className="mt-1 h-12 text-base"
+						/>
+					</div>
+
+					{/* Time picker */}
+					<TimePicker
+						label="Godzina rozpoczęcia *"
+						value={formData.startTime}
+						onChange={(val) => {
+							setFormData({ ...formData, startTime: val });
+							const [h, m] = val.split(':').map(Number);
+							const durationMinutes = duration * 60;
+							const endH = Math.floor((h * 60 + m + durationMinutes) / 60);
+							const endM = (h * 60 + m + durationMinutes) % 60;
+							setFormData((prev) => ({
+								...prev,
+								endTime: `${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}`,
+							}));
+						}}
+					/>
+
+					{/* Duration presets - HORIZONTAL SCROLL */}
+					<div>
+						<Label>Czas trwania *</Label>
+						<div className="mt-2 -mx-4 overflow-x-auto px-4">
+							<div className="flex gap-2 pb-2" style={{ minWidth: 'min-content' }}>
+								{[1, 1.5, 2, 2.5, 3, 4, 5, 6].map((h) => (
+									<button
+										key={h}
+										type="button"
+										onClick={() => {
+											setDuration(h);
+											const [startH, startM] = formData.startTime.split(':').map(Number);
+											const durationMinutes = h * 60;
+											const endH = Math.floor((startH * 60 + startM + durationMinutes) / 60);
+											const endM = (startH * 60 + startM + durationMinutes) % 60;
+											setFormData((prev) => ({
+												...prev,
+												endTime: `${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}`,
+											}));
+										}}
+										className={`min-h-[44px] min-w-[70px] flex-shrink-0 rounded-lg border-2 px-4 py-2 font-semibold transition-all active:scale-95 ${
+											duration === h
+												? 'border-blue-600 bg-blue-50 text-blue-700'
+												: 'border-gray-300 bg-white text-gray-700'
+										}`}
+									>
+										{h}h
+									</button>
+								))}
+							</div>
+						</div>
+						<div className="mt-2 text-center text-sm text-gray-600">
+							Zakończenie: <strong>{formData.endTime.slice(0, 5)}</strong>
+						</div>
+					</div>
+
+					{conflictWarning && (
+						<div className="rounded-lg border-2 border-red-200 bg-red-50 p-3 text-sm text-red-800">
+							⚠️ Instruktor ma już lekcję w tym czasie
+						</div>
+					)}
+
+					{/* Students - Selectable cards */}
+					<div>
+						<Label>Kursanci * ({formData.studentIds.length})</Label>
+						<Input
+							placeholder="Szukaj..."
+							value={studentSearch}
+							onChange={(e) => setStudentSearch(e.target.value)}
+							className="mt-1 mb-3 h-11"
+						/>
+						<div className="max-h-64 space-y-2 overflow-y-auto">
+							{filteredStudents.length === 0 ? (
+								<div className="py-8 text-center text-sm text-gray-500">
+									{students.length === 0 ? 'Brak aktywnych kursantów' : 'Brak wyników'}
+								</div>
+							) : (
+								filteredStudents.map((student) => (
+									<button
+										key={student.id}
+										type="button"
+										onClick={() => handleStudentToggle(student.id)}
+										className={`min-h-[54px] w-full rounded-lg border-2 p-3 text-left transition-all active:scale-98 ${
+											formData.studentIds.includes(student.id)
+												? 'border-blue-600 bg-blue-50'
+												: 'border-gray-200 bg-white'
+										}`}
+									>
+										<div className="font-medium">
+											{student.firstName} {student.lastName}
+										</div>
+										{student.phone && (
+											<div className="text-xs text-gray-500">{student.phone}</div>
+										)}
+									</button>
+								))
+							)}
+						</div>
+						{validationError && (
+							<div className="mt-2 flex items-center gap-2 text-sm text-red-600">
+								<span>⚠</span>
+								<span>{validationError}</span>
+							</div>
+						)}
+					</div>
+
+					{/* Status */}
+					<div>
+						<Label htmlFor="status-mobile">Status</Label>
+						<Select
+							id="status-mobile"
+							value={formData.status}
+							onChange={(e) => setFormData({ ...formData, status: e.target.value as any })}
+							className="mt-1 h-12 text-base"
+						>
+							<option value="completed">Ukończona</option>
+							<option value="scheduled">Zaplanowana</option>
+							<option value="cancelled">Anulowana</option>
+						</Select>
+					</div>
+
+					{/* Notes */}
+					<div>
+						<Label htmlFor="notes-mobile">Notatki</Label>
+						<Textarea
+							id="notes-mobile"
+							rows={3}
+							value={formData.notes}
+							onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+							className="mt-1 text-base"
+						/>
+					</div>
+
+					{/* Sticky submit */}
+					<div className="fixed bottom-0 left-0 right-0 border-t bg-white p-4">
+						<Button
+							type="submit"
+							disabled={loading || conflictWarning}
+							className="h-12 w-full text-base font-semibold"
+						>
+							{loading ? 'Zapisywanie...' : lesson ? 'Zapisz zmiany' : 'Dodaj lekcję'}
+						</Button>
+					</div>
+				</form>
+			</BottomSheet>
+		);
+	}
+
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
 			<DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[600px]">
 				<DialogHeader>
-					<DialogTitle>{lesson ? 'Edytuj lekcję' : 'Dodaj lekcję'}</DialogTitle>
+					<DialogTitle>{lesson ? 'Edytuj lekcjÄ™' : 'Dodaj lekcjÄ™'}</DialogTitle>
 				</DialogHeader>
 
 				<form onSubmit={handleSubmit} className="space-y-4">
@@ -265,36 +488,72 @@ export default function LessonDialog({
 						/>
 					</div>
 
-					<div className="grid grid-cols-2 gap-4">
-						<div>
-							<Label htmlFor="startTime">Godzina rozpoczęcia *</Label>
-							<Input
-								id="startTime"
-								type="time"
-								required
+					{isMobile ? (
+						<>
+							<TimePicker
+								label="Godzina rozpoczęcia *"
 								value={formData.startTime}
-								onChange={(e) =>
-									setFormData({ ...formData, startTime: e.target.value })
-								}
+								onChange={(val) => {
+									setFormData({ ...formData, startTime: val });
+									// Auto-update endTime
+									const [h, m] = val.split(':').map(Number);
+									const durationMinutes = duration * 60;
+									const endH = Math.floor((h * 60 + m + durationMinutes) / 60);
+									const endM = (h * 60 + m + durationMinutes) % 60;
+									setFormData(prev => ({
+										...prev,
+										endTime: `${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}`
+									}));
+								}}
 							/>
-						</div>
-						<div>
-							<Label htmlFor="endTime">Godzina zakończenia *</Label>
-							<Input
-								id="endTime"
-								type="time"
-								required
-								value={formData.endTime}
-								onChange={(e) =>
-									setFormData({ ...formData, endTime: e.target.value })
-								}
+							<DurationPicker
+								label="Czas trwania *"
+								value={duration}
+								onChange={(val) => {
+									setDuration(val);
+									const [h, m] = formData.startTime.split(':').map(Number);
+									const durationMinutes = val * 60;
+									const endH = Math.floor((h * 60 + m + durationMinutes) / 60);
+									const endM = (h * 60 + m + durationMinutes) % 60;
+									setFormData(prev => ({
+										...prev,
+										endTime: `${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}`
+									}));
+								}}
 							/>
+						</>
+					) : (
+						<div className="grid grid-cols-2 gap-4">
+							<div>
+								<Label htmlFor="startTime">Godzina rozpoczęcia *</Label>
+								<Input
+									id="startTime"
+									type="time"
+									required
+									value={formData.startTime}
+									onChange={(e) =>
+										setFormData({ ...formData, startTime: e.target.value })
+									}
+								/>
+							</div>
+							<div>
+								<Label htmlFor="endTime">Godzina zakończenia *</Label>
+								<Input
+									id="endTime"
+									type="time"
+									required
+									value={formData.endTime}
+									onChange={(e) =>
+										setFormData({ ...formData, endTime: e.target.value })
+									}
+								/>
+							</div>
 						</div>
-					</div>
+					)}
 
 					{conflictWarning && (
 						<div className="rounded-lg bg-red-50 border border-red-200 p-3 text-sm text-red-800">
-							W tym czasie instruktor ma już zaplanowaną lekcję. Wybierz inny
+							W tym czasie instruktor ma juÅ¼ zaplanowanÄ… lekcjÄ™. Wybierz inny
 							termin.
 						</div>
 					)}
@@ -311,8 +570,8 @@ export default function LessonDialog({
 							onChange={(e) =>
 								setFormData({ ...formData, status: e.target.value as any })
 							}>
-							<option value="scheduled">Zaplanowana</option>
 							<option value="completed">Ukończona</option>
+							<option value="scheduled">Zaplanowana</option>
 							<option value="cancelled">Anulowana</option>
 						</Select>
 					</div>
@@ -329,8 +588,8 @@ export default function LessonDialog({
 							{filteredStudents.length === 0 ? (
 								<div className="text-center text-sm text-gray-500">
 									{students.length === 0
-										? 'Brak aktywnych kursantów dla tego instruktora'
-										: 'Brak wyników wyszukiwania'}
+										? 'Brak aktywnych kursantÃ³w dla tego instruktora'
+										: 'Brak wynikÃ³w wyszukiwania'}
 								</div>
 							) : (
 								filteredStudents.map((student) => (
@@ -353,6 +612,12 @@ export default function LessonDialog({
 								))
 							)}
 						</div>
+						{validationError && (
+							<div className="mt-2 flex items-center gap-2 text-sm text-red-600">
+								<span>⚠</span>
+								<span>{validationError}</span>
+							</div>
+						)}
 					</div>
 
 					<div>
