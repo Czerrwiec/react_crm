@@ -16,10 +16,13 @@ import { pl } from 'date-fns/locale';
 import { lessonService } from '@/services/lesson.service';
 import { studentService } from '@/services/student.service';
 import { useAuth } from '@/hooks/useAuth';
+import { useIsMobile } from '@/hooks/useIsMobile';
 import { Button } from '@/components/ui/button';
 import { Plus, ChevronLeft, ChevronRight } from 'lucide-react';
 import LessonDialog from '@/components/LessonDialog';
 import LessonDetailDialog from '@/components/LessonDetailDialog';
+import MobileDayView from '@/components/mobile/MobileDayView';
+import MobileMonthView from '@/components/mobile/MobileMonthView';
 import type { Lesson, Student } from '@/types';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import '../../pages/admin/calendar.css';
@@ -44,12 +47,18 @@ interface CalendarEvent {
 
 export default function InstructorCalendarPage() {
 	const { user } = useAuth();
+	const isMobile = useIsMobile();
 	const [lessons, setLessons] = useState<Lesson[]>([]);
 	const [students, setStudents] = useState<Student[]>([]);
 	const [currentDate, setCurrentDate] = useState(new Date());
 	const [selectedDay, setSelectedDay] = useState(new Date());
 	const [loading, setLoading] = useState(true);
 	const [view, setView] = useState<View>('month');
+
+	// Mobile state
+	const [showMonthView, setShowMonthView] = useState(false);
+	const [selectedHour, setSelectedHour] = useState<number | null>(null);
+	const [selectedMinute, setSelectedMinute] = useState<number>(0);
 
 	// Dialogs
 	const [lessonDialogOpen, setLessonDialogOpen] = useState(false);
@@ -229,13 +238,31 @@ export default function InstructorCalendarPage() {
 
 	const handleAddLesson = () => {
 		setEditingLesson(null);
-		// Używaj selectedDay zamiast currentDate
+		// UÅ¼ywaj selectedDay zamiast currentDate
 		setLessonDialogOpen(true);
 	};
 
 	const handleEditLesson = (lesson: Lesson) => {
 		setEditingLesson(lesson);
 		setLessonDialogOpen(true);
+	};
+
+	// Mobile handlers
+	const handleMobileAddLesson = (hour: number, minute: number) => {
+		setSelectedHour(hour);
+		setSelectedMinute(minute);
+		setEditingLesson(null);
+		setLessonDialogOpen(true);
+	};
+
+	const handleMobileLessonClick = (lesson: Lesson) => {
+		setSelectedLesson(lesson);
+		setDetailDialogOpen(true);
+	};
+
+	const handleMonthDateSelect = (date: Date) => {
+		setCurrentDate(date);
+		setShowMonthView(false);
 	};
 
 	const getDateRangeText = () => {
@@ -279,13 +306,13 @@ export default function InstructorCalendarPage() {
 	const handleViewChange = (newView: View) => {
 		setView(newView);
 
-		// Gdy przełączamy na dzień/tydzień z miesiąca, ustaw currentDate na wybrany dzień
+		// Gdy przeÅ‚Ä…czamy na dzieÅ„/tydzieÅ„ z miesiÄ…ca, ustaw currentDate na wybrany dzieÅ„
 		if ((newView === 'day' || newView === 'week') && view === 'month') {
 			setCurrentDate(selectedDay);
 			setSelectedDay(selectedDay); // Synchronizuj
 		}
 
-		// DODAJ: Gdy przełączamy na dzień, ustaw też selectedDay
+		// DODAJ: Gdy przeÅ‚Ä…czamy na dzieÅ„, ustaw teÅ¼ selectedDay
 		if (newView === 'day' && view !== 'month') {
 			setSelectedDay(currentDate);
 		}
@@ -315,6 +342,66 @@ export default function InstructorCalendarPage() {
 		);
 	}
 
+	// MOBILE VIEW
+	if (isMobile) {
+		return (
+			<>
+				<MobileDayView
+					currentDate={currentDate}
+					onDateChange={setCurrentDate}
+					lessons={lessons}
+					students={students}
+					onLessonClick={handleMobileLessonClick}
+					onAddLesson={handleMobileAddLesson}
+					onOpenMonthView={() => setShowMonthView(true)}
+				/>
+
+				{showMonthView && (
+					<MobileMonthView
+						currentDate={currentDate}
+						lessons={lessons}
+						onSelectDate={handleMonthDateSelect}
+						onClose={() => setShowMonthView(false)}
+					/>
+				)}
+
+				{/* Dialogs */}
+				{user && (
+					<LessonDialog
+						open={lessonDialogOpen}
+						onOpenChange={(open) => {
+							setLessonDialogOpen(open);
+							if (!open) {
+								setSelectedHour(null);
+								setSelectedMinute(0);
+							}
+						}}
+						instructorId={user.id}
+						lesson={editingLesson}
+						preselectedDate={currentDate}
+						preselectedTime={
+							selectedHour !== null
+								? `${String(selectedHour).padStart(2, '0')}:${String(selectedMinute).padStart(2, '0')}`
+								: undefined
+						}
+						onSuccess={loadLessons}
+					/>
+				)}
+
+				<LessonDetailDialog
+					open={detailDialogOpen}
+					onOpenChange={setDetailDialogOpen}
+					lesson={selectedLesson}
+					studentNames={studentNamesMap}
+					onEdit={handleEditLesson}
+					onSuccess={loadLessons}
+				/>
+			</>
+		);
+	}
+
+	// DESKTOP VIEW (bez zmian)
+
 	return (
 		<div className="flex h-full flex-col p-4 sm:p-8 pt-16">
 			{/* Custom toolbar */}
@@ -327,7 +414,7 @@ export default function InstructorCalendarPage() {
 								variant="outline"
 								size="sm"
 								onClick={() => handleNavigate('today')}>
-								Dziś
+								DziÅ›
 							</Button>
 							<Button
 								variant="outline"
@@ -358,21 +445,21 @@ export default function InstructorCalendarPage() {
 							size="sm"
 							className="flex-1"
 							onClick={() => handleViewChange('month')}>
-							Miesiąc
+							MiesiÄ…c
 						</Button>
 						<Button
 							variant={view === 'week' ? 'default' : 'outline'}
 							size="sm"
 							className="flex-1"
 							onClick={() => handleViewChange('week')}>
-							Tydzień
+							TydzieÅ„
 						</Button>
 						<Button
 							variant={view === 'day' ? 'default' : 'outline'}
 							size="sm"
 							className="flex-1"
 							onClick={() => handleViewChange('day')}>
-							Dzień
+							DzieÅ„
 						</Button>
 					</div>
 				</div>

@@ -87,4 +87,30 @@ export const lessonService = {
 
         if (error) throw error
     },
+
+    async recalculateStudentHours(studentId: string) {
+        // Pobierz wszystkie ukończone lekcje studenta
+        const { data: completedLessons, error } = await supabase
+            .from('lessons')
+            .select('duration, student_ids')
+            .contains('student_ids', [studentId])
+            .eq('status', 'completed')
+
+        if (error) throw error
+
+        // Sumuj godziny
+        const totalHours = completedLessons?.reduce((sum, lesson) => {
+            return sum + lesson.duration
+        }, 0) || 0
+
+        // Zaktualizuj studenta
+        const { error: updateError } = await supabase
+            .from('students')
+            .update({ total_hours_driven: totalHours })
+            .eq('id', studentId)
+
+        if (updateError) throw updateError
+
+        return totalHours
+    },
 }

@@ -50,12 +50,15 @@ export default function InstructorLayout() {
 				)}>
 				<div className="flex h-16 items-center justify-center border-b px-6">
 					<h1 className="text-xl font-bold">Easy Drive</h1>
-					<NotificationBell />
+					<NotificationBell onNavigate={() => setMobileMenuOpen(false)} />
 				</div>
 				<nav className="flex-1 space-y-1 p-4">
 					{navigation.map((item) => {
 						const Icon = item.icon;
-						const isActive = location.pathname === item.path;
+						// Obsłuż /instructor (root) jako calendar
+						const isActive = 
+							location.pathname === item.path ||
+							(location.pathname === "/instructor" && item.path === "/instructor/calendar");
 						return (
 							<Link
 								key={item.path}
@@ -102,7 +105,7 @@ export default function InstructorLayout() {
 					<Route path="calendar" element={<InstructorCalendarPage />} />
 					<Route path="cars" element={<CarsPage />} />
 					<Route path="notifications" element={<NotificationsPage />} />
-					<Route path="*" element={<InstructorStudentsPage />} />
+					<Route path="*" element={<InstructorCalendarPage />} />
 				</Routes>
 			</main>
 		</div>
