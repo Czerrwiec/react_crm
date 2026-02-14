@@ -57,12 +57,12 @@ export default function LessonDialog({
 	const [validationError, setValidationError] = useState<string | null>(null);
 
 	// Reset formularza przy otwarciu/zamkniÄ™ciu lub zmianie instruktora
-	useEffect(() => {
+		useEffect(() => {
 		if (open) {
 			loadStudents();
 
 			if (lesson) {
-				// Edycja - zaÅ‚aduj dane lekcji
+				// Edycja - załaduj dane lekcji
 				setFormData({
 					date: lesson.date,
 					startTime: lesson.startTime,
@@ -71,6 +71,11 @@ export default function LessonDialog({
 					studentIds: lesson.studentIds,
 					notes: lesson.notes || '',
 				});
+				// Oblicz duration z lekcji
+				const [startH, startM] = lesson.startTime.split(':').map(Number);
+				const [endH, endM] = lesson.endTime.split(':').map(Number);
+				const durationInHours = (endH * 60 + endM - (startH * 60 + startM)) / 60;
+				setDuration(durationInHours);
 			} else {
 				// Nowa lekcja - reset + preselect daty i czasu
 				const newFormData = {
@@ -90,10 +95,21 @@ export default function LessonDialog({
 				}
 				
 				setFormData(newFormData);
+				
+				// Oblicz duration z newFormData (a nie hardcode 2)
+				const [startH, startM] = newFormData.startTime.split(':').map(Number);
+				const [endH, endM] = newFormData.endTime.split(':').map(Number);
+				const durationInHours = (endH * 60 + endM - (startH * 60 + startM)) / 60;
+				setDuration(durationInHours);
 			}
 		} else {
-			// ZamkniÄ™cie - reset formularza
+			// Zamknięcie - reset formularza
 			setFormData(initialFormData);
+			// Oblicz duration z initialFormData
+			const [startH, startM] = initialFormData.startTime.split(':').map(Number);
+			const [endH, endM] = initialFormData.endTime.split(':').map(Number);
+			const durationInHours = (endH * 60 + endM - (startH * 60 + startM)) / 60;
+			setDuration(durationInHours);
 			setConflictWarning(false);
 		}
 	}, [open, lesson, preselectedDate, preselectedTime, instructorId]);
@@ -383,6 +399,12 @@ export default function LessonDialog({
 
 					{/* Students - Selectable cards */}
 					<div>
+						{validationError && (
+							<div className="mb-2 flex items-center gap-2 text-sm text-red-600">
+								<span>⚠</span>
+								<span>{validationError}</span>
+							</div>
+						)}
 						<Label>Kursanci * ({formData.studentIds.length})</Label>
 						<Input
 							placeholder="Szukaj..."
@@ -417,27 +439,33 @@ export default function LessonDialog({
 								))
 							)}
 						</div>
-						{validationError && (
-							<div className="mt-2 flex items-center gap-2 text-sm text-red-600">
-								<span>⚠</span>
-								<span>{validationError}</span>
-							</div>
-						)}
 					</div>
 
-					{/* Status */}
+					{/* Status - Segment Control */}
 					<div>
-						<Label htmlFor="status-mobile">Status</Label>
-						<Select
-							id="status-mobile"
-							value={formData.status}
-							onChange={(e) => setFormData({ ...formData, status: e.target.value as any })}
-							className="mt-1 h-12 text-base"
-						>
-							<option value="completed">Ukończona</option>
-							<option value="scheduled">Zaplanowana</option>
-							<option value="cancelled">Anulowana</option>
-						</Select>
+						<Label>Status</Label>
+						<div className="mt-2 -mx-4 overflow-x-auto px-4">
+							<div className="flex gap-2 pb-2" style={{ minWidth: 'min-content' }}>
+								{[
+									{ value: 'completed', label: 'Ukończona' },
+									{ value: 'scheduled', label: 'Zaplanowana' },
+									{ value: 'cancelled', label: 'Anulowana' },
+								].map((status) => (
+									<button
+										key={status.value}
+										type="button"
+										onClick={() => setFormData({ ...formData, status: status.value as any })}
+										className={`min-h-[44px] min-w-[110px] flex-shrink-0 rounded-lg border-2 px-4 py-2 font-semibold transition-all active:scale-95 ${
+											formData.status === status.value
+												? 'border-blue-600 bg-blue-600 text-white'
+												: 'border-gray-300 bg-white text-gray-700'
+										}`}
+									>
+										{status.label}
+									</button>
+								))}
+							</div>
+						</div>
 					</div>
 
 					{/* Notes */}
@@ -577,6 +605,12 @@ export default function LessonDialog({
 					</div>
 
 					<div>
+						{validationError && (
+							<div className="mb-2 flex items-center gap-2 text-sm text-red-600">
+								<span>⚠</span>
+								<span>{validationError}</span>
+							</div>
+						)}
 						<Label>Kursanci * ({formData.studentIds.length})</Label>
 						<Input
 							placeholder="Szukaj po imieniu, nazwisku lub telefonie..."
@@ -588,8 +622,8 @@ export default function LessonDialog({
 							{filteredStudents.length === 0 ? (
 								<div className="text-center text-sm text-gray-500">
 									{students.length === 0
-										? 'Brak aktywnych kursantÃ³w dla tego instruktora'
-										: 'Brak wynikÃ³w wyszukiwania'}
+										? 'Brak aktywnych kursantów dla tego instruktora'
+										: 'Brak wyników wyszukiwania'}
 								</div>
 							) : (
 								filteredStudents.map((student) => (
@@ -612,12 +646,6 @@ export default function LessonDialog({
 								))
 							)}
 						</div>
-						{validationError && (
-							<div className="mt-2 flex items-center gap-2 text-sm text-red-600">
-								<span>⚠</span>
-								<span>{validationError}</span>
-							</div>
-						)}
 					</div>
 
 					<div>

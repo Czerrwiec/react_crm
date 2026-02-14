@@ -28,7 +28,7 @@ export default function TimeGrid({
     const [startHour, startMinute] = lesson.startTime.split(':').map(Number);
     const [endHour, endMinute] = lesson.endTime.split(':').map(Number);
 
-    const startOffset = (startHour - 6) * 60 + startMinute;
+    const startOffset = (startHour - 6) * 60 + startMinute + 6; // +6px offset - zmień tutaj dla lessons
     const duration = (endHour * 60 + endMinute) - (startHour * 60 + startMinute);
 
     return {
@@ -78,7 +78,7 @@ export default function TimeGrid({
 
       {/* Lessons */}
       <div className="absolute left-16 right-4 top-0">
-        {/* NOW indicator - tylko na dzisiejszym dniu */}
+        {/* NOW indicator */}
         {isInRange && isToday && (
           <div
             className="absolute left-0 right-0 z-10"
@@ -93,29 +93,34 @@ export default function TimeGrid({
 
         {lessons.map((lesson) => {
           const studentNames = lesson.studentIds
-            .map((id) => studentNamesMap.get(id) || 'Nieznany')
+            .map((id) => studentNamesMap.get(id))
+            .filter(Boolean)
             .join(', ');
 
           return (
             <button
               key={lesson.id}
-              className={`absolute w-full rounded-lg border-l-[5px] border-t border-t-gray-100 bg-white p-2.5 text-left shadow-md ${getStatusColor(
+              className={`absolute w-full rounded-lg border-l-[5px] border-t border-t-gray-100 bg-white p-2.5 text-left shadow-md transition-transform active:scale-95 ${getStatusColor(
                 lesson.status
-              )} transition-transform active:scale-95`}
+              )}`}
               style={getLessonStyle(lesson)}
               onClick={(e) => {
                 e.stopPropagation();
                 onLessonClick(lesson);
               }}
             >
-              <div className="text-sm font-bold leading-tight text-gray-900">
-                {studentNames || 'Bez kursanta'}
+              {/* Duration badge - prawy środek */}
+              <div className="absolute right-2 top-1/2 -translate-y-1/2 rounded bg-gray-100 px-1.5 py-0.5 text-[10px] font-medium text-gray-600">
+                {lesson.duration}h
               </div>
-              <div className="mt-1 flex items-center gap-1 text-xs text-gray-600">
-                <span>{lesson.startTime.slice(0, 5)}</span>
+              
+              <div className="text-sm font-bold leading-tight">
+                {studentNames || 'Brak kursantów'}
+              </div>
+              <div className="mt-1 flex items-center gap-1.5 text-xs text-gray-600">
+                <span className="font-medium">{lesson.startTime.slice(0, 5)}</span>
                 <span>→</span>
-                <span>{lesson.endTime.slice(0, 5)}</span>
-                <span className="ml-auto font-medium">{lesson.duration}h</span>
+                <span className="font-medium">{lesson.endTime.slice(0, 5)}</span>
               </div>
             </button>
           );
