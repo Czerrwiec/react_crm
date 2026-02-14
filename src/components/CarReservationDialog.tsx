@@ -11,6 +11,9 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select } from '@/components/ui/select';
+import { useIsMobile } from '@/hooks/useIsMobile';
+import BottomSheet from '@/components/mobile/BottomSheet';
+import { TimePicker } from '@/components/mobile/MobileTimePicker';
 import { carService } from '@/services/car.service';
 import { studentService } from '@/services/student.service';
 import type { CarReservation, Student, Car } from '@/types';
@@ -19,9 +22,10 @@ import { format } from 'date-fns';
 interface CarReservationDialogProps {
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
-	carId?: string; // opcjonalne teraz
+	carId?: string;
 	reservation?: CarReservation | null;
 	preselectedDate?: Date;
+	preselectedTime?: string; // "14:30"
 	onSuccess: () => void;
 }
 
@@ -40,8 +44,10 @@ export default function CarReservationDialog({
 	carId,
 	reservation,
 	preselectedDate,
+	preselectedTime,
 	onSuccess,
 }: CarReservationDialogProps) {
+	const isMobile = useIsMobile();
 	const [loading, setLoading] = useState(false);
 	const [students, setStudents] = useState<Student[]>([]);
 	const [cars, setCars] = useState<Car[]>([]);
@@ -54,7 +60,7 @@ export default function CarReservationDialog({
 			loadData();
 
 			if (reservation) {
-				// Oblicz duration z istniejącej rezerwacji
+				// Oblicz duration z istniejÄ…cej rezerwacji
 				const [startH, startM] = reservation.startTime.split(':').map(Number);
 				const [endH, endM] = reservation.endTime.split(':').map(Number);
 				const durationMinutes = endH * 60 + endM - (startH * 60 + startM);
@@ -75,6 +81,7 @@ export default function CarReservationDialog({
 					date: preselectedDate
 						? format(preselectedDate, 'yyyy-MM-dd')
 						: format(new Date(), 'yyyy-MM-dd'),
+					startTime: preselectedTime || initialFormData.startTime,
 				});
 			}
 		} else {
@@ -199,18 +206,18 @@ export default function CarReservationDialog({
 		e.preventDefault();
 
 		if (!formData.carId) {
-			alert('Wybierz samochód');
+			alert('Wybierz samochÃ³d');
 			return;
 		}
 
 		if (formData.duration <= 0) {
-			alert('Czas trwania musi być większy od 0');
+			alert('Czas trwania musi byÄ‡ wiÄ™kszy od 0');
 			return;
 		}
 
 		if (conflictWarning) {
 			alert(
-				'W tym czasie samochód jest już zarezerwowany. Wybierz inny termin.'
+				'W tym czasie samochÃ³d jest juÅ¼ zarezerwowany. Wybierz inny termin.'
 			);
 			return;
 		}
@@ -240,7 +247,7 @@ export default function CarReservationDialog({
 			onOpenChange(false);
 		} catch (error) {
 			console.error('Error saving reservation:', error);
-			alert('Błąd zapisywania rezerwacji');
+			alert('BÅ‚Ä…d zapisywania rezerwacji');
 		} finally {
 			setLoading(false);
 		}
@@ -255,18 +262,159 @@ export default function CarReservationDialog({
 		});
 	};
 
+	// MOBILE VERSION - Bottom Sheet
+	if (isMobile) {
+		return (
+			<BottomSheet
+				open={open}
+				onClose={() => onOpenChange(false)}
+				title={reservation ? 'Edytuj rezerwację' : 'Dodaj rezerwację'}
+			>
+				<form onSubmit={handleSubmit} className="space-y-6 p-4 pb-20">
+					{/* Samochód */}
+					<div>
+						<Label htmlFor="carSelect-mobile">Samochód *</Label>
+						<Select
+							id="carSelect-mobile"
+							required
+							value={formData.carId}
+							onChange={(e) => setFormData({ ...formData, carId: e.target.value })}
+							className="mt-1 h-12 text-base"
+						>
+							<option value="">Wybierz samochód</option>
+							{cars.map((car) => (
+								<option key={car.id} value={car.id}>
+									{car.name} ({car.registrationNumber})
+								</option>
+							))}
+						</Select>
+					</div>
+
+					{/* Data */}
+					<div>
+						<Label htmlFor="date-mobile">Data *</Label>
+						<Input
+							id="date-mobile"
+							type="date"
+							required
+							value={formData.date}
+							onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+							className="mt-1 h-12 text-base"
+						/>
+					</div>
+
+					{/* Godzina rozpoczęcia */}
+					<TimePicker
+						label="Godzina rozpoczęcia *"
+						value={formData.startTime}
+						onChange={(val) => setFormData({ ...formData, startTime: val })}
+					/>
+
+					{/* Czas trwania - dropdown */}
+					<div>
+						<Label htmlFor="duration-mobile">Czas trwania *</Label>
+						<select
+							id="duration-mobile"
+							value={formData.duration}
+							onChange={(e) => setFormData({ ...formData, duration: parseFloat(e.target.value) })}
+							className="mt-1 h-12 w-full rounded-lg border border-gray-300 px-3 text-base"
+						>
+							{[1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5].map((dur) => (
+								<option key={dur} value={dur}>
+									{dur}h
+								</option>
+							))}
+						</select>
+					</div>
+
+					{conflictWarning && (
+						<div className="rounded-lg border-2 border-red-200 bg-red-50 p-3 text-sm text-red-800">
+							⚠️ W tym czasie samochód jest już zarezerwowany
+						</div>
+					)}
+
+					<div className="text-center text-sm text-gray-600">
+						Zakończenie: <strong>{calculateEndTime()}</strong>
+					</div>
+
+					{/* Kursanci - Selectable cards */}
+					<div>
+						<Label>Kursanci ({formData.studentIds.length})</Label>
+						<Input
+							placeholder="Szukaj..."
+							value={studentSearch}
+							onChange={(e) => setStudentSearch(e.target.value)}
+							className="mt-1 mb-3 h-11"
+						/>
+						<div className="mt-2 max-h-40 space-y-2 overflow-y-auto">
+							{students.length === 0 ? (
+								<div className="py-8 text-center text-sm text-gray-500">
+									Brak aktywnych kursantów
+								</div>
+							) : (
+								filteredStudents.map((student) => (
+									<button
+										key={student.id}
+										type="button"
+										onClick={() => handleStudentToggle(student.id)}
+										className={`min-h-[44px] w-full rounded-lg border-2 px-3 py-2 text-left transition-all active:scale-98 ${
+											formData.studentIds.includes(student.id)
+												? 'border-blue-600 bg-blue-50'
+												: 'border-gray-200 bg-white'
+										}`}
+									>
+										<div className="text-sm font-medium">
+											{student.firstName} {student.lastName}
+										</div>
+										{student.phone && (
+											<div className="text-xs text-gray-500">{student.phone}</div>
+										)}
+									</button>
+								))
+							)}
+						</div>
+					</div>
+
+					{/* Notatki */}
+					<div>
+						<Label htmlFor="notes-mobile">Notatki</Label>
+						<Textarea
+							id="notes-mobile"
+							rows={3}
+							value={formData.notes}
+							onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+							className="mt-1 text-base"
+						/>
+					</div>
+
+					{/* Sticky submit button */}
+					<div className="fixed bottom-0 left-0 right-0 border-t bg-white p-4">
+						<Button
+							type="submit"
+							disabled={loading || conflictWarning}
+							className="h-12 w-full text-base font-semibold"
+						>
+							{loading ? 'Zapisywanie...' : reservation ? 'Zapisz zmiany' : 'Dodaj rezerwację'}
+						</Button>
+					</div>
+				</form>
+			</BottomSheet>
+		);
+	}
+
+	// DESKTOP VERSION - Dialog
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
 			<DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[600px]">
 				<DialogHeader>
 					<DialogTitle>
-						{reservation ? 'Edytuj rezerwację' : 'Dodaj rezerwację'}
+						{reservation ? 'Edytuj rezerwacjÄ™' : 'Dodaj rezerwacjÄ™'}
 					</DialogTitle>
 				</DialogHeader>
 
 				<form onSubmit={handleSubmit} className="space-y-4">
 					<div>
-						<Label htmlFor="carSelect">Samochód *</Label>
+						<Label htmlFor="carSelect">SamochÃ³d *</Label>
 						<Select
 							id="carSelect"
 							required
@@ -274,7 +422,7 @@ export default function CarReservationDialog({
 							onChange={(e) =>
 								setFormData({ ...formData, carId: e.target.value })
 							}>
-							<option value="">Wybierz samochód</option>
+							<option value="">Wybierz samochÃ³d</option>
 							{cars.map((car) => (
 								<option key={car.id} value={car.id}>
 									{car.name}{' '}
@@ -333,7 +481,7 @@ export default function CarReservationDialog({
 
 					{conflictWarning && (
 						<div className="rounded-lg bg-red-50 border border-red-200 p-3 text-sm text-red-800">
-							W tym czasie samochód jest już zarezerwowany. Wybierz inny termin.
+							W tym czasie samochÃ³d jest juÅ¼ zarezerwowany. Wybierz inny termin.
 						</div>
 					)}
 
@@ -352,32 +500,62 @@ export default function CarReservationDialog({
 							onChange={(e) => setStudentSearch(e.target.value)}
 							className="mb-2"
 						/>
-						<div className="mt-2 max-h-48 space-y-2 overflow-y-auto rounded-md border p-3">
-							{students.length === 0 ? (
-								<div className="text-center text-sm text-gray-500">
-									Brak aktywnych kursantów
-								</div>
-							) : (
-								filteredStudents.map((student) => (
-									<label
-										key={student.id}
-										className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-2 rounded">
-										<Checkbox
-											checked={formData.studentIds.includes(student.id)}
-											onChange={() => handleStudentToggle(student.id)}
-										/>
-										<span className="text-sm">
-											{student.firstName} {student.lastName}
+						{isMobile ? (
+							<div className="mt-2 max-h-40 space-y-2 overflow-y-auto">
+								{students.length === 0 ? (
+									<div className="py-8 text-center text-sm text-gray-500">
+										Brak aktywnych kursantów
+									</div>
+								) : (
+									filteredStudents.map((student) => (
+										<button
+											key={student.id}
+											type="button"
+											onClick={() => handleStudentToggle(student.id)}
+											className={`min-h-[44px] w-full rounded-lg border-2 px-3 py-2 text-left transition-all active:scale-98 ${
+												formData.studentIds.includes(student.id)
+													? 'border-blue-600 bg-blue-50'
+													: 'border-gray-200 bg-white'
+											}`}
+										>
+											<div className="text-sm font-medium">
+												{student.firstName} {student.lastName}
+											</div>
 											{student.phone && (
-												<span className="text-gray-500 ml-2">
-													({student.phone})
-												</span>
+												<div className="text-xs text-gray-500">{student.phone}</div>
 											)}
-										</span>
-									</label>
-								))
-							)}
-						</div>
+										</button>
+									))
+								)}
+							</div>
+						) : (
+							<div className="mt-2 max-h-48 space-y-2 overflow-y-auto rounded-md border p-3">
+								{students.length === 0 ? (
+									<div className="text-center text-sm text-gray-500">
+										Brak aktywnych kursantów
+									</div>
+								) : (
+									filteredStudents.map((student) => (
+										<label
+											key={student.id}
+											className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-2 rounded">
+											<Checkbox
+												checked={formData.studentIds.includes(student.id)}
+												onChange={() => handleStudentToggle(student.id)}
+											/>
+											<span className="text-sm">
+												{student.firstName} {student.lastName}
+												{student.phone && (
+													<span className="text-gray-500 ml-2">
+														({student.phone})
+													</span>
+												)}
+											</span>
+										</label>
+									))
+								)}
+							</div>
+						)}
 					</div>
 
 					<div>
@@ -404,7 +582,7 @@ export default function CarReservationDialog({
 								? 'Zapisywanie...'
 								: reservation
 									? 'Zapisz zmiany'
-									: 'Dodaj rezerwację'}
+									: 'Dodaj rezerwacjÄ™'}
 						</Button>
 					</div>
 				</form>

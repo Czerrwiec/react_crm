@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { useAuth } from '@/hooks/useAuth'; // DODAJ ten import
+import { useAuth } from '@/hooks/useAuth';
+import { useIsMobile } from '@/hooks/useIsMobile';
 import { Calendar, dateFnsLocalizer, View } from 'react-big-calendar';
 import {
 	format,
@@ -19,6 +20,7 @@ import { Plus, ChevronLeft, ChevronRight } from 'lucide-react';
 import CarDialog from '@/components/CarDialog';
 import CarReservationDialog from '@/components/CarReservationDialog';
 import CarReservationDetailDialog from '@/components/CarReservationDetailDialog';
+import MobileCarCalendar from '@/components/cars/MobileCarCalendar';
 import type { Car, CarReservation, Student } from '@/types';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import '../admin/calendar.css';
@@ -43,6 +45,7 @@ interface CalendarEvent {
 
 export default function CarsPage() {
 	const { role } = useAuth();
+	const isMobile = useIsMobile();
 	const [cars, setCars] = useState<Car[]>([]);
 	const [students, setStudents] = useState<Student[]>([]);
 	const [reservations, setReservations] = useState<CarReservation[]>([]);
@@ -66,6 +69,10 @@ export default function CarsPage() {
 		useState<CarReservation | null>(null);
 	const [deleteCarDialogOpen, setDeleteCarDialogOpen] = useState(false);
 	const [carToDelete, setCarToDelete] = useState<Car | null>(null);
+
+	// Mobile state
+	const [selectedHour, setSelectedHour] = useState<number | null>(null);
+	const [selectedMinute, setSelectedMinute] = useState<number>(0);
 
 	useEffect(() => {
 		loadInitialData();
@@ -168,7 +175,7 @@ export default function CarsPage() {
 			.map((id) => studentNamesMap.get(id))
 			.join(', ');
 
-		// ZMIANA: Jeśli brak kursantów, pokaż nazwę auta
+		// ZMIANA: JeÅ›li brak kursantÃ³w, pokaÅ¼ nazwÄ™ auta
 		const displayLabel = studentNames || carName || 'Bez danych';
 
 		return {
@@ -242,7 +249,7 @@ export default function CarsPage() {
 			return;
 		}
 		setEditingReservation(null);
-		setSelectedCarForReservation(cars[0].id); // Domyślnie pierwszy samochód
+		setSelectedCarForReservation(cars[0].id); // DomyÅ›lnie pierwszy samochÃ³d
 		setReservationDialogOpen(true);
 	};
 
@@ -273,6 +280,24 @@ export default function CarsPage() {
 		}
 	};
 
+	// Mobile handlers
+	const handleMobileAddReservation = (hour: number, minute: number) => {
+		if (cars.length === 0) {
+			alert('Dodaj najpierw samochód');
+			return;
+		}
+		setSelectedHour(hour);
+		setSelectedMinute(minute);
+		setEditingReservation(null);
+		setSelectedCarForReservation(cars[0].id);
+		setReservationDialogOpen(true);
+	};
+
+	const handleMobileReservationClick = (reservation: CarReservation) => {
+		setSelectedReservation(reservation);
+		setDetailDialogOpen(true);
+	};
+
 	const getDateRangeText = () => {
 		if (view === 'month') {
 			return format(currentDate, 'LLLL yyyy', { locale: pl });
@@ -292,7 +317,7 @@ export default function CarsPage() {
 		setView(newView);
 	};
 
-	// Filtruj rezerwacje dla obecnego miesiąca
+	// Filtruj rezerwacje dla obecnego miesiÄ…ca
 	const currentMonthReservations = reservations
 		.filter((r) => {
 			const resDate = new Date(r.date);
@@ -315,6 +340,57 @@ export default function CarsPage() {
 		);
 	}
 
+	// MOBILE VIEW
+	if (isMobile) {
+		return (
+			<>
+				<MobileCarCalendar
+					cars={cars}
+					reservations={reservations}
+					students={students}
+					currentDate={currentDate}
+					onDateChange={setCurrentDate}
+					onReservationClick={handleMobileReservationClick}
+					onAddReservation={handleMobileAddReservation}
+					onLoadReservations={loadReservations}
+					canAdd={role === 'admin'}
+				/>
+
+				{/* Dialogs */}
+				<CarReservationDialog
+					open={reservationDialogOpen}
+					onOpenChange={(open) => {
+						setReservationDialogOpen(open);
+						if (!open) {
+							setSelectedHour(null);
+							setSelectedMinute(0);
+						}
+					}}
+					reservation={editingReservation}
+					preselectedDate={currentDate}
+					preselectedTime={
+						selectedHour !== null
+							? `${String(selectedHour).padStart(2, '0')}:${String(selectedMinute).padStart(2, '0')}`
+							: undefined
+					}
+					onSuccess={loadReservations}
+				/>
+
+				<CarReservationDetailDialog
+					open={detailDialogOpen}
+					onOpenChange={setDetailDialogOpen}
+					reservation={selectedReservation}
+					carNames={carNamesMap}
+					cars={cars}
+					studentNames={studentNamesMap}
+					onEdit={handleEditReservation}
+					onSuccess={loadReservations}
+				/>
+			</>
+		);
+	}
+
+	// DESKTOP VIEW (bez zmian)
 	const messages = {
 		week: 'Tydzień',
 		work_week: 'Tydzień pracy',
@@ -322,7 +398,7 @@ export default function CarsPage() {
 		month: 'Miesiąc',
 		previous: 'Poprzedni',
 		next: 'Następny',
-		today: 'Dziś',
+		today: 'Dziś›',
 		agenda: 'Agenda',
 		showMore: (total: number) => `+${total}`,
 	};
@@ -411,7 +487,7 @@ export default function CarsPage() {
 
 						{cars.length === 0 && (
 							<div className="py-12 text-center text-gray-500">
-								Brak samochodów w bazie
+								Brak samochodÃ³w w bazie
 							</div>
 						)}
 					</div>
@@ -666,11 +742,11 @@ export default function CarsPage() {
 			<ConfirmDialog
 				open={deleteCarDialogOpen}
 				onOpenChange={setDeleteCarDialogOpen}
-				title="Usunąć samochód?"
+				title="UsunÄ…Ä‡ samochÃ³d?"
 				description={
 					carToDelete ? (
 						<>
-							Czy na pewno chcesz usunąć samochód{' '}
+							Czy na pewno chcesz usunÄ…Ä‡ samochÃ³d{' '}
 							<strong>
 								{carToDelete.name} ({carToDelete.year})
 							</strong>
@@ -686,7 +762,7 @@ export default function CarsPage() {
 						''
 					)
 				}
-				confirmText="Usuń samochód"
+				confirmText="UsuÅ„ samochÃ³d"
 				onConfirm={handleDeleteConfirm}
 			/>
 		</div>
@@ -745,7 +821,7 @@ function ReservationsList({
 									{format(new Date(reservation.date), 'dd.MM.yyyy EEEE,', {
 										locale: pl,
 									})}{' '}
-									• {reservation.startTime.slice(0, 5)} -{' '}
+									{reservation.startTime.slice(0, 5)} -{' '}
 									{reservation.endTime.slice(0, 5)}
 								</div>
 								<div className="text-sm text-gray-700 mt-1">
