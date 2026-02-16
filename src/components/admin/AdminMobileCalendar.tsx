@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { instructorService } from '@/services/instructor.service';
 import { lessonService } from '@/services/lesson.service';
 import { studentService } from '@/services/student.service';
@@ -16,6 +16,12 @@ export default function AdminMobileCalendar() {
   const [selectedInstructorId, setSelectedInstructorId] = useState<string>('');
   const [lessons, setLessons] = useState<Lesson[]>([]);
   const [studentNamesMap, setStudentNamesMap] = useState<Map<string, string>>(new Map());
+  
+  // Track loaded month range (start and end)
+  const loadedRangeRef = useRef<{ start: Date | null; end: Date | null }>({
+    start: null,
+    end: null,
+  });
 
   // Dialogs
   const [lessonDialogOpen, setLessonDialogOpen] = useState(false);
@@ -43,9 +49,22 @@ export default function AdminMobileCalendar() {
     }
   }, [instructors]);
 
-  // Load lessons when instructor changes
+  // Load lessons when instructor changes or when currentDate is outside loaded range
   useEffect(() => {
-    if (selectedInstructorId) {
+    if (!selectedInstructorId) return;
+
+    const { start, end } = loadedRangeRef.current;
+    
+    // Load if:
+    // 1. Never loaded before (start === null)
+    // 2. currentDate is outside loaded range
+    const needsLoad = 
+      !start || 
+      !end || 
+      currentDate < start || 
+      currentDate > end;
+
+    if (needsLoad) {
       loadLessons();
     }
   }, [selectedInstructorId, currentDate]);
@@ -76,11 +95,31 @@ export default function AdminMobileCalendar() {
 
   const loadLessons = async () => {
     try {
-      const data = await lessonService.getLessonsByInstructor(
-        selectedInstructorId,
-        currentDate
+      // Load 3 months: previous, current, next
+      const prevMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1);
+      const currentMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+      const nextMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1);
+
+      // Load all 3 months in parallel
+      const [prevData, currentData, nextData] = await Promise.all([
+        lessonService.getLessonsByInstructor(selectedInstructorId, prevMonth),
+        lessonService.getLessonsByInstructor(selectedInstructorId, currentMonth),
+        lessonService.getLessonsByInstructor(selectedInstructorId, nextMonth),
+      ]);
+
+      // Merge all lessons and remove duplicates
+      const allLessons = [...prevData, ...currentData, ...nextData];
+      const uniqueLessons = Array.from(
+        new Map(allLessons.map(lesson => [lesson.id, lesson])).values()
       );
-      setLessons(data);
+
+      setLessons(uniqueLessons);
+      
+      // Update loaded range
+      loadedRangeRef.current = {
+        start: prevMonth,
+        end: new Date(nextMonth.getFullYear(), nextMonth.getMonth() + 1, 0), // Last day of next month
+      };
     } catch (error) {
       console.error('Error loading lessons:', error);
     }
@@ -89,6 +128,8 @@ export default function AdminMobileCalendar() {
   const handleInstructorChange = (id: string) => {
     setSelectedInstructorId(id);
     localStorage.setItem('admin-selected-instructor', id);
+    // Reset loaded range to force reload for new instructor
+    loadedRangeRef.current = { start: null, end: null };
   };
 
   const handleLessonClick = (lesson: Lesson) => {
@@ -157,6 +198,10 @@ export default function AdminMobileCalendar() {
             setView('day');
           }}
           onClose={() => setView('day')}
+          onMonthChange={(date) => {
+            // Update currentDate when month changes to trigger lesson reload
+            setCurrentDate(date);
+          }}
         />
       ) : (
         <MobileDayView
