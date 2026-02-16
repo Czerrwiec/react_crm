@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, addMonths, subMonths, isToday } from 'date-fns';
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, addMonths, subMonths, isToday} from 'date-fns';
 import { pl } from 'date-fns/locale';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -8,6 +8,7 @@ import type { Lesson } from '@/types';
 interface MobileMonthViewProps {
   currentDate: Date;
   lessons: Lesson[];
+  studentNamesMap: Map<string, string>;
   onSelectDate: (date: Date) => void;
   onClose: () => void;
 }

@@ -499,7 +499,7 @@ export default function LessonDialog({
 		<Dialog open={open} onOpenChange={onOpenChange}>
 			<DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[600px]">
 				<DialogHeader>
-					<DialogTitle>{lesson ? 'Edytuj lekcjÄ™' : 'Dodaj lekcjÄ™'}</DialogTitle>
+					<DialogTitle>{lesson ? 'Edytuj lekcję' : 'Dodaj lekcję'}</DialogTitle>
 				</DialogHeader>
 
 				<form onSubmit={handleSubmit} className="space-y-4">
