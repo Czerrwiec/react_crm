@@ -23,7 +23,7 @@ import LessonDialog from '@/components/LessonDialog';
 import LessonDetailDialog from '@/components/LessonDetailDialog';
 import MobileDayView from '@/components/mobile/MobileDayView';
 import MobileMonthView from '@/components/mobile/MobileMonthView';
-import type { Lesson, Student } from '@/types';
+import type { Lesson } from '@/types';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import '../../pages/admin/calendar.css';
 
@@ -49,7 +49,7 @@ export default function InstructorCalendarPage() {
 	const { user } = useAuth();
 	const isMobile = useIsMobile();
 	const [lessons, setLessons] = useState<Lesson[]>([]);
-	const [students, setStudents] = useState<Student[]>([]);
+	const [studentNamesMap, setStudentNamesMap] = useState<Map<string, string>>(new Map());
 	const [currentDate, setCurrentDate] = useState(new Date());
 	const [selectedDay, setSelectedDay] = useState(new Date());
 	const [loading, setLoading] = useState(true);
@@ -81,7 +81,12 @@ export default function InstructorCalendarPage() {
 	const loadInitialData = async () => {
 		try {
 			const studentsData = await studentService.getStudents();
-			setStudents(studentsData);
+			
+			// Create names map
+			const namesMap = new Map(
+				studentsData.map((s) => [s.id, `${s.firstName} ${s.lastName}`])
+			);
+			setStudentNamesMap(namesMap);
 		} catch (error) {
 			console.error('Error loading data:', error);
 		} finally {
@@ -120,10 +125,6 @@ export default function InstructorCalendarPage() {
 			console.error('Error loading lessons:', error);
 		}
 	};
-
-	const studentNamesMap = new Map(
-		students.map((s) => [s.id, `${s.firstName} ${s.lastName}`])
-	);
 
 	const events: CalendarEvent[] = lessons.map((lesson) => {
 		const [startHour, startMinute] = lesson.startTime.split(':').map(Number);
@@ -323,13 +324,13 @@ export default function InstructorCalendarPage() {
 	};
 
 	const messages = {
-		week: 'Tydzień',
-		work_week: 'Tydzień pracy',
-		day: 'Dzień',
-		month: 'Miesiąc',
+		week: 'TydzieÅ„',
+		work_week: 'TydzieÅ„ pracy',
+		day: 'DzieÅ„',
+		month: 'MiesiÄ…c',
 		previous: 'Poprzedni',
-		next: 'Następny',
-		today: 'Dziś',
+		next: 'NastÄ™pny',
+		today: 'DziÅ›',
 		agenda: 'Agenda',
 		showMore: (total: number) => `+${total}`,
 	};
@@ -350,16 +351,18 @@ export default function InstructorCalendarPage() {
 					currentDate={currentDate}
 					onDateChange={setCurrentDate}
 					lessons={lessons}
-					students={students}
+					studentNamesMap={studentNamesMap}
 					onLessonClick={handleMobileLessonClick}
 					onAddLesson={handleMobileAddLesson}
 					onOpenMonthView={() => setShowMonthView(true)}
+					instructorId={user!.id}
 				/>
 
 				{showMonthView && (
 					<MobileMonthView
 						currentDate={currentDate}
 						lessons={lessons}
+						studentNamesMap={studentNamesMap}
 						onSelectDate={handleMonthDateSelect}
 						onClose={() => setShowMonthView(false)}
 					/>
@@ -469,7 +472,7 @@ export default function InstructorCalendarPage() {
 					<div className="flex items-center gap-2">
 						<Button onClick={handleAddLesson} size="sm">
 							<Plus className="mr-2 h-4 w-4" />
-							Dodaj lekcję
+							Dodaj lekcjÄ™
 						</Button>
 
 						<div className="ml-4 mr-2 h-8 w-px bg-gray-300" />
@@ -478,7 +481,7 @@ export default function InstructorCalendarPage() {
 							variant="outline"
 							size="sm"
 							onClick={() => handleNavigate('today')}>
-							Dziś
+							DziÅ›
 						</Button>
 						<Button
 							variant="outline"
@@ -502,13 +505,13 @@ export default function InstructorCalendarPage() {
 							variant={view === 'month' ? 'default' : 'outline'}
 							size="sm"
 							onClick={() => handleViewChange('month')}>
-							Miesiąc
+							MiesiÄ…c
 						</Button>
 						<Button
 							variant={view === 'week' ? 'default' : 'outline'}
 							size="sm"
 							onClick={() => handleViewChange('week')}>
-							Tydzień
+							TydzieÅ„
 						</Button>
 					</div>
 				</div>

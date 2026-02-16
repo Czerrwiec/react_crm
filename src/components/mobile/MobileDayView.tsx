@@ -4,23 +4,24 @@ import { pl } from 'date-fns/locale';
 import { Calendar as CalendarIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import TimeGrid from './TimeGrid';
-import type { Lesson, Student } from '@/types';
+import type { Lesson } from '@/types';
 
 interface MobileDayViewProps {
   currentDate: Date;
   onDateChange: (date: Date) => void;
   lessons: Lesson[];
-  students: Student[];
+  studentNamesMap: Map<string, string>;
   onLessonClick: (lesson: Lesson) => void;
   onAddLesson: (hour: number, minute: number) => void;
   onOpenMonthView: () => void;
+  instructorId: string; // NEW - passed from parent
 }
 
 export default function MobileDayView({
   currentDate,
   onDateChange,
   lessons,
-  students,
+  studentNamesMap,
   onLessonClick,
   onAddLesson,
   onOpenMonthView,
@@ -56,10 +57,6 @@ export default function MobileDayView({
 
   const todayLessons = lessons.filter(
     (lesson) => lesson.date === format(currentDate, 'yyyy-MM-dd')
-  );
-
-  const studentNamesMap = new Map(
-    students.map((s) => [s.id, `${s.firstName} ${s.lastName}`])
   );
 
   // Generuj dni tygodnia (poniedziałek-niedziela)

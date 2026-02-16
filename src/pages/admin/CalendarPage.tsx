@@ -14,6 +14,8 @@ import {
 	subDays,
 } from 'date-fns';
 import { pl } from 'date-fns/locale';
+import { useIsMobile } from '@/hooks/useIsMobile';
+import AdminMobileCalendar from '@/components/admin/AdminMobileCalendar';
 import { lessonService } from '@/services/lesson.service';
 import { instructorService } from '@/services/instructor.service';
 import { studentService } from '@/services/student.service';
@@ -25,7 +27,6 @@ import LessonDetailDialog from '@/components/LessonDetailDialog';
 import type { Lesson, User, Student } from '@/types';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import './calendar.css';
-// import { useAuth } from '@/hooks/useAuth';
 
 const EventComponent = ({ event }: any) => {
 	const lines = event.resource?.displayLines || [event.title];
@@ -44,7 +45,7 @@ const EventComponent = ({ event }: any) => {
 					style={{
 						fontWeight: idx === 0 ? 'bold' : 'normal',
 						fontSize: idx === 0 ? '12px' : '11px',
-						whiteSpace: 'normal', // WAŻNE - pozwala na zawijanie
+						whiteSpace: 'normal', // WAÅ»NE - pozwala na zawijanie
 						wordBreak: 'break-word',
 					}}>
 					{line}
@@ -73,6 +74,7 @@ interface CalendarEvent {
 }
 
 export default function CalendarPage() {
+	const isMobile = useIsMobile();
 	const location = useLocation();
 	const [lessons, setLessons] = useState<Lesson[]>([]);
 	const [instructors, setInstructors] = useState<User[]>([]);
@@ -95,17 +97,22 @@ export default function CalendarPage() {
 	const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
 	const [editingLesson, setEditingLesson] = useState<Lesson | null>(null);
 
+	// useEffects - MUST be before conditional return
 	useEffect(() => {
-		loadInitialData();
-	}, []);
+		if (!isMobile) {
+			loadInitialData();
+		}
+	}, [isMobile]);
 
 	useEffect(() => {
-		loadLessons(); // Wywołuj zawsze, nie tylko gdy instructors.length > 0
-	}, [selectedInstructor, currentDate, instructorsMap.size]);
+		if (!isMobile) {
+			loadLessons();
+		}
+	}, [selectedInstructor, currentDate, instructorsMap.size, isMobile]);
 
 	// Check for lessonId from navigation state
 	useEffect(() => {
-		if (location.state?.lessonId && lessons.length > 0) {
+		if (!isMobile && location.state?.lessonId && lessons.length > 0) {
 			setHighlightedLessonId(location.state.lessonId);
 
 			// Find the lesson and navigate to its date
@@ -114,13 +121,22 @@ export default function CalendarPage() {
 				const lessonDate = new Date(lesson.date);
 				setCurrentDate(lessonDate);
 				setSelectedDay(lessonDate);
-				setView('week'); // Switch to week view for better visibility
+				setView('week');
 			}
 
 			// Clear highlight after 3 seconds
-			setTimeout(() => setHighlightedLessonId(null), 3000);
+			setTimeout(() => {
+				setHighlightedLessonId(null);
+			}, 3000);
 		}
-	}, [location.state, lessons]);
+	}, [location.state, lessons, isMobile]);
+
+	// MOBILE VERSION
+	if (isMobile) {
+		return <AdminMobileCalendar />;
+	}
+
+	// DESKTOP VERSION (below)
 
 	const loadInitialData = async () => {
 		try {
@@ -132,7 +148,6 @@ export default function CalendarPage() {
 			setInstructors(activeInstructors);
 			setStudents(studentsData);
 
-			// Stwórz mapę instruktorów
 			const map = new Map(
 				instructorsData.map((i) => [i.id, `${i.firstName} ${i.lastName}`])
 			);
@@ -229,7 +244,7 @@ export default function CalendarPage() {
 			const instructorName =
 				instructorsMap.get(lesson.instructorId) || 'Nieznany';
 
-			// Linie do wyświetlenia w week/day view
+			// Linie do wyÅ›wietlenia w week/day view
 			const displayLines =
 				forView === 'week' || forView === 'day'
 					? [
@@ -366,20 +381,20 @@ export default function CalendarPage() {
 	const handleViewChange = (newView: View) => {
 		setView(newView);
 
-		// Gdy przełączamy na dzień/tydzień, ustaw currentDate na wybrany dzień
+		// Gdy przeÅ‚Ä…czamy na dzieÅ„/tydzieÅ„, ustaw currentDate na wybrany dzieÅ„
 		if (newView === 'day' || newView === 'week') {
 			setCurrentDate(selectedDay);
 		}
 	};
 
 	const messages = {
-		week: 'Tydzień',
-		work_week: 'Tydzień pracy',
-		day: 'Dzień',
-		month: 'Miesiąc',
+		week: 'TydzieÅ„',
+		work_week: 'TydzieÅ„ pracy',
+		day: 'DzieÅ„',
+		month: 'MiesiÄ…c',
 		previous: 'Poprzedni',
-		next: 'Następny',
-		today: 'Dziś',
+		next: 'NastÄ™pny',
+		today: 'DziÅ›',
 		agenda: 'Agenda',
 		showMore: (total: number) => `+${total}`,
 	};
@@ -424,7 +439,7 @@ export default function CalendarPage() {
 								variant="outline"
 								size="sm"
 								onClick={() => handleNavigate('today')}>
-								Dziś
+								DziÅ›
 							</Button>
 							<Button
 								variant="outline"
@@ -453,21 +468,21 @@ export default function CalendarPage() {
 							size="sm"
 							className="flex-1"
 							onClick={() => handleViewChange('month')}>
-							Miesiąc
+							MiesiÄ…c
 						</Button>
 						{/* <Button
 							variant={view === 'week' ? 'default' : 'outline'}
 							size="sm"
 							className="flex-1"
 							onClick={() => handleViewChange('week')}>
-							Tydzień
+							TydzieÅ„
 						</Button> */}
 						<Button
 							variant={view === 'day' ? 'default' : 'outline'}
 							size="sm"
 							className="flex-1"
 							onClick={() => handleViewChange('day')}>
-							Dzień
+							DzieÅ„
 						</Button>
 					</div>
 				</div>
