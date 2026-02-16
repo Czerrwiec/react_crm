@@ -363,6 +363,7 @@ export default function InstructorCalendarPage() {
 						currentDate={currentDate}
 						lessons={lessons}
 						studentNamesMap={studentNamesMap}
+						instructorId={user!.id}
 						onSelectDate={handleMonthDateSelect}
 						onClose={() => setShowMonthView(false)}
 					/>
@@ -472,7 +473,7 @@ export default function InstructorCalendarPage() {
 					<div className="flex items-center gap-2">
 						<Button onClick={handleAddLesson} size="sm">
 							<Plus className="mr-2 h-4 w-4" />
-							Dodaj lekcjÄ™
+							Dodaj lekcję
 						</Button>
 
 						<div className="ml-4 mr-2 h-8 w-px bg-gray-300" />
@@ -481,7 +482,7 @@ export default function InstructorCalendarPage() {
 							variant="outline"
 							size="sm"
 							onClick={() => handleNavigate('today')}>
-							DziÅ›
+							Dziś
 						</Button>
 						<Button
 							variant="outline"
@@ -505,13 +506,13 @@ export default function InstructorCalendarPage() {
 							variant={view === 'month' ? 'default' : 'outline'}
 							size="sm"
 							onClick={() => handleViewChange('month')}>
-							MiesiÄ…c
+							Miesiąc
 						</Button>
 						<Button
 							variant={view === 'week' ? 'default' : 'outline'}
 							size="sm"
 							onClick={() => handleViewChange('week')}>
-							TydzieÅ„
+							Tydzień
 						</Button>
 					</div>
 				</div>
