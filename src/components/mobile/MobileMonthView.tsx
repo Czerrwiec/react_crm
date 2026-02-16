@@ -12,6 +12,7 @@ interface MobileMonthViewProps {
   instructorId?: string; // Optional - for filtering (admin only)
   onSelectDate: (date: Date) => void;
   onClose: () => void;
+  onMonthChange?: (date: Date) => void; // NEW - notify parent of month changes
 }
 
 export default function MobileMonthView({
@@ -20,6 +21,7 @@ export default function MobileMonthView({
   instructorId,
   onSelectDate,
   onClose,
+  onMonthChange,
 }: MobileMonthViewProps) {
   const [viewDate, setViewDate] = useState(currentDate);
   const [touchStart, setTouchStart] = useState<number | null>(null);
@@ -53,10 +55,14 @@ export default function MobileMonthView({
     const isRightSwipe = distance < -minSwipeDistance;
 
     if (isLeftSwipe) {
-      setViewDate(addMonths(viewDate, 1));
+      const newDate = addMonths(viewDate, 1);
+      setViewDate(newDate);
+      onMonthChange?.(newDate);
     }
     if (isRightSwipe) {
-      setViewDate(subMonths(viewDate, 1));
+      const newDate = subMonths(viewDate, 1);
+      setViewDate(newDate);
+      onMonthChange?.(newDate);
     }
   };
 
@@ -90,7 +96,11 @@ export default function MobileMonthView({
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => setViewDate(subMonths(viewDate, 1))}
+            onClick={() => {
+              const newDate = subMonths(viewDate, 1);
+              setViewDate(newDate);
+              onMonthChange?.(newDate);
+            }}
           >
             <ChevronLeft className="h-5 w-5" />
           </Button>
@@ -102,7 +112,11 @@ export default function MobileMonthView({
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => setViewDate(addMonths(viewDate, 1))}
+            onClick={() => {
+              const newDate = addMonths(viewDate, 1);
+              setViewDate(newDate);
+              onMonthChange?.(newDate);
+            }}
           >
             <ChevronRight className="h-5 w-5" />
           </Button>

@@ -54,7 +54,7 @@ export default function AdminMobileCalendar() {
     try {
       const data = await instructorService.getInstructors();
       // Filter only active instructors
-      const activeInstructors = data.filter((i) => i.active);
+      const activeInstructors = data.filter((i) => !i.active);
       setInstructors(activeInstructors);
     } catch (error) {
       console.error('Error loading instructors:', error);
