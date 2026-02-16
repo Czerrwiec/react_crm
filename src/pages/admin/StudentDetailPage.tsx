@@ -176,7 +176,7 @@ export default function StudentDetailPage() {
 					hoursToSet = pkg.hours;
 				}
 			}
-			// Nadpisz godzinami custom jeÅ›li sÄ… ustawione
+			// Nadpisz godzinami custom jeśli są ustawione
 			if (studentData.customCourseHours) {
 				hoursToSet = studentData.customCourseHours;
 			}
@@ -360,7 +360,13 @@ export default function StudentDetailPage() {
 
 	// MOBILE VERSION - Calendar tab
 	if (isMobile && activeTab === 'calendar') {
-		return <StudentMobileCalendar studentId={id!} student={student} />;
+		return (
+			<StudentMobileCalendar 
+				studentId={id!} 
+				student={student}
+				onBack={() => setActiveTab('info')}
+			/>
+		);
 	}
 
 	return (
@@ -389,7 +395,7 @@ export default function StudentDetailPage() {
 						</div>
 					</div>
 
-					{/* MOBILE â€“ gÃ³ra-prawo */}
+					{/* MOBILE â€“ góra-prawo */}
 					<div className="sm:hidden absolute right-4 top-4 z-10 flex gap-2">
 						<Button
 							variant="ghost"
@@ -535,16 +541,16 @@ export default function StudentDetailPage() {
 											<Badge
 												variant={student.inactive ? 'secondary' : 'default'}
 												className="text-sm">
-												{student.inactive ? 'ZakoÅ„czony' : 'W trakcie'}
+												{student.inactive ? 'Zakończony' : 'W trakcie'}
 											</Badge>
 
 											{packageName && (
 												<span className="text-sm font-medium text-gray-700">
-													{packageName} â€¢ {student.coursePrice.toFixed(0)} zł
+													{packageName} • {student.coursePrice.toFixed(0)} zł
 												</span>
 											)}
 
-											{/* Badge dla kursu uzupeÅ‚niajÄ…cego - bez ceny (juÅ¼ jest wyÅ¼ej) */}
+											{/* Badge dla kursu uzupełniającego - bez ceny (już jest wyżej) */}
 											{student.isSupplementaryCourse && (
 												<Badge variant="secondary" className="text-sm">
 													Kurs uzupełniający
@@ -660,7 +666,7 @@ export default function StudentDetailPage() {
 												</span>
 											</div>
 
-											{/* Teoria wewnÄ™trzna */}
+											{/* Teoria wewnętrzna */}
 											<div className="flex items-center gap-3">
 												{student.internalTheoryPassed ? (
 													<CheckCircle2 className="h-5 w-5 text-green-600 flex-shrink-0" />
@@ -677,7 +683,7 @@ export default function StudentDetailPage() {
 												</span>
 											</div>
 
-											{/* Praktyka wewnÄ™trzna */}
+											{/* Praktyka wewnętrzna */}
 											<div className="flex items-center gap-3">
 												{student.internalPracticePassed ? (
 													<CheckCircle2 className="h-5 w-5 text-green-600 flex-shrink-0" />
@@ -694,7 +700,7 @@ export default function StudentDetailPage() {
 												</span>
 											</div>
 
-											{/* PaÅ„stwowy */}
+											{/* Państwowy */}
 											<div className="flex items-center gap-3">
 												{student.stateExamStatus === 'passed' ? (
 													<CheckCircle2 className="h-5 w-5 text-green-600 flex-shrink-0" />
@@ -860,7 +866,7 @@ export default function StudentDetailPage() {
 								</CardContent>
 							</Card>
 
-							{/* PÅ‚atnoÅ›ci - Mobile Optimized */}
+							{/* Płatności - Mobile Optimized */}
 							<Card className="md:col-span-3">
 								<CardHeader className="pb-3 sm:pb-6">
 									<div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -955,7 +961,7 @@ export default function StudentDetailPage() {
 											variant="outline"
 											size="sm"
 											onClick={() => setCalendarMonth(new Date())}>
-											DziÅ›
+											Dziś
 										</Button>
 										<Button
 											variant="outline"
@@ -996,10 +1002,10 @@ export default function StudentDetailPage() {
 										defaultView="month"
 										eventPropGetter={eventStyleGetter}
 										messages={{
-											next: 'NastÄ™pny',
+											next: 'Następny',
 											previous: 'Poprzedni',
-											today: 'DziÅ›',
-											month: 'MiesiÄ…c',
+											today: 'Dziś',
+											month: 'Miesiąc',
 										}}
 									/>
 								</div>
@@ -1110,13 +1116,13 @@ export default function StudentDetailPage() {
 														{format(new Date(lesson.date), 'dd.MM.yyyy', {
 															locale: pl,
 														})}{' '}
-														â€¢ {lesson.startTime.slice(0, 5)} -{' '}
+														• {lesson.startTime.slice(0, 5)} -{' '}
 														{lesson.endTime.slice(0, 5)}
 													</div>
 													<div className="text-xs text-gray-600 mt-0.5">
 														{formatHours(lesson.duration)}
-														{lesson.status === 'cancelled' && ' â€¢ Anulowana'}
-														{' â€¢ '}
+														{lesson.status === 'cancelled' && ' • Anulowana'}
+														{' • '}
 														{instructorsMap.get(lesson.instructorId)}
 													</div>
 												</div>
@@ -1147,13 +1153,13 @@ function PaymentRow({
 }) {
 	const [editing, setEditing] = useState(false);
 
-	// Czy uÅ¼ytkownik moÅ¼e edytowaÄ‡/usuwaÄ‡ tÄ™ pÅ‚atnoÅ›Ä‡
+	// Czy użytkownik może edytować/usuwać tę płatność
 
 	const canModify =
 		currentUserRole === 'admin' || payment.createdBy === currentUserId;
 
 	const handleDelete = async () => {
-		if (!confirm('Usunięto płatność')) return;
+		if (!confirm('Usunąć płatność?')) return;
 
 		try {
 			await paymentService.deletePayment(payment.id);
@@ -1183,8 +1189,8 @@ function PaymentRow({
 			<div className="flex-1">
 				<div className="font-medium">{payment.amount.toFixed(2)} zł</div>
 				<div className="text-xs text-muted-foreground sm:text-sm">
-					{format(new Date(payment.createdAt), 'dd.MM.yyyy HH:mm')}, {' '}
-					{payment.type === 'course' ? 'Kurs' : 'Dodatkowe'} -{' '}
+					{format(new Date(payment.createdAt), 'dd.MM.yyyy HH:mm')} •{' '}
+					{payment.type === 'course' ? 'Kurs' : 'Dodatkowe'} •{' '}
 					{payment.method === 'cash'
 						? 'Gotówka'
 						: payment.method === 'card'
@@ -1194,12 +1200,12 @@ function PaymentRow({
 				{(payment.createdByName || payment.updatedByName) && (
 					<div className="mt-1 text-xs text-gray-500">
 						{payment.createdByName && `Dodano: ${payment.createdByName}`}
-						{payment.updatedByName && `Edytowano: ${payment.updatedByName}`}
+						{payment.updatedByName && ` • Edytowano: ${payment.updatedByName}`}
 					</div>
 				)}
 			</div>
 
-			{/* PokaÅ¼ przyciski tylko jeÅ›li uÅ¼ytkownik moÅ¼e modyfikowaÄ‡ */}
+			{/* Pokaż przyciski tylko jeśli użytkownik może modyfikować */}
 			{canModify && (
 				<div className="flex gap-2">
 					<Button variant="ghost" size="icon" onClick={() => setEditing(true)}>
@@ -1283,7 +1289,7 @@ function EditPaymentForm({
 						id="method"
 						value={method}
 						onChange={(e) => setMethod(e.target.value as any)}>
-						<option value="cash">GotÃ³wka</option>
+						<option value="cash">Gotówka</option>
 						<option value="card">Karta</option>
 						<option value="transfer">Przelew</option>
 					</Select>
@@ -1335,7 +1341,7 @@ function AddPaymentDialog({
 			setAmount('');
 		} catch (error) {
 			console.error('Error creating payment:', error);
-			alert('Bąd dodawania płatności');
+			alert('Błąd dodawania płatności');
 		} finally {
 			setLoading(false);
 		}

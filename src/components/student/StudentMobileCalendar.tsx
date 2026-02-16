@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, addMonths, subMonths, isToday, isSameDay } from 'date-fns';
 import { pl } from 'date-fns/locale';
 import { ChevronLeft, ChevronRight, ArrowLeft } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/lib/supabase';
@@ -11,13 +10,14 @@ import type { Student, Lesson } from '@/types';
 interface StudentMobileCalendarProps {
   studentId: string;
   student: Student;
+  onBack: () => void;
 }
 
 export default function StudentMobileCalendar({
   studentId,
   student,
+  onBack,
 }: StudentMobileCalendarProps) {
-  const navigate = useNavigate();
   const [viewDate, setViewDate] = useState(new Date());
   const [selectedDay, setSelectedDay] = useState<Date | null>(new Date()); // Auto-select today
   const [lessons, setLessons] = useState<Lesson[]>([]);
@@ -168,11 +168,11 @@ export default function StudentMobileCalendar({
           {student.firstName} {student.lastName}
         </h1>
         
-        {/* Back arrow (right) */}
+        {/* Back arrow (right) - returns to info tab */}
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => navigate(-1)}
+          onClick={onBack}
           className="h-10 w-10 p-0"
         >
           <ArrowLeft className="h-5 w-5" />
