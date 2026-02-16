@@ -151,6 +151,7 @@ export default function AdminMobileCalendar() {
           currentDate={currentDate}
           lessons={lessons}
           studentNamesMap={studentNamesMap}
+          instructorId={selectedInstructorId}
           onSelectDate={(date) => {
             setCurrentDate(date);
             setView('day');

@@ -9,6 +9,7 @@ interface MobileMonthViewProps {
   currentDate: Date;
   lessons: Lesson[];
   studentNamesMap: Map<string, string>;
+  instructorId?: string; // Optional - for filtering (admin only)
   onSelectDate: (date: Date) => void;
   onClose: () => void;
 }
@@ -16,12 +17,18 @@ interface MobileMonthViewProps {
 export default function MobileMonthView({
   currentDate,
   lessons,
+  instructorId,
   onSelectDate,
   onClose,
 }: MobileMonthViewProps) {
   const [viewDate, setViewDate] = useState(currentDate);
   const [touchStart, setTouchStart] = useState<number | null>(null);
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
+
+  // Filter lessons by instructorId if provided (admin view)
+  const filteredLessons = instructorId 
+    ? lessons.filter(l => l.instructorId === instructorId)
+    : lessons;
 
   const monthStart = startOfMonth(viewDate);
   const monthEnd = endOfMonth(viewDate);
@@ -54,7 +61,7 @@ export default function MobileMonthView({
   };
 
   const getLessonHours = (date: Date) => {
-    return lessons
+    return filteredLessons
       .filter((l) => l.date === format(date, 'yyyy-MM-dd'))
       .reduce((sum, l) => sum + l.duration, 0);
   };
@@ -68,7 +75,7 @@ export default function MobileMonthView({
   };
 
   // Suma godzin w miesiącu
-  const totalMonthHours = lessons
+  const totalMonthHours = filteredLessons
     .filter((l) => {
       const lessonDate = new Date(l.date);
       return lessonDate >= monthStart && lessonDate <= monthEnd;
