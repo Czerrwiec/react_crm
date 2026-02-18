@@ -65,6 +65,7 @@ export default function LoginPage() {
 							onChange={(e) => setEmail(e.target.value)}
 							required
 							disabled={loading}
+							data-testid="login-email-input"
 						/>
 						<Input
 							type="password"
@@ -73,10 +74,15 @@ export default function LoginPage() {
 							onChange={(e) => setPassword(e.target.value)}
 							required
 							disabled={loading}
+							data-testid="login-password-input"
 						/>
 					</div>
 
-					<Button type="submit" className="w-full" disabled={loading}>
+					<Button
+						type="submit"
+						className="w-full"
+						disabled={loading}
+						data-testid="login-button">
 						{loading ? 'Logowanie...' : 'Zaloguj się'}
 					</Button>
 
