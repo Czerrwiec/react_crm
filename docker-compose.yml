@@ -1,0 +1,35 @@
+services:
+  playwright-runner:
+    # Oficjalny Playwright image - zaktualizowana wersja
+    image: mcr.microsoft.com/playwright:v1.58.2-jammy
+    container_name: easy-drive-e2e
+    working_dir: /app
+    
+    # Bind mount - kod z hosta
+    volumes:
+      - ./:/app
+      - playwright-cache:/root/.cache/ms-playwright
+    
+    # Environment variables
+    environment:
+      - VERCEL_AUTOMATION_BYPASS_SECRET=${VERCEL_AUTOMATION_BYPASS_SECRET}
+      - PLAYWRIGHT_BASE_URL=https://easy-drive-test.vercel.app
+      - CI=true
+    
+    # Keep container running (for manual test execution)
+    command: tail -f /dev/null
+    
+    # Restart policy
+    restart: unless-stopped
+    
+    # Network
+    networks:
+      - playwright-network
+
+volumes:
+  playwright-cache:
+    name: playwright-cache
+
+networks:
+  playwright-network:
+    name: playwright-network
