@@ -15,9 +15,9 @@ export default defineConfig({
   outputDir: './e2e/report/test-results',
   
   reporter: [
-    ['html', { outputFolder: 'e2e/report' }],
-    ['junit', { outputFile: 'e2e/report/test-results/junit.xml' }],
-    ['list'], 
+    ['html', { outputFolder: 'e2e/html-report' }],    
+    ['junit', { outputFile: 'e2e/test-results/junit.xml' }], 
+    ['list'],
   ],
   
   use: {
