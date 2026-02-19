@@ -15,10 +15,10 @@ jobs:
       - name: 📥 Checkout code
         uses: actions/checkout@v4
         with:
-          clean: false  
+          clean: false 
           fetch-depth: 1  
 
-      - name: 🐳 Run Playwright tests in Docker (no compose)
+      - name: 🧪 Run Playwright tests in Docker (no compose)
         run: |
           docker run --rm \
             -v ${{ github.workspace }}:/app \
@@ -28,6 +28,10 @@ jobs:
             -e CI=true \
             mcr.microsoft.com/playwright:v1.58.2-jammy \
             /bin/bash -c "npm ci && npm run test:e2e"
+
+      - name: 🧹 Fix permissions (Docker creates files as root)
+        if: always()
+        run: sudo chown -R $USER:$USER ${{ github.workspace }}
 
       - name: 📋 Verify reports
         if: always()
