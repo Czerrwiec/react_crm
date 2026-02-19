@@ -17,10 +17,10 @@ test.describe('Smoke Test', () => {
     }
 
     await expect(page).toHaveURL(/\/login/, { timeout: 10000 });
-    await expect(page.locator('text=/easy drive|zaloguj/i')).toBeVisible({ timeout: 5000 });
-    // await expect(page.locator('[data-testid="login-email-input"]')).toBeVisible({ timeout: 5000 });
-    // await expect(page.locator('[data-testid="login-password-input"]')).toBeVisible({ timeout: 5000 });
-    // await expect(page.locator('[data-testid="login-button"]')).toBeVisible({ timeout: 5000 });
+    await expect(page.locator('[data-testid="login-email-input"]')).toBeVisible();
+    await expect(page.locator('[data-testid="login-password-input"]')).toBeVisible();
+    await expect(page.locator('[data-testid="login-button"]')).toBeVisible();
+    await expect(page.locator('[data-testid="password-recovery-button"]')).toBeVisible();
   
     console.log('Smoke test passed!');
   });
