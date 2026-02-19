@@ -21,14 +21,13 @@ jobs:
       - name: 🐳 Run Playwright tests in Docker (no compose)
         run: |
           docker run --rm \
-            --user $(id -u):$(id -g) \
             -v ${{ github.workspace }}:/app \
             -w /app \
             -e VERCEL_AUTOMATION_BYPASS_SECRET=${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }} \
             -e PLAYWRIGHT_BASE_URL=https://easy-drive-test.vercel.app \
             -e CI=true \
             mcr.microsoft.com/playwright:v1.58.2-jammy \
-            /bin/bash -c "npm ci && npm run test:e2e"
+            /bin/bash -c "npm ci && npm run test:e2e && chown -R $(id -u):$(id -g) /app/e2e"
 
       - name: 📋 Verify reports
         if: always()
