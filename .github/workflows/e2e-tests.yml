@@ -9,42 +9,28 @@ on:
 jobs:
   test:
     name: Run E2E Tests on Self-Hosted Ubuntu
-    runs-on: self-hosted 
+    runs-on: self-hosted
     
     steps:
       - name: 📥 Checkout code
         uses: actions/checkout@v4
 
-      - name: 🔄 Pull latest Docker image (if needed)
-        run: docker compose pull
-        working-directory: ${{ github.workspace }}
+      - name: 🐳 Run Playwright tests in Docker (no compose)
+        run: |
+          docker run --rm \
+            -v ${{ github.workspace }}:/app \
+            -w /app \
+            -e VERCEL_AUTOMATION_BYPASS_SECRET=${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }} \
+            -e PLAYWRIGHT_BASE_URL=https://easy-drive-test.vercel.app \
+            -e CI=true \
+            mcr.microsoft.com/playwright:v1.58.2-jammy \
+            /bin/bash -c "npm ci && npm run test:e2e"
 
-      - name: 📦 Install/Update dependencies in Docker
-        run: docker compose exec -T playwright-runner npm ci
-        working-directory: ${{ github.workspace }}
-        env:
-          VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
-
-      - name: 🧪 Run Playwright tests in Docker
-        run: docker compose exec -T playwright-runner npm run test:e2e
-        working-directory: ${{ github.workspace }}
-        env:
-          VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
-
-      - name: 📋 Copy reports from Docker container to host
+      - name: 📋 Verify reports
         if: always()
         run: |
-          # Utwórz katalogi na hoście jeśli nie istnieją
-          mkdir -p e2e/html-report e2e/test-results
-          
-          # Skopiuj raporty z kontenera
-          docker cp easy-drive-e2e:/app/e2e/html-report/. e2e/html-report/ || true
-          docker cp easy-drive-e2e:/app/e2e/test-results/. e2e/test-results/ || true
-          
-          # Sprawdź co zostało skopiowane
-          ls -la e2e/html-report/
-          ls -la e2e/test-results/
-        working-directory: ${{ github.workspace }}
+          ls -la e2e/html-report/ || echo "No HTML report"
+          ls -la e2e/test-results/ || echo "No test results"
 
       - name: 📤 Upload HTML report
         if: always()
@@ -64,10 +50,10 @@ jobs:
 
       - name: ✅ Tests passed
         if: success()
-        run: echo "🎉 All E2E tests passed on self-hosted runner!"
+        run: echo "🎉 All E2E tests passed!"
 
       - name: ❌ Tests failed
         if: failure()
         run: |
-          echo "❌ E2E tests failed. Check artifacts for details."
+          echo "❌ E2E tests failed. Check artifacts."
           exit 1
