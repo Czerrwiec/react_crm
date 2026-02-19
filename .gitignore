@@ -35,3 +35,4 @@ tsconfig.tsbuildinfo
 e2e/html-report
 e2e/report
 e2e/test-results
+e2e/test-data.json
