@@ -9,7 +9,7 @@ on:
 jobs:
   test:
     name: Run E2E Tests on Self-Hosted Ubuntu
-    runs-on: self-hosted  # Używa twojego Ubuntu servera!
+    runs-on: self-hosted 
     
     steps:
       - name: 📥 Checkout code
@@ -30,6 +30,21 @@ jobs:
         working-directory: ${{ github.workspace }}
         env:
           VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+
+      - name: 📋 Copy reports from Docker container to host
+        if: always()
+        run: |
+          # Utwórz katalogi na hoście jeśli nie istnieją
+          mkdir -p e2e/html-report e2e/test-results
+          
+          # Skopiuj raporty z kontenera
+          docker cp easy-drive-e2e:/app/e2e/html-report/. e2e/html-report/ || true
+          docker cp easy-drive-e2e:/app/e2e/test-results/. e2e/test-results/ || true
+          
+          # Sprawdź co zostało skopiowane
+          ls -la e2e/html-report/
+          ls -la e2e/test-results/
+        working-directory: ${{ github.workspace }}
 
       - name: 📤 Upload HTML report
         if: always()

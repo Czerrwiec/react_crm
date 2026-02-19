@@ -90,7 +90,8 @@ export default function LoginPage() {
 						<button
 							type="button"
 							onClick={() => navigate('/reset-password')}
-							className="text-sm text-primary hover:underline">
+							className="text-sm text-primary hover:underline"
+							data-testid="password-recovery-button">
 							Zapomniałeś hasła?
 						</button>
 					</div>

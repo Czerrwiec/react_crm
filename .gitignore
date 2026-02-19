@@ -31,3 +31,7 @@ dist-ssr
 .env prod
 vite.config.js BACKUP
 tsconfig.tsbuildinfo
+
+e2e/html-report
+e2e/report
+e2e/test-results
