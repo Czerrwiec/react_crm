@@ -30,13 +30,43 @@ import { Package } from 'lucide-react';
 import PackagesPage from '@/pages/admin/PackagesPage';
 
 const navigation = [
-	{ name: 'Tablica', path: '/admin', icon: LayoutDashboard },
-	{ name: 'Kursanci', path: '/admin/students', icon: Users },
-	{ name: 'Kalendarz', path: '/admin/calendar', icon: Calendar },
-	{ name: 'Samochody', path: '/admin/cars', icon: Car },
-	{ name: 'Instruktorzy', path: '/admin/instructors', icon: UserCog },
-	{ name: 'Cennik', path: '/admin/packages', icon: Package },
-	{ name: 'Ustawienia', path: '/admin/settings', icon: Settings },
+	{
+		name: 'Tablica',
+		path: '/admin',
+		icon: LayoutDashboard,
+		testId: 'nav-dashboard',
+	},
+	{
+		name: 'Kursanci',
+		path: '/admin/students',
+		icon: Users,
+		testId: 'nav-students',
+	},
+	{
+		name: 'Kalendarz',
+		path: '/admin/calendar',
+		icon: Calendar,
+		testId: 'nav-calendar',
+	},
+	{ name: 'Samochody', path: '/admin/cars', icon: Car, testId: 'nav-cars' },
+	{
+		name: 'Instruktorzy',
+		path: '/admin/instructors',
+		icon: UserCog,
+		testId: 'nav-instructors',
+	},
+	{
+		name: 'Cennik',
+		path: '/admin/packages',
+		icon: Package,
+		testId: 'nav-packages',
+	},
+	{
+		name: 'Ustawienia',
+		path: '/admin/settings',
+		icon: Settings,
+		testId: 'nav-settings',
+	},
 ];
 
 export default function AdminLayout() {
@@ -60,7 +90,7 @@ export default function AdminLayout() {
 			<aside
 				className={cn(
 					'fixed inset-y-0 left-0 z-40 flex w-64 flex-col border-r bg-white transition-transform duration-300 md:relative md:translate-x-0',
-					mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
+					mobileMenuOpen ? 'translate-x-0' : '-translate-x-full',
 				)}>
 				<div className="flex h-16 items-center justify-center border-b px-6">
 					<h1 className="text-xl font-bold ml-10 md:ml-0">CRM Admin</h1>
@@ -74,13 +104,14 @@ export default function AdminLayout() {
 							<Link
 								key={item.path}
 								to={item.path}
+								data-testid={item.testId}
 								onClick={() => setMobileMenuOpen(false)}>
 								<div
 									className={cn(
 										'flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors',
 										isActive
 											? 'bg-primary text-primary-foreground'
-											: 'text-gray-700 hover:bg-gray-100'
+											: 'text-gray-700 hover:bg-gray-100',
 									)}>
 									<Icon className="h-5 w-5" />
 									{item.name}
@@ -91,6 +122,7 @@ export default function AdminLayout() {
 				</nav>
 				<div className="border-t p-4">
 					<Button
+						data-testid="logout-button"
 						variant="outline"
 						className="w-full justify-start"
 						onClick={signOut}>
