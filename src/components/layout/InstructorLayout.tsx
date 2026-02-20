@@ -20,10 +20,30 @@ import InstructorDashboardPage from '@/pages/instructor/InstructorDashboardPage'
 import CarsPage from '@/pages/admin/CarsPage';
 
 const navigation = [
-	{ name: 'Tablica', path: '/instructor/dashboard', icon: LayoutDashboard },
-	{ name: 'Kursanci', path: '/instructor/students', icon: Users },
-	{ name: 'Kalendarz', path: '/instructor/calendar', icon: Calendar },
-	{ name: 'Samochody', path: '/instructor/cars', icon: Car },
+	{
+		name: 'Tablica',
+		path: '/instructor/dashboard',
+		icon: LayoutDashboard,
+		testId: 'nav-dashboard',
+	},
+	{
+		name: 'Kursanci',
+		path: '/instructor/students',
+		icon: Users,
+		testId: 'nav-students',
+	},
+	{
+		name: 'Kalendarz',
+		path: '/instructor/calendar',
+		icon: Calendar,
+		testId: 'nav-calendar',
+	},
+	{
+		name: 'Samochody',
+		path: '/instructor/cars',
+		icon: Car,
+		testId: 'nav-cars',
+	},
 ];
 
 export default function InstructorLayout() {
@@ -63,13 +83,14 @@ export default function InstructorLayout() {
 							<Link
 								key={item.path}
 								to={item.path}
+								data-testid={item.testId}
 								onClick={() => setMobileMenuOpen(false)}>
 								<div
 									className={cn(
 										'flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors',
 										isActive
 											? 'bg-primary text-primary-foreground'
-											: 'text-gray-700 hover:bg-gray-100'
+											: 'text-gray-700 hover:bg-gray-100',
 									)}>
 									<Icon className="h-5 w-5" />
 									{item.name}
