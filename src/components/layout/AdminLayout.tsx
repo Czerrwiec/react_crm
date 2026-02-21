@@ -141,8 +141,6 @@ export default function AdminLayout() {
 			{/* Main content */}
 			<main className="flex-1 overflow-auto">
 				<Routes>
-					{/* <Route index element={<Navigate to="/admin/students" replace />} />
-					<Route index element={<DashboardPage />} /> */}
 					<Route index element={<DashboardPage />} /> {/* zmień z Navigate */}
 					<Route path="students" element={<StudentsPage />} />
 					<Route path="students/add" element={<AddStudentPage />} />

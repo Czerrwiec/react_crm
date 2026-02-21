@@ -72,6 +72,7 @@ export default function ResetPasswordPage() {
 					<div>
 						<Label htmlFor="email">Email</Label>
 						<Input
+							data-testid="recovery-email"
 							id="email"
 							type="email"
 							placeholder="twoj@email.pl"
@@ -82,11 +83,16 @@ export default function ResetPasswordPage() {
 						/>
 					</div>
 
-					<Button type="submit" className="w-full" disabled={loading}>
+					<Button
+						data-testid="send-link-button"
+						type="submit"
+						className="w-full"
+						disabled={loading}>
 						{loading ? 'Wysyłanie...' : 'Wyślij link resetujący'}
 					</Button>
 
 					<Button
+						data-testid="back-login-button"
 						type="button"
 						variant="ghost"
 						className="w-full"

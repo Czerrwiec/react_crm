@@ -1,4 +1,4 @@
-import { useState, FormEvent } from 'react';
+import { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,7 +11,7 @@ export default function LoginPage() {
 	const [loading, setLoading] = useState(false);
 	const { signIn } = useAuth();
 
-	const handleSubmit = async (e: FormEvent) => {
+	const handleSubmit = async (e: any) => {
 		e.preventDefault();
 		setError('');
 		setLoading(true);

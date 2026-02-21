@@ -107,7 +107,7 @@ export default function DashboardPage() {
 								Brak kursantów z zadłużeniem
 							</p>
 						) : (
-							<div className="space-y-2">
+							<div data-testid="debt-board" className="space-y-2">
 								{topDebtors.map((debtor, idx) => (
 									<div
 										key={debtor.id}
