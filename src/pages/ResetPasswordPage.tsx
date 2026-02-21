@@ -1,4 +1,4 @@
-import { useState, FormEvent } from 'react';
+import { useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,7 +12,7 @@ export default function ResetPasswordPage() {
 	const [error, setError] = useState('');
 	const navigate = useNavigate();
 
-	const handleSubmit = async (e: FormEvent) => {
+	const handleSubmit = async (e: any) => {
 		e.preventDefault();
 		setError('');
 		setLoading(true);

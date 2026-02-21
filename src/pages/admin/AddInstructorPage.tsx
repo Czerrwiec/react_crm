@@ -32,7 +32,7 @@ export default function AddInstructorPage() {
 			setLoading(false);
 		}
 	};
-
+	
 	return (
 		<div className="p-2 sm:p-4 md:p-8">
 			<div className="mb-4 flex items-center justify-end sm:justify-between pt-2">
