@@ -47,6 +47,7 @@ export class BasePom {
     }
 
     async goAndsendRecovery(email: string) {
+
         await this.page.getByTestId(BaseSelectors.recoveryButton).click()
         await this.page
             .getByTestId(BaseSelectors.recoveryEmail)
