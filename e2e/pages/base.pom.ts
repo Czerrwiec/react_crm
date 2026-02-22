@@ -86,4 +86,3 @@ export class BasePom {
             .toHaveClass(/text-primary-foreground/);
     }
 }
-
