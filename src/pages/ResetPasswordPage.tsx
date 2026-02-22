@@ -42,6 +42,7 @@ export default function ResetPasswordPage() {
 						</p>
 					</div>
 					<Button
+						data-testid="back-login-button-sended"
 						onClick={() => navigate('/login')}
 						variant="outline"
 						className="w-full">

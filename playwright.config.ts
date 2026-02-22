@@ -22,12 +22,13 @@ export default defineConfig({
   
   use: {
     baseURL: process.env.PLAYWRIGHT_BASE_URL || 'https://easy-drive-test.vercel.app',
+    serviceWorkers: 'block',
     extraHTTPHeaders: {
       'x-vercel-protection-bypass': process.env.VERCEL_AUTOMATION_BYPASS_SECRET || '',
     },
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
-    video: 'retain-on-failure',
+    video: 'off',
     actionTimeout: 10000,
     navigationTimeout: 30000,
   },
