@@ -43,7 +43,7 @@ jobs:
             echo "🔄 Pull latest code"
             git fetch origin master
             git checkout master
-            git reset --hard origin/master  # Force reset do remote (usuwa local changes)
+            git reset --hard origin/master
             git pull origin master
             
             echo "🐳 Ensure Docker container is running"
@@ -55,6 +55,13 @@ jobs:
             echo "🧪 Run Playwright tests"
             docker compose exec -T playwright-runner npm run test:e2e
             
+            echo "📋 Copy reports from container to host"
+            docker cp easy-drive-e2e:/app/e2e/html-report ./e2e/ 2>/dev/null || echo "⚠️  html-report not found, checking alternatives..."
+            docker cp easy-drive-e2e:/app/e2e/test-results ./e2e/ 2>/dev/null || echo "⚠️  test-results not found"
+            
+            echo "🔍 Verify what exists on host"
+            ls -la ~/projects/react_crm/e2e/
+            
             EXIT_CODE=$?
             echo "Tests finished with exit code: $EXIT_CODE"
             exit $EXIT_CODE
@@ -63,19 +70,17 @@ jobs:
       - name: 📊 Download test results via Tailscale
         if: always()
         run: |
-          echo "🔍 Checking what exists on Ubuntu..."
-          ssh ${{ secrets.UBUNTU_USER }}@${{ secrets.UBUNTU_TAILSCALE_IP }} "ls -la ~/projects/react_crm/e2e/"
+          echo "📥 Copying reports from Ubuntu..."
+          scp -r ${{ secrets.UBUNTU_USER }}@${{ secrets.UBUNTU_TAILSCALE_IP }}:~/projects/react_crm/e2e/html-report ./playwright-report 2>/dev/null || \
+          scp -r ${{ secrets.UBUNTU_USER }}@${{ secrets.UBUNTU_TAILSCALE_IP }}:~/projects/react_crm/e2e/report ./playwright-report || \
+          echo "❌ No HTML report found"
           
-          echo "📥 Copying HTML report..."
-          scp -r ${{ secrets.UBUNTU_USER }}@${{ secrets.UBUNTU_TAILSCALE_IP }}:~/projects/react_crm/e2e/html-report ./playwright-report || echo "❌ HTML report copy failed"
+          scp -r ${{ secrets.UBUNTU_USER }}@${{ secrets.UBUNTU_TAILSCALE_IP }}:~/projects/react_crm/e2e/test-results ./test-results 2>/dev/null || \
+          echo "❌ No test results found"
           
-          echo "📥 Copying test results..."
-          scp -r ${{ secrets.UBUNTU_USER }}@${{ secrets.UBUNTU_TAILSCALE_IP }}:~/projects/react_crm/e2e/test-results ./test-results || echo "❌ Test results copy failed"
-          
-          echo "🔍 Checking what was copied to GitHub runner..."
-          ls -la ./ || true
-          ls -la ./playwright-report/ || echo "playwright-report/ doesn't exist"
-          ls -la ./test-results/ || echo "test-results/ doesn't exist"
+          echo "🔍 What was copied:"
+          ls -la ./playwright-report/ 2>/dev/null || echo "playwright-report/ missing"
+          ls -la ./test-results/ 2>/dev/null || echo "test-results/ missing"
 
       - name: 📤 Upload HTML report
         if: always()
