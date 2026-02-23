@@ -46,11 +46,15 @@ jobs:
             git reset --hard origin/master
             git pull origin master
             
-            echo "🐳 Ensure Docker container is running"
+            echo "🐳 Restart Docker container with fresh code"
+            docker compose down
             docker compose up -d
             
             echo "📦 Update dependencies in container"
             docker compose exec -T playwright-runner npm ci
+            
+            echo "🗑️  Clean old reports in container"
+            docker compose exec -T playwright-runner rm -rf /app/e2e/html-report /app/e2e/test-results /app/e2e/report
             
             echo "🧪 Run Playwright tests"
             docker compose exec -T playwright-runner npm run test:e2e
