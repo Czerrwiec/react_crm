@@ -36,10 +36,6 @@ test.describe('Login tests', () => {
     test('User can send recovery email', async () => {
         await base.navigate('/');
 
-        console.log('Full data object:', data);
-        console.log('Recovery email:', data.recoveryEmail);
-
-
         await base.goAndsendRecovery(data.recoveryEmail)
         await base.backToLogin()
         await base.expectRedirectTo('/login');
