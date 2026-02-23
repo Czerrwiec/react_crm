@@ -63,8 +63,19 @@ jobs:
       - name: 📊 Download test results via Tailscale
         if: always()
         run: |
-          scp -r ${{ secrets.UBUNTU_USER }}@${{ secrets.UBUNTU_TAILSCALE_IP }}:~/projects/react_crm/e2e/html-report ./playwright-report || true
-          scp -r ${{ secrets.UBUNTU_USER }}@${{ secrets.UBUNTU_TAILSCALE_IP }}:~/projects/react_crm/e2e/test-results ./test-results || true
+          echo "🔍 Checking what exists on Ubuntu..."
+          ssh ${{ secrets.UBUNTU_USER }}@${{ secrets.UBUNTU_TAILSCALE_IP }} "ls -la ~/projects/react_crm/e2e/"
+          
+          echo "📥 Copying HTML report..."
+          scp -r ${{ secrets.UBUNTU_USER }}@${{ secrets.UBUNTU_TAILSCALE_IP }}:~/projects/react_crm/e2e/html-report ./playwright-report || echo "❌ HTML report copy failed"
+          
+          echo "📥 Copying test results..."
+          scp -r ${{ secrets.UBUNTU_USER }}@${{ secrets.UBUNTU_TAILSCALE_IP }}:~/projects/react_crm/e2e/test-results ./test-results || echo "❌ Test results copy failed"
+          
+          echo "🔍 Checking what was copied to GitHub runner..."
+          ls -la ./ || true
+          ls -la ./playwright-report/ || echo "playwright-report/ doesn't exist"
+          ls -la ./test-results/ || echo "test-results/ doesn't exist"
 
       - name: 📤 Upload HTML report
         if: always()
