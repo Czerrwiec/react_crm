@@ -43,6 +43,7 @@ jobs:
             echo "🔄 Pull latest code"
             git fetch origin master
             git checkout master
+            git reset --hard origin/master  # Force reset do remote (usuwa local changes)
             git pull origin master
             
             echo "🐳 Ensure Docker container is running"
