@@ -9,9 +9,10 @@
 Kolejnym krokiem jest wprowadzenie testów e2e w Playwright (celowo, bo w pracy piszę w Cypressie), testy zostały zainicjalizowane i są
 triggerowane każdym pushem do mastera, który jest hostowany na domenie testowej Vercel (chronionej kluczem)
 
-- aplikacja musi zostać cała przetestowana e2e z braku czasu na klikanie manualne przy pracy i dwójce dzieci :D 
-- testy docelowo będą odpalane na prywatnym mini PC z Ubuntu Server
-- póki co została stworzona podstawowa struktura, flow i kilka testów
+- Testy lecą przez tailscale na prywatny Ubuntu Server podpięty pod domową sieć
+
+- Aplikacja musi zostać cała przetestowana e2e z braku czasu na klikanie manualne przy pracy i dwójce dzieci :D 
+- Póki co została stworzona jedynie podstawowa struktura, flow i kilka testów żeby przetestować flow
 
 ---------------------------------------------------------
 ---------------------------------------------------------
