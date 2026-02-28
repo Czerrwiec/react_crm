@@ -19,3 +19,4 @@ triggerowane każdym pushem do mastera, który jest hostowany na domenie testowe
 Z tego tytułu, że w tej aplikacji front robi to co powinien robić BE, w natępnych krokach postaram się również utworzyć własne API jako przelotka
 Supabase - api - Dummy Front (co by front nie musiał mielić tyle danych)
 - skutkować to będzie możliwością rozpisania również testów API w Playwright (oby)
+
