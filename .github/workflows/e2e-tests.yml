@@ -68,9 +68,9 @@ jobs:
             echo "📦 Update dependencies in container"
             docker compose exec -T playwright-runner npm ci
             
-            echo "🗑️  Clean old reports"
-            sudo rm -rf ~/projects/react_crm/e2e/html-report
-            sudo rm -rf ~/projects/react_crm/e2e/test-results
+            echo "🗑️  Clean old reports (Docker + host)"
+            docker compose exec -T playwright-runner rm -rf /app/e2e/html-report /app/e2e/test-results
+            sudo rm -rf ~/projects/react_crm/e2e/html-report ~/projects/react_crm/e2e/test-results
             
             echo "🧪 Run Playwright tests"
             docker compose exec -T playwright-runner npm run test:e2e
