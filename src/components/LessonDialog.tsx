@@ -13,7 +13,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useIsMobile } from '@/hooks/useIsMobile';
 import BottomSheet from '@/components/mobile/BottomSheet';
-import { TimePicker, DurationPicker } from '@/components/mobile/MobileTimePicker';
+import {
+	TimePicker,
+	DurationPicker,
+} from '@/components/mobile/MobileTimePicker';
 import { lessonService } from '@/services/lesson.service';
 import { studentService } from '@/services/student.service';
 import type { Lesson, Student } from '@/types';
@@ -57,7 +60,7 @@ export default function LessonDialog({
 	const [validationError, setValidationError] = useState<string | null>(null);
 
 	// Reset formularza przy otwarciu/zamkniÄ™ciu lub zmianie instruktora
-		useEffect(() => {
+	useEffect(() => {
 		if (open) {
 			loadStudents();
 
@@ -74,7 +77,8 @@ export default function LessonDialog({
 				// Oblicz duration z lekcji
 				const [startH, startM] = lesson.startTime.split(':').map(Number);
 				const [endH, endM] = lesson.endTime.split(':').map(Number);
-				const durationInHours = (endH * 60 + endM - (startH * 60 + startM)) / 60;
+				const durationInHours =
+					(endH * 60 + endM - (startH * 60 + startM)) / 60;
 				setDuration(durationInHours);
 			} else {
 				// Nowa lekcja - reset + preselect daty i czasu
@@ -84,7 +88,7 @@ export default function LessonDialog({
 						? format(preselectedDate, 'yyyy-MM-dd')
 						: format(new Date(), 'yyyy-MM-dd'),
 				};
-				
+
 				// Jeśli mamy preselectedTime, ustaw startTime
 				if (preselectedTime) {
 					newFormData.startTime = preselectedTime;
@@ -93,13 +97,14 @@ export default function LessonDialog({
 					const endH = h + 2;
 					newFormData.endTime = `${String(endH).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
 				}
-				
+
 				setFormData(newFormData);
-				
+
 				// Oblicz duration z newFormData (a nie hardcode 2)
 				const [startH, startM] = newFormData.startTime.split(':').map(Number);
 				const [endH, endM] = newFormData.endTime.split(':').map(Number);
-				const durationInHours = (endH * 60 + endM - (startH * 60 + startM)) / 60;
+				const durationInHours =
+					(endH * 60 + endM - (startH * 60 + startM)) / 60;
 				setDuration(durationInHours);
 			}
 		} else {
@@ -126,7 +131,7 @@ export default function LessonDialog({
 			const allStudents = await studentService.getActiveStudents();
 			// Filtruj po instructorIds (array)
 			const instructorStudents = allStudents.filter(
-				(s) => s.instructorIds.includes(instructorId) && !s.inactive
+				(s) => s.instructorIds.includes(instructorId) && !s.inactive,
 			);
 			setStudents(instructorStudents);
 		} catch (error) {
@@ -141,12 +146,12 @@ export default function LessonDialog({
 			const prevMonth = new Date(
 				selectedDate.getFullYear(),
 				selectedDate.getMonth() - 1,
-				1
+				1,
 			);
 			const nextMonth = new Date(
 				selectedDate.getFullYear(),
 				selectedDate.getMonth() + 1,
-				1
+				1,
 			);
 
 			const [prevLessons, currentLessons, nextLessons] = await Promise.all([
@@ -166,7 +171,7 @@ export default function LessonDialog({
 					formData.startTime,
 					formData.endTime,
 					l.startTime,
-					l.endTime
+					l.endTime,
 				);
 			});
 
@@ -180,7 +185,7 @@ export default function LessonDialog({
 		start1: string,
 		end1: string,
 		start2: string,
-		end2: string
+		end2: string,
 	) => {
 		const start1Minutes = timeToMinutes(start1);
 		const end1Minutes = timeToMinutes(end1);
@@ -201,7 +206,7 @@ export default function LessonDialog({
 		const startMinutes = startH * 60 + startM;
 		const endMinutes = endH * 60 + endM;
 		const durationMinutes = endMinutes - startMinutes;
-		return durationMinutes / 60; 
+		return durationMinutes / 60;
 	};
 
 	const formatDuration = (hours: number) => {
@@ -226,7 +231,7 @@ export default function LessonDialog({
 
 		if (conflictWarning) {
 			alert(
-				'W tym czasie instruktor ma już zaplanowaną lekcję. Wybierz inny termin.'
+				'W tym czasie instruktor ma już zaplanowaną lekcję. Wybierz inny termin.',
 			);
 			return;
 		}
@@ -247,40 +252,53 @@ export default function LessonDialog({
 
 			if (lesson) {
 				await lessonService.updateLesson(lesson.id, lessonData);
-				
+
 				// Recalculate hours jeśli zmienił się status lub studentIds
 				const statusChanged = lesson.status !== formData.status;
-				const studentsChanged = JSON.stringify(lesson.studentIds.sort()) !== JSON.stringify(formData.studentIds.sort());
-				
+				const studentsChanged =
+					JSON.stringify(lesson.studentIds.sort()) !==
+					JSON.stringify(formData.studentIds.sort());
+
 				if (statusChanged || studentsChanged) {
 					// Recalculate dla starych studentów jeśli status był completed
 					if (lesson.status === 'completed' && studentsChanged) {
 						await Promise.all(
-							lesson.studentIds.map(id => lessonService.recalculateStudentHours(id))
+							lesson.studentIds.map((id) =>
+								lessonService.recalculateStudentHours(id),
+							),
 						);
 					}
-					
+
 					// Recalculate dla nowych studentów jeśli status jest completed
 					if (formData.status === 'completed') {
 						await Promise.all(
-							formData.studentIds.map(id => lessonService.recalculateStudentHours(id))
+							formData.studentIds.map((id) =>
+								lessonService.recalculateStudentHours(id),
+							),
 						);
 					}
-					
+
 					// Jeśli zmienił się status z completed na inny
-					if (lesson.status === 'completed' && formData.status !== 'completed') {
+					if (
+						lesson.status === 'completed' &&
+						formData.status !== 'completed'
+					) {
 						await Promise.all(
-							lesson.studentIds.map(id => lessonService.recalculateStudentHours(id))
+							lesson.studentIds.map((id) =>
+								lessonService.recalculateStudentHours(id),
+							),
 						);
 					}
 				}
 			} else {
 				await lessonService.createLesson(lessonData);
-				
+
 				// Recalculate dla nowych studentów jeśli status jest completed
 				if (formData.status === 'completed') {
 					await Promise.all(
-						formData.studentIds.map(id => lessonService.recalculateStudentHours(id))
+						formData.studentIds.map((id) =>
+							lessonService.recalculateStudentHours(id),
+						),
 					);
 				}
 			}
@@ -312,9 +330,7 @@ export default function LessonDialog({
 		if (!studentSearch) return true;
 		const searchLower = studentSearch.toLowerCase();
 		const fullName = `${student.firstName} ${student.lastName}`.toLowerCase();
-		return (
-			fullName.includes(searchLower)
-		);
+		return fullName.includes(searchLower);
 	});
 
 	if (isMobile) {
@@ -322,8 +338,7 @@ export default function LessonDialog({
 			<BottomSheet
 				open={open}
 				onClose={() => onOpenChange(false)}
-				title={lesson ? 'Edytuj lekcję' : 'Dodaj lekcję'}
-			>
+				title={lesson ? 'Edytuj lekcję' : 'Dodaj lekcję'}>
 				<form onSubmit={handleSubmit} className="space-y-6 p-4 pb-20">
 					{/* Date */}
 					<div>
@@ -333,7 +348,9 @@ export default function LessonDialog({
 							type="date"
 							required
 							value={formData.date}
-							onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+							onChange={(e) =>
+								setFormData({ ...formData, date: e.target.value })
+							}
 							className="mt-1 h-12 text-base"
 						/>
 					</div>
@@ -359,17 +376,24 @@ export default function LessonDialog({
 					<div>
 						<Label>Czas trwania *</Label>
 						<div className="mt-2 -mx-4 overflow-x-auto px-4">
-							<div className="flex gap-2 pb-2" style={{ minWidth: 'min-content' }}>
-								{[1, 1.5, 2.5, 3.5, 4.5, 5.5, 6].map((h) => (
+							<div
+								className="flex gap-2 pb-2"
+								style={{ minWidth: 'min-content' }}>
+								{[1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 5.5, 6].map((h) => (
 									<button
 										key={h}
 										type="button"
 										onClick={() => {
 											setDuration(h);
-											const [startH, startM] = formData.startTime.split(':').map(Number);
+											const [startH, startM] = formData.startTime
+												.split(':')
+												.map(Number);
 											const durationMinutes = h * 60;
-											const endH = Math.floor((startH * 60 + startM + durationMinutes) / 60);
-											const endM = (startH * 60 + startM + durationMinutes) % 60;
+											const endH = Math.floor(
+												(startH * 60 + startM + durationMinutes) / 60,
+											);
+											const endM =
+												(startH * 60 + startM + durationMinutes) % 60;
 											setFormData((prev) => ({
 												...prev,
 												endTime: `${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}`,
@@ -379,8 +403,7 @@ export default function LessonDialog({
 											duration === h
 												? 'border-blue-600 bg-blue-50 text-blue-700'
 												: 'border-gray-300 bg-white text-gray-700'
-										}`}
-									>
+										}`}>
 										{h}h
 									</button>
 								))}
@@ -415,7 +438,9 @@ export default function LessonDialog({
 						<div className="max-h-64 space-y-2 overflow-y-auto">
 							{filteredStudents.length === 0 ? (
 								<div className="py-8 text-center text-sm text-gray-500">
-									{students.length === 0 ? 'Brak aktywnych kursantów' : 'Brak wyników'}
+									{students.length === 0
+										? 'Brak aktywnych kursantów'
+										: 'Brak wyników'}
 								</div>
 							) : (
 								filteredStudents.map((student) => (
@@ -427,8 +452,7 @@ export default function LessonDialog({
 											formData.studentIds.includes(student.id)
 												? 'border-blue-600 bg-blue-50'
 												: 'border-gray-200 bg-white'
-										}`}
-									>
+										}`}>
 										<div className="font-medium">
 											{student.firstName} {student.lastName}
 										</div>
@@ -442,7 +466,9 @@ export default function LessonDialog({
 					<div>
 						<Label>Status</Label>
 						<div className="mt-2 -mx-4 overflow-x-auto px-4">
-							<div className="flex gap-2 pb-2" style={{ minWidth: 'min-content' }}>
+							<div
+								className="flex gap-2 pb-2"
+								style={{ minWidth: 'min-content' }}>
 								{[
 									{ value: 'completed', label: 'Ukończona' },
 									{ value: 'scheduled', label: 'Zaplanowana' },
@@ -451,13 +477,14 @@ export default function LessonDialog({
 									<button
 										key={status.value}
 										type="button"
-										onClick={() => setFormData({ ...formData, status: status.value as any })}
+										onClick={() =>
+											setFormData({ ...formData, status: status.value as any })
+										}
 										className={`min-h-[44px] min-w-[110px] flex-shrink-0 rounded-lg border-2 px-4 py-2 font-semibold transition-all active:scale-95 ${
 											formData.status === status.value
 												? 'border-blue-600 bg-blue-600 text-white'
 												: 'border-gray-300 bg-white text-gray-700'
-										}`}
-									>
+										}`}>
 										{status.label}
 									</button>
 								))}
@@ -472,7 +499,9 @@ export default function LessonDialog({
 							id="notes-mobile"
 							rows={3}
 							value={formData.notes}
-							onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+							onChange={(e) =>
+								setFormData({ ...formData, notes: e.target.value })
+							}
 							className="mt-1 text-base"
 						/>
 					</div>
@@ -482,9 +511,12 @@ export default function LessonDialog({
 						<Button
 							type="submit"
 							disabled={loading || conflictWarning}
-							className="h-12 w-full text-base font-semibold"
-						>
-							{loading ? 'Zapisywanie...' : lesson ? 'Zapisz zmiany' : 'Dodaj lekcję'}
+							className="h-12 w-full text-base font-semibold">
+							{loading
+								? 'Zapisywanie...'
+								: lesson
+									? 'Zapisz zmiany'
+									: 'Dodaj lekcję'}
 						</Button>
 					</div>
 				</form>
@@ -525,9 +557,9 @@ export default function LessonDialog({
 									const durationMinutes = duration * 60;
 									const endH = Math.floor((h * 60 + m + durationMinutes) / 60);
 									const endM = (h * 60 + m + durationMinutes) % 60;
-									setFormData(prev => ({
+									setFormData((prev) => ({
 										...prev,
-										endTime: `${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}`
+										endTime: `${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}`,
 									}));
 								}}
 							/>
@@ -540,9 +572,9 @@ export default function LessonDialog({
 									const durationMinutes = val * 60;
 									const endH = Math.floor((h * 60 + m + durationMinutes) / 60);
 									const endM = (h * 60 + m + durationMinutes) % 60;
-									setFormData(prev => ({
+									setFormData((prev) => ({
 										...prev,
-										endTime: `${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}`
+										endTime: `${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}`,
 									}));
 								}}
 							/>
@@ -668,8 +700,8 @@ export default function LessonDialog({
 							{loading
 								? 'Zapisywanie...'
 								: lesson
-								? 'Zapisz zmiany'
-								: 'Dodaj lekcję'}
+									? 'Zapisz zmiany'
+									: 'Dodaj lekcję'}
 						</Button>
 					</div>
 				</form>
