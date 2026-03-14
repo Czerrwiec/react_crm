@@ -53,10 +53,11 @@ export default function BottomSheet({ open, onClose, children, title }: BottomSh
 
       {/* Sheet */}
       <div
-        className="relative w-full rounded-t-2xl bg-white shadow-xl transition-transform"
+        className="relative w-full rounded-t-2xl bg-white shadow-xl"
         style={{
           maxHeight: '95vh',
-          animation: 'slideUp 200ms ease-out',
+          animation: 'slideUp 300ms cubic-bezier(0.32, 0.72, 0, 1)',
+          willChange: 'transform',
         }}
       >
         {/* Drag handle */}
@@ -88,12 +89,8 @@ export default function BottomSheet({ open, onClose, children, title }: BottomSh
 
       <style>{`
         @keyframes slideUp {
-          from {
-            transform: translateY(100%);
-          }
-          to {
-            transform: translateY(0);
-          }
+          from { transform: translateY(100%); }
+          to { transform: translateY(0); }
         }
       `}</style>
     </div>

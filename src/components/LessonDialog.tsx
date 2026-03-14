@@ -313,7 +313,7 @@ export default function LessonDialog({
 		const searchLower = studentSearch.toLowerCase();
 		const fullName = `${student.firstName} ${student.lastName}`.toLowerCase();
 		return (
-			fullName.includes(searchLower) || student.phone?.includes(studentSearch)
+			fullName.includes(searchLower)
 		);
 	});
 
@@ -360,7 +360,7 @@ export default function LessonDialog({
 						<Label>Czas trwania *</Label>
 						<div className="mt-2 -mx-4 overflow-x-auto px-4">
 							<div className="flex gap-2 pb-2" style={{ minWidth: 'min-content' }}>
-								{[1, 1.5, 2, 2.5, 3, 4, 5, 6].map((h) => (
+								{[1, 1.5, 2.5, 3.5, 4.5, 5.5, 6].map((h) => (
 									<button
 										key={h}
 										type="button"
@@ -432,9 +432,6 @@ export default function LessonDialog({
 										<div className="font-medium">
 											{student.firstName} {student.lastName}
 										</div>
-										{student.phone && (
-											<div className="text-xs text-gray-500">{student.phone}</div>
-										)}
 									</button>
 								))
 							)}

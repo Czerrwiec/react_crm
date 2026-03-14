@@ -51,81 +51,86 @@ export default function TimeGrid({
   };
 
   return (
-    <div className="relative px-4 py-2">
-      {/* Hour lines with half-hour marks */}
-      {HOURS.map((hour) => (
-        <div key={hour}>
-          {/* Full hour */}
-          <div
-            className="relative h-[30px] border-b border-gray-300"
-            onClick={() => onTimeSlotClick(hour, 0)}
-          >
-            <span className="absolute -top-2 left-0 text-xs font-medium text-gray-600">
-              {String(hour).padStart(2, '0')}:00
-            </span>
-          </div>
-          {/* Half hour */}
-          <div
-            className="relative h-[30px] border-b border-gray-200 border-dashed"
-            onClick={() => onTimeSlotClick(hour, 30)}
-          >
-            <span className="absolute -top-2 left-0 text-[10px] text-gray-400">
-              {String(hour).padStart(2, '0')}:30
-            </span>
-          </div>
-        </div>
-      ))}
+		<div className="relative px-4 py-2">
+			{/* Hour lines with half-hour marks */}
+			{HOURS.map((hour) => (
+				<div key={hour}>
+					{/* Full hour */}
+					<div
+						className="relative h-[30px]"
+						onClick={() => onTimeSlotClick(hour, 0)}>
+						<span className="absolute -top-2 left-0 text-xs font-medium text-gray-600">
+							{String(hour).padStart(2, '0')}:00
+						</span>
 
-      {/* Lessons */}
-      <div className="absolute left-16 right-4 top-0">
-        {/* NOW indicator */}
-        {isInRange && isToday && (
-          <div
-            className="absolute left-0 right-0 z-10"
-            style={{ top: `${currentOffset}px` }}
-          >
-            <div className="flex items-center">
-              <div className="h-2.5 w-2.5 rounded-full bg-red-500 shadow-sm" />
-              <div className="h-0.5 flex-1 bg-red-500" />
-            </div>
-          </div>
-        )}
+						<div className="absolute left-8 right-0 bottom-0 border-t border-gray-300 border-dashed" />
+					</div>
 
-        {lessons.map((lesson) => {
-          const studentNames = lesson.studentIds
-            .map((id) => studentNamesMap.get(id))
-            .filter(Boolean)
-            .join(', ');
+					{/* Half hour */}
+					<div
+						className="relative h-[30px]"
+						onClick={() => onTimeSlotClick(hour, 30)}>
+						<span className="absolute -top-2 left-0 text-[10px] text-gray-400">
+							{String(hour).padStart(2, '0')}:30
+						</span>
 
-          return (
-            <button
-              key={lesson.id}
-              className={`absolute w-full rounded-lg border-l-[5px] border-t border-t-gray-100 bg-white p-2.5 text-left shadow-md transition-transform active:scale-95 ${getStatusColor(
-                lesson.status
-              )}`}
-              style={getLessonStyle(lesson)}
-              onClick={(e) => {
-                e.stopPropagation();
-                onLessonClick(lesson);
-              }}
-            >
-              {/* Duration badge - prawy środek */}
-              <div className="absolute right-2 top-1/2 -translate-y-1/2 rounded bg-gray-100 px-1.5 py-0.5 text-[10px] font-medium text-gray-600">
-                {lesson.duration}h
-              </div>
-              
-              <div className="text-sm font-bold leading-tight">
-                {studentNames || 'Brak kursantów'}
-              </div>
-              <div className="mt-1 flex items-center gap-1.5 text-xs text-gray-600">
-                <span className="font-medium">{lesson.startTime.slice(0, 5)}</span>
-                <span>→</span>
-                <span className="font-medium">{lesson.endTime.slice(0, 5)}</span>
-              </div>
-            </button>
-          );
-        })}
-      </div>
-    </div>
-  );
+						<div className="absolute left-8 right-0 bottom-0 border-b border-gray-300 border-solid" />
+					</div>
+				</div>
+			))}
+
+			{/* Lessons */}
+			<div className="absolute left-16 right-4 top-0">
+				{/* NOW indicator */}
+				{isInRange && isToday && (
+					<div
+						className="absolute -left-4 right-0 z-10"
+						style={{ top: `${currentOffset}px` }}>
+						<div className="flex items-center">
+							<div className="h-2.5 w-2.5 rounded-full bg-red-500 shadow-sm" />
+							<div className="h-0.5 flex-1 bg-red-500" />
+						</div>
+					</div>
+				)}
+
+				{lessons.map((lesson) => {
+					const studentNames = lesson.studentIds
+						.map((id) => studentNamesMap.get(id))
+						.filter(Boolean)
+						.join(', ');
+
+					return (
+						<button
+							key={lesson.id}
+							className={`absolute w-full rounded-lg border-l-[5px] border-t border-t-gray-100 bg-white p-2.5 text-left shadow-md transition-transform active:scale-95 ${getStatusColor(
+								lesson.status,
+							)}`}
+							style={getLessonStyle(lesson)}
+							onClick={(e) => {
+								e.stopPropagation();
+								onLessonClick(lesson);
+							}}>
+							{/* Duration badge - prawy środek */}
+							<div className="absolute right-2 top-1/2 -translate-y-1/2 rounded bg-gray-100 px-1.5 py-0.5 text-[10px] font-medium text-gray-600">
+								{lesson.duration}h
+							</div>
+
+							<div className="text-sm font-bold leading-tight">
+								{studentNames || 'Brak kursantów'}
+							</div>
+							<div className="mt-1 flex items-center gap-1.5 text-xs text-gray-600">
+								<span className="font-medium">
+									{lesson.startTime.slice(0, 5)}
+								</span>
+								<span>→</span>
+								<span className="font-medium">
+									{lesson.endTime.slice(0, 5)}
+								</span>
+							</div>
+						</button>
+					);
+				})}
+			</div>
+		</div>
+	);
 }

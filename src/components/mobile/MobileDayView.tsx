@@ -14,7 +14,7 @@ interface MobileDayViewProps {
   onLessonClick: (lesson: Lesson) => void;
   onAddLesson: (hour: number, minute: number) => void;
   onOpenMonthView: () => void;
-  instructorId: string; // NEW - passed from parent
+  instructorId: string; 
 }
 
 export default function MobileDayView({

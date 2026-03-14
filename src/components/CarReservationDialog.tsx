@@ -365,10 +365,7 @@ export default function CarReservationDialog({
 									>
 										<div className="text-sm font-medium">
 											{student.firstName} {student.lastName}
-										</div>
-										{student.phone && (
-											<div className="text-xs text-gray-500">{student.phone}</div>
-										)}
+										</div>										
 									</button>
 								))
 							)}
