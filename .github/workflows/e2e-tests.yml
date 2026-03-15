@@ -63,7 +63,7 @@ jobs:
             
             echo "🗑️  Clean old reports"
             docker compose exec -T playwright-runner rm -rf /app/e2e/html-report /app/e2e/test-results
-            sudo rm -rf ~/projects/react_crm/e2e/html-report ~/projects/react_crm/e2e/test-results
+            rm -rf ~/projects/react_crm/e2e/html-report ~/projects/react_crm/e2e/test-results || true
             
             echo "🧪 Run Playwright tests"
             docker compose exec -T playwright-runner npm run test:e2e
