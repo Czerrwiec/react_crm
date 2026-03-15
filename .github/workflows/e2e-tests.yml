@@ -58,13 +58,7 @@ jobs:
             sudo rm -rf ~/projects/react_crm/e2e/html-report ~/projects/react_crm/e2e/test-results
             
             echo "🧪 Run Playwright tests with env vars"
-            docker compose exec -T \
-              -e TEST_ADMIN_EMAIL="${{ secrets.TEST_ADMIN_EMAIL }}" \
-              -e TEST_ADMIN_PASSWORD="${{ secrets.TEST_ADMIN_PASSWORD }}" \
-              -e TEST_INSTRUCTOR_EMAIL="${{ secrets.TEST_INSTRUCTOR_EMAIL }}" \
-              -e TEST_INSTRUCTOR_PASSWORD="${{ secrets.TEST_INSTRUCTOR_PASSWORD }}" \
-              -e TEST_RECOVERY_EMAIL="${{ secrets.TEST_RECOVERY_EMAIL }}" \
-              playwright-runner npm run test:e2e
+            docker compose exec -T -e TEST_ADMIN_EMAIL="${{ secrets.TEST_ADMIN_EMAIL }}" -e TEST_ADMIN_PASSWORD="${{ secrets.TEST_ADMIN_PASSWORD }}" -e TEST_INSTRUCTOR_EMAIL="${{ secrets.TEST_INSTRUCTOR_EMAIL }}" -e TEST_INSTRUCTOR_PASSWORD="${{ secrets.TEST_INSTRUCTOR_PASSWORD }}" -e TEST_RECOVERY_EMAIL="${{ secrets.TEST_RECOVERY_EMAIL }}" playwright-runner npm run test:e2e
             
             echo "✅ Reports created, verifying..."
             ls -la ~/projects/react_crm/e2e/html-report/ || echo "⚠️  No HTML report"
