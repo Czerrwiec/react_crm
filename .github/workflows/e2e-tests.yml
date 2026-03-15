@@ -46,21 +46,6 @@ jobs:
             git reset --hard origin/master
             git pull origin master
             
-            echo "📝 Create test-data.json from secrets"
-            cat > ~/projects/react_crm/e2e/test-data.json << TESTDATA
-            {
-              "admin": {
-                "email": "${{ secrets.TEST_ADMIN_EMAIL }}",
-                "password": "${{ secrets.TEST_ADMIN_PASSWORD }}"
-              },
-              "instructor": {
-                "email": "${{ secrets.TEST_INSTRUCTOR_EMAIL }}",
-                "password": "${{ secrets.TEST_INSTRUCTOR_PASSWORD }}"
-              },
-              "recoveryEmail": "${{ secrets.TEST_RECOVERY_EMAIL }}"
-            }
-            TESTDATA
-            
             echo "🐳 Restart Docker container with fresh code"
             docker compose down
             docker compose up -d
@@ -68,12 +53,18 @@ jobs:
             echo "📦 Update dependencies in container"
             docker compose exec -T playwright-runner npm ci
             
-            echo "🗑️  Clean old reports (Docker + host)"
+            echo "🗑️  Clean old reports"
             docker compose exec -T playwright-runner rm -rf /app/e2e/html-report /app/e2e/test-results
             sudo rm -rf ~/projects/react_crm/e2e/html-report ~/projects/react_crm/e2e/test-results
             
-            echo "🧪 Run Playwright tests"
-            docker compose exec -T playwright-runner npm run test:e2e
+            echo "🧪 Run Playwright tests with env vars"
+            docker compose exec -T \
+              -e TEST_ADMIN_EMAIL="${{ secrets.TEST_ADMIN_EMAIL }}" \
+              -e TEST_ADMIN_PASSWORD="${{ secrets.TEST_ADMIN_PASSWORD }}" \
+              -e TEST_INSTRUCTOR_EMAIL="${{ secrets.TEST_INSTRUCTOR_EMAIL }}" \
+              -e TEST_INSTRUCTOR_PASSWORD="${{ secrets.TEST_INSTRUCTOR_PASSWORD }}" \
+              -e TEST_RECOVERY_EMAIL="${{ secrets.TEST_RECOVERY_EMAIL }}" \
+              playwright-runner npm run test:e2e
             
             echo "✅ Reports created, verifying..."
             ls -la ~/projects/react_crm/e2e/html-report/ || echo "⚠️  No HTML report"
